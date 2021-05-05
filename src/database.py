@@ -1,10 +1,11 @@
 import sqlalchemy
 import sqlite3
 from bs4 import BeautifulSoup
-from util import saveImageFromURL, splitGIFIntoImages
+from util import saveImageFromURL#, splitGIFIntoImages
 import requests
-from models import Killer, Survivor
+from models import Killer, Survivor, Perk, PerkType, ItemType
 import os
+from PIL import Image
 
 class Database:
     __instance = None
@@ -36,6 +37,8 @@ class Database:
         ADDONS_URL = f'{BASE_WIKI_URL}Add-ons'
         OFFERINGS_URL = f'{BASE_WIKI_URL}Offerings'
 
+        perks = []
+        addons = []
         killersDoc = requests.get(KILLERS_URL).content
         killersParser = BeautifulSoup(killersDoc, 'html.parser')
         mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
@@ -52,6 +55,29 @@ class Database:
             dest = f'../images/killers/the-{name}.png'
             if not os.path.exists(dest):
                 saveImageFromURL(imgUrl, dest)
+            perksTable = killerPageParser.find('table', attrs={'class': 'wikitable'})
+            rows = perksTable.find_all('tr')
+            index = 0
+            for row in rows:
+                perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
+                perks += [
+                    Perk(perkID=index+i, perkTier=i+1,perkType=PerkType.Killer,perkName=f'{perkName} {"I" * (i+1)}') for i in range(3)
+                ] #range 3 because there are only 3 perk tiers
+                index += 3
+                #download and save images
+                imgTag = row.find('img')
+                gifUrl = imgTag.get('src', '')
+                tempGifPath = '../temp/temp.gif'
+                saveImageFromURL(gifUrl, tempGifPath)
+                img = Image.open(tempGifPath)
+                for frameIndex in range(img.n_frames):
+                    img.seek(frameIndex)
+                    frameRGBA = img.convert("RGBA")
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    gifPath = f'../images/perks/{filename}.png'
+                    if not os.path.exists(gifPath):
+                        frameRGBA.save(gifPath)
+            #todo: download addons from killer sites     
 
 
         survivorsDoc = requests.get(SURVIVORS_URL).content
@@ -66,11 +92,42 @@ class Database:
             infoTable = survivorPageParser.find('table', attrs={"class": "infoboxtable"})
             imgTag = infoTable.find('img')
             imgUrl = imgTag.get('src', '')
-            name = survivors[i].survivorName.lower().replace(' ', '-')
+            name = survivors[i].survivorName.lower().replace(' ', '-').replace('"', '')
             dest = f'../images/survivors/{name}.png'
             if not os.path.exists(dest):
                 saveImageFromURL(imgUrl, dest)
             #todo: download gifs here and split them into perk icons
+            perksTable = killerPageParser.find('table', attrs={'class': 'wikitable'})
+            rows = perksTable.find_all('tr')
+            index = 0
+            for row in rows:
+                perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
+                perks += [
+                    Perk(perkID=index+i, perkTier=i+1,perkType=PerkType.Survivor,perkName=f'{perkName} {"I" * (i+1)}') for i in range(3)
+                ] #range 3 because there are only 3 perk tiers
+                index += 3
+                #download and save images
+                imgTag = row.find('img')
+                gifUrl = imgTag.get('src', '')
+                tempGifPath = '../temp/temp.gif'
+                saveImageFromURL(gifUrl, tempGifPath)
+                img = Image.open(tempGifPath)
+                for frameIndex in range(img.n_frames):
+                    img.seek(frameIndex)
+                    frameRGBA = img.convert("RGBA")
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    gifPath = f'../images/perks/{filename}.png'
+                    if not os.path.exists(gifPath):
+                        frameRGBA.save(gifPath)
 
-        print(killers)
-        print(survivors)
+        itemsDoc = requests.get(ITEMS_URL).content
+        itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
+        itemTypesInParsingOrder = [ItemType.Firecracker, ItemType.Flashlight, ItemType.Key, ItemType.Map, ItemType.Medkit, ItemType.Toolbox]
+        for itemType in itemTypesInParsingOrder:
+            pass
+
+        addonsDoc = requests.get(ADDONS_URL).content
+        addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
+
+        offeringsDoc = requests.get(OFFERINGS_URL).content
+        offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')

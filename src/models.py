@@ -36,6 +36,16 @@ class Survivor:
     survivorName: str
 
 @dataclass
+class FacedSurvivor:
+    facedSurvivorID: int
+    facedSurvivorName: str
+
+@dataclass
+class FacedKiller:
+    facedKillerID: int
+    facedKillerName: str
+
+@dataclass
 class Item:
     itemID: int
     itemName: str
@@ -55,11 +65,15 @@ class Realm:
 
 @dataclass
 class ItemAddon:
-    pass
+    addonID: int
+    addonName: str
+    itemType: ItemType
 
 @dataclass
 class KillerAddon:
-    pass
+    addonID: int
+    addonName: str
+    killer: Killer
 
 @dataclass
 class Perk:
@@ -82,15 +96,13 @@ class DBDMatch(ABC):
 
 @dataclass
 class SurvivorMatch(DBDMatch):
-    facedKiller: Killer
+    facedKiller: FacedKiller
     item: Item
     matchResult: SurvivorMatchResult
 
-
-
 @dataclass
 class KillerMatch(DBDMatch):
-    facedSurvivors: list[Survivor]
+    facedSurvivors: list[FacedSurvivor]
     sacrifices: int
     kills: int
     disconnects: int
