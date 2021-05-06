@@ -4,8 +4,8 @@ from MainWindow import MainWindow
 from database import Database
 
 def main() -> None:
-    Database.init('sqlite:///../dbd-match-log-DEV.db')
-    Database.update()
+    # Database.init('sqlite:///../dbd-match-log-DEV.db')
+    # Database.update()
     app = QApplication(sys.argv)
     window = MainWindow(title='Dead by Daylight match log', windowSize=(1200, 800))
     window.show()
