@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sqlalchemy
 import sqlite3
 from bs4 import BeautifulSoup
@@ -18,7 +19,7 @@ class Database:
         return Session(self._engine)
 
     @staticmethod
-    def instance():
+    def instance() -> Database:
         return Database.__instance
 
     @staticmethod
@@ -44,7 +45,7 @@ class Database:
         killersParser = BeautifulSoup(killersDoc, 'html.parser')
         mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
         aTags = mainDiv.find_all('a')
-        killers = [Killer(killerID=i, killerName=aTags[j].get('title', ''), killerAlias=aTags[j+1].get('title', '')) for i, j in enumerate(range(0, len(aTags), 2))]
+        killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias=aTags[j + 1].get('title', '')) for i, j in enumerate(range(0, len(aTags), 2))]
         killerUrls = [f"{BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
         #todo: download killer portrait for each of the killers
         for i, url in enumerate(killerUrls):
