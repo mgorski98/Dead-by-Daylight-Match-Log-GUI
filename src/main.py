@@ -2,9 +2,12 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from MainWindow import MainWindow
 from database import Database
+from src.models import Killer, KillerAddon, GameMap, Realm
+from sqlalchemy import insert, select
+
 
 def main() -> None:
-    # Database.init('sqlite:///../dbd-match-log-DEV.db')
+    Database.init('sqlite:///../dbd-match-log-DEV.db')
     # Database.update()
     app = QApplication(sys.argv)
     window = MainWindow(title='Dead by Daylight match log', windowSize=(1200, 800))

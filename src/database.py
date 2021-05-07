@@ -1,8 +1,9 @@
 import sqlalchemy
 import sqlite3
 from bs4 import BeautifulSoup
-from util import saveImageFromURL#, splitGIFIntoImages
+from util import saveImageFromURL
 import requests
+from sqlalchemy.orm import Session
 from models import Killer, Survivor, Perk, PerkType, ItemType
 import os
 from PIL import Image
@@ -13,7 +14,7 @@ class Database:
     def __init__(self, url: str):
         self._engine = sqlalchemy.create_engine(url)
 
-    def getNewSession(self):
+    def getNewSession(self) -> Session:
         return Session(self._engine)
 
     @staticmethod
