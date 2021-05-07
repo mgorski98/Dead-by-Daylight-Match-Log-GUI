@@ -62,7 +62,7 @@ class Database:
             for row in rows:
                 perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
                 perks += [
-                    Perk(perkID=index+i, perkTier=i+1,perkType=PerkType.Killer,perkName=f'{perkName} {"I" * (i+1)}') for i in range(3)
+                    Perk(perkTier=i + 1, perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (i + 1)}') for i in range(3)
                 ] #range 3 because there are only 3 perk tiers
                 index += 3
                 #download and save images
@@ -85,7 +85,7 @@ class Database:
         survivorsParser = BeautifulSoup(survivorsDoc, 'html.parser')
         mainDiv = survivorsParser.find('div', attrs={'style': 'color: #fff;'})
         aTags = mainDiv.find_all('a')
-        survivors = [Survivor(survivorID=i, survivorName=a.get('title', '')) for i,a in enumerate(aTags[::2])]
+        survivors = [Survivor(survivorName=a.get('title', '')) for i, a in enumerate(aTags[::2])]
         survivorUrls = [f"{BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
 
         for i, url in enumerate(survivorUrls):
@@ -98,13 +98,13 @@ class Database:
             if not os.path.exists(dest):
                 saveImageFromURL(imgUrl, dest)
             #todo: download gifs here and split them into perk icons
-            perksTable = killerPageParser.find('table', attrs={'class': 'wikitable'})
+            perksTable = survivorPageParser.find('table', attrs={'class': 'wikitable'})
             rows = perksTable.find_all('tr')
             index = 0
             for row in rows:
                 perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
                 perks += [
-                    Perk(perkID=index+i, perkTier=i+1,perkType=PerkType.Survivor,perkName=f'{perkName} {"I" * (i+1)}') for i in range(3)
+                    Perk(perkTier=i + 1, perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (i + 1)}') for i in range(3)
                 ] #range 3 because there are only 3 perk tiers
                 index += 3
                 #download and save images
@@ -123,7 +123,10 @@ class Database:
 
         itemsDoc = requests.get(ITEMS_URL).content
         itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
-        itemTypesInParsingOrder = [ItemType.Firecracker, ItemType.Flashlight, ItemType.Key, ItemType.Map, ItemType.Medkit, ItemType.Toolbox]
+        itemTypesInParsingOrder = [
+            ItemType.Firecracker, ItemType.Flashlight, ItemType.Key,
+            ItemType.Map, ItemType.Medkit, ItemType.Toolbox
+        ]
         for itemType in itemTypesInParsingOrder:
             pass
 

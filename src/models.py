@@ -1,8 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABC
+
+import sqlalchemy
 from sqlalchemy.orm import registry, relationship, backref
-from sqlalchemy import Table, Column, Integer, Text, ForeignKey
+from sqlalchemy import Table, Column, Integer, Text, ForeignKey, Date
 from datetime import date
 from enum import Enum
 
@@ -61,18 +63,18 @@ class Survivor:
     survivorName: str
 
 
-# @mapperRegistry.mapped
-# @dataclass
-# class FacedSurvivor:
-#     __table__ = Table(
-#         "faced_survivors",
-#         mapperRegistry.metadata,
-#         Column("facedSurvivorID", Integer, primary_key=True),
-#         Column("facedSurvivorName", )
-#     )
-#     facedSurvivorID: int = field(init=False)
-#     facedSurvivorName: str
-#     killerMatchID: int = field(init=False)
+@mapperRegistry.mapped
+@dataclass
+class FacedSurvivor:
+    __table__ = Table(
+        "faced_survivors",
+        mapperRegistry.metadata,
+        Column("facedSurvivorID", Integer, primary_key=True),
+        Column("facedSurvivorName", )
+    )
+    facedSurvivorID: int = field(init=False)
+    facedSurvivorName: str
+    killerMatchID: int = field(init=False)
 
 
 @mapperRegistry.mapped
@@ -83,7 +85,7 @@ class Item:
         mapperRegistry.metadata,
         Column("itemID", Integer, primary_key=True),
         Column("itemName", Text, nullable=False, unique=True),
-        Column("itemType", Text, nullable=False)
+        Column("itemType", sqlalchemy.Enum(ItemType), nullable=False)
     )
     itemID: int = field(init=False)
     itemName: str
@@ -141,7 +143,7 @@ class ItemAddon:
         mapperRegistry.metadata,
         Column("addonID", Integer, primary_key=True),
         Column("addonName", Text, nullable=False, unique=True),
-        Column("itemType", Text, nullable=False)
+        Column("itemType", sqlalchemy.Enum(ItemType), nullable=False)
     )
     addonID: int = field(init=False)
     addonName: str
@@ -178,7 +180,7 @@ class Perk:
         mapperRegistry.metadata,
         Column("perkID", Integer, primary_key=True),
         Column("perkName", Text, nullable=False),
-        Column("perkType", Text, nullable=False),
+        Column("perkType", sqlalchemy.Enum(PerkType), nullable=False),
         Column("perkTier", Integer, nullable=False, default=1)
     )
     perkID: int = field(init=False)
@@ -200,16 +202,15 @@ class Offering:
     offeringName: str
 
 
-#
-#
-# # @mapperRegistry.mapped
+
+
+# @mapperRegistry.mapped
 # @dataclass
 # class KillerMatchPerk:
 #     __table__ = Table()
-#     pass
 #
 #
-# # @mapperRegistry.mapped
+# @mapperRegistry.mapped
 # @dataclass
 # class SurvivorMatchPerk:
 #     __table__ = Table()
@@ -220,51 +221,69 @@ class DBDMatch(ABC):
     matchID: int
     points: int
     gameMap: GameMap
+    gameMapID: int
     offering: Offering
+    offeringID: int
     matchDate: date
-#
-#
-# @mapperRegistry.mapped
-# @dataclass
-# class SurvivorMatch(DBDMatch):
-#     __table__ = Table(
-#         "survivor_matches",
-#         mapperRegistry.metadata,
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column()
-#     )
-#     facedKiller: str
-#     item: Item
-#     matchResult: SurvivorMatchResult
-#     itemAddons: tuple[ItemAddon]
-#     perks: list[SurvivorMatchPerk]
-#
-#
-# @mapperRegistry.mapped
-# @dataclass
-# class KillerMatch(DBDMatch):
-#     __table__ = Table(
-#         "killer_matches",
-#         mapperRegistry.metadata,
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column(),
-#         Column()
-#     )
-#     facedSurvivors: list[FacedSurvivor]
-#     sacrifices: int
-#     kills: int
-#     disconnects: int
-#     killerAddons: tuple[KillerAddon]
-#     perks: list[KillerMatchPerk]
+    rank: int
+
+
+@mapperRegistry.mapped
+@dataclass
+class SurvivorMatch(DBDMatch):
+    __table__ = Table(
+        "survivor_matches",
+        mapperRegistry.metadata,
+        Column("matchID", Integer, primary_key=True),
+        Column("points", Integer, default=0),
+        Column("matchDate", Date, nullable=False),
+        Column("rank", Integer, default=20, nullable=True),
+        Column("offeringID", Integer, ForeignKey("offerings.offeringID"), nullable=True),
+        Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True),
+        Column("facedKillerID", Integer, ForeignKey("killers.killerID"), nullable=False),
+        Column("itemID", Integer, ForeignKey("items.itemID"), nullable=True),
+        Column("matchResult", sqlalchemy.Enum(SurvivorMatchResult), nullable=False)
+    )
+    facedKiller: Killer
+    facedKillerID: int
+    item: Item
+    matchResult: SurvivorMatchResult
+    itemAddons: tuple[ItemAddon]
+    # perks: list[SurvivorMatchPerk]
+
+    __mapper_args__ = {
+        "properties": {
+
+        }
+    }
+
+
+@mapperRegistry.mapped
+@dataclass
+class KillerMatch(DBDMatch):
+    __table__ = Table(
+        "killer_matches",
+        mapperRegistry.metadata,
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column(),
+        Column()
+    )
+    facedSurvivors: list[FacedSurvivor]
+    sacrifices: int
+    kills: int
+    disconnects: int
+    killerAddons: tuple[KillerAddon]
+    # perks: list[KillerMatchPerk]
+
+    __mapper_args__ = {
+        "properties": {
+
+        }
+    }
