@@ -38,6 +38,7 @@ class Database:
         ITEMS_URL = f'{BASE_WIKI_URL}Items'
         ADDONS_URL = f'{BASE_WIKI_URL}Add-ons'
         OFFERINGS_URL = f'{BASE_WIKI_URL}Offerings'
+        REALM_URL = f'{BASE_WIKI_URL}Realms'
 
         perks = []
         addons = []

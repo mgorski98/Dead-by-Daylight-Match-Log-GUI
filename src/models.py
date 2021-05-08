@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABC
+from typing import Optional
 
 import sqlalchemy
 from sqlalchemy.orm import registry, relationship, backref
@@ -200,15 +201,17 @@ class KillerMatchPerk:
         "killer_match_perks",
         mapperRegistry.metadata,
         Column("killerMatchPerkID", Integer, primary_key=True),
-        Column("perkID", Integer, nullable=False)
+        Column("killerPerkID", Integer, ForeignKey("perks.perkID"), nullable=False),
+        Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False)
     )
     killerMatchPerkID: int = field(init=False)
-    perkID: int = field(init=False)
+    killerPerkID: int = field(init=False)
     perk: Perk
+    killerMatchID: int
 
     __mapper_args__ = {
         "properties": {
-
+            "perk": relationship("Perk",uselist=False)
         }
     }
 
@@ -219,51 +222,59 @@ class SurvivorMatchPerk:
         "survivor_match_perks",
         mapperRegistry.metadata,
         Column("survivorMatchPerkID", Integer, primary_key=True),
-        Column("perkID", Integer, nullable=False)
+        Column("survivorPerkID", Integer, ForeignKey("perks.perkID"), nullable=False),
+        Column("survivorMatchID", Integer, ForeignKey("survivor_matches.matchID"), nullable=False)
     )
     survivorMatchPerkID: int = field(init=False)
-    perkID: int = field(init=False)
+    survivorPerkID: int = field(init=False)
     perk: Perk
+    survivorMatchID: int = field(init=False)
 
     __mapper_args__ = {
         "properties": {
-
+            "perk": relationship("Perk",uselist=False)
         }
     }
 
+@mapperRegistry.mapped
 @dataclass
 class MatchKillerAddon:
     __table__ = Table(
         "match_killer_addons",
         mapperRegistry.metadata,
         Column("matchKillerAddonID", Integer, primary_key=True),
-        Column("killerAddonID", Integer, nullable=False)
+        Column("killerAddonID", Integer, ForeignKey("killer_addons.addonID"), nullable=False),
+        Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False)
     )
     matchKillerAddonID: int = field(init=False)
     killerAddon: KillerAddon
     killerAddonID: int = field(init=False)
+    killerMatchID: int = field(init=False)
 
     __mapper_args__ = {
         "properties": {
-
+            "killerAddon": relationship("KillerAddon", uselist=False, backref="killer_addons")
         }
     }
 
+@mapperRegistry.mapped
 @dataclass
 class MatchItemAddon:
     __table__ = Table(
         "match_item_addons",
         mapperRegistry.metadata,
         Column("matchItemAddonID", Integer, primary_key=True),
-        Column("itemAddonID", Integer, nullable=False)
+        Column("itemAddonID", Integer, ForeignKey("item_addons.addonID"), nullable=False),
+        Column("survivorMatchID", Integer, ForeignKey("survivor_matches.matchID"),nullable=False)
     )
     matchItemAddonID: int = field(init=False)
     itemAddon: ItemAddon
     itemAddonID: int = field(init=False)
+    survivorMatchID: int = field(init=False)
 
     __mapper_args__ = {
         "properties": {
-
+            "itemAddon": relationship("ItemAddon",uselist=False,backref="item_addons")
         }
     }
 
@@ -274,15 +285,17 @@ class FacedSurvivor:
         "faced_survivors",
         mapperRegistry.metadata,
         Column("facedSurvivorID", Integer, primary_key=True),
-        Column("killerMatchID", Integer, ForeignKey(""), nullable=False)
+        Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False),
+        Column("survivorID", Integer, ForeignKey("survivors.survivorID"), nullable=False)
     )
     facedSurvivorID: int = field(init=False)
+    survivorID: int = field(init=False)
     facedSurvivor: Survivor
     killerMatchID: int = field(init=False)
 
     __mapper_args__ = {
         "properties": {
-
+            "facedSurvivor": relationship("Survivor",uselist=False)
         }
     }
 
@@ -291,9 +304,9 @@ class FacedSurvivor:
 class DBDMatch(ABC):
     matchID: int = field(init=False)
     points: int
-    gameMap: GameMap
+    gameMap: Optional[GameMap]
     gameMapID: int = field(init=False)
-    offering: Offering
+    offering: Optional[Offering]
     offeringID: int = field(init=False)
     matchDate: date
     rank: int
@@ -306,6 +319,7 @@ class SurvivorMatch(DBDMatch):
         "survivor_matches",
         mapperRegistry.metadata,
         Column("matchID", Integer, primary_key=True),
+        Column("survivorID", Integer, ForeignKey("survivors.survivorID"), nullable=False),
         Column("points", Integer, default=0),
         Column("matchDate", Date, nullable=False),
         Column("rank", Integer, default=20, nullable=True),
@@ -316,20 +330,26 @@ class SurvivorMatch(DBDMatch):
         Column("matchResult", Enum(SurvivorMatchResult), nullable=False),
         Column("partySize", Integer, nullable=True, default=1)
     )
+    survivor: Survivor
+    survivorID: int = field(init=False)
     facedKiller: Killer
     facedKillerID: int = field(init=False)
-    item: Item
+    item: Optional[Item]
     itemID: int = field(init=False)
     matchResult: SurvivorMatchResult
-    itemAddons: tuple[MatchItemAddon]
-    perks: list[SurvivorMatchPerk]
-    # swf: bool
     partySize: int
+    perks: list[SurvivorMatchPerk] = field(default_factory=list)
+    itemAddons: list[MatchItemAddon] = field(default_factory=list)
 
     __mapper_args__ = {
         "properties": {
-            "facedKiller": relationship("Killer"),
-            "item": relationship("Item")
+            "facedKiller": relationship("Killer",uselist=False),
+            "item": relationship("Item",uselist=False),
+            "perks": relationship("SurvivorMatchPerk"),
+            "offering": relationship("Offering",uselist=False),
+            "gameMap": relationship("GameMap",uselist=False),
+            "itemAddons": relationship("MatchItemAddon"),
+            "survivor": relationship("Survivor", uselist=False)
         }
     }
 
@@ -341,6 +361,7 @@ class KillerMatch(DBDMatch):
         "killer_matches",
         mapperRegistry.metadata,
         Column("matchID", Integer, primary_key=True),
+        Column("killerID", Integer, ForeignKey("killers.killerID"), nullable=False),
         Column("points", Integer, default=0),
         Column("sacrifices", Integer, default=0, nullable=False),
         Column("kills", Integer, default=0, nullable=False),
@@ -350,16 +371,22 @@ class KillerMatch(DBDMatch):
         Column("offeringID", Integer, ForeignKey("offerings.offeringID"), nullable=True),
         Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True)
     )
-    facedSurvivors: list[FacedSurvivor]
+    killer: Killer
     sacrifices: int
     kills: int
     disconnects: int
-    killerAddons: tuple[MatchKillerAddon]
-    perks: list[KillerMatchPerk]
+    killerID: int = field(init=False)
+    facedSurvivors: list[FacedSurvivor] = field(default_factory=list)
+    perks: list[KillerMatchPerk] = field(default_factory=list)
+    killerAddons: list[MatchKillerAddon] = field(default_factory=list)
 
     __mapper_args__ = {
         "properties": {
             "facedSurvivors": relationship("FacedSurvivor"),
-            "killerAddons": relationship("KillerAddon")
+            "offering": relationship("Offering",uselist=False),
+            "gameMap": relationship("GameMap",uselist=False),
+            "perks": relationship("KillerMatchPerk"),
+            "killerAddons": relationship("MatchKillerAddon"),
+            "killer": relationship("Killer", uselist=False)
         }
     }
