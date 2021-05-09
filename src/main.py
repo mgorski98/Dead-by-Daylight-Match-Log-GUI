@@ -12,7 +12,7 @@ from datetime import date
 def main() -> None:
     Database.init('sqlite:///../dbd-match-log-DEV.db')
     # Database.update()
-    with Database.instance().getNewSession() as dbSession:
+    # with Database.instance().getNewSession() as dbSession:
         # matchDate = date(2021, 5, 7)
         # offering = Offering(offeringName='Fresh Primrose Blossom', offeringType=OfferingType.Survivor)
         # realm = Realm(realmName='Autohaven Wreckers')
@@ -28,12 +28,12 @@ def main() -> None:
         #     gameMap=gameMap, facedKiller=killer, item=None, itemAddons=[], perks=matchPerks
         # )
         # dbSession.add_all([survMatch, surv, offering, realm, gameMap, killer, *matchPerks, *perks])
-        query = select(SurvivorMatch)
-        matches = dbSession.execute(query).all()
-        print(matches)
-        dbSession.commit()
+        # query = select(SurvivorMatch)
+        # matches = dbSession.execute(query).all()
+        # print(matches)
+        # dbSession.commit()
     app = QApplication(sys.argv)
-    window = MainWindow(title='Dead by Daylight match log', windowSize=(1200, 800))
+    window = MainWindow(title='Dead by Daylight match log', windowSize=(960, 700))
     window.show()
     sys.exit(app.exec_())
 
