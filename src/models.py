@@ -100,13 +100,6 @@ class GameMap:
     mapID: int = field(init=False)
     mapName: str
     realmID: int = field(init=False)
-    realm: Realm
-
-    __mapper_args__ = {
-        "properties": {
-            "realm": relationship("Realm", uselist=False, back_populates="maps")
-        }
-    }
 
 
 @mapperRegistry.mapped
@@ -121,13 +114,13 @@ class Realm:
 
     __mapper_args__ = {
         "properties": {
-            "maps": relationship("GameMap", back_populates="realm")
+            "maps": relationship("GameMap")
         }
     }
 
     realmID: int = field(init=False)
     realmName: str
-    maps: list[GameMap] = field(default_factory=list, init=False)
+    maps: list[GameMap] = field(default_factory=list)
 
 
 @mapperRegistry.mapped

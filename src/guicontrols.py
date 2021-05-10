@@ -7,7 +7,8 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy
 
-from globaldata import KILLER_ICONS
+from constants import OTHER_ICONS_SIZE
+from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
 from util import clampReverse
 
@@ -84,7 +85,7 @@ class KillerSelect(ItemSelect):
 
     def next(self):
         self.__updateIndex(self.currentIndex + 1)
-        # selectPopup = AddonPopupSelect([str(i) for i in range(32)])
+        # selectPopup = AddonPopupSelect([KillerAddon(killer=self.killers[0],addonName='Party Bottle')])
         # point = self.rightButton.rect().bottomRight()
         # globalPoint = self.mapToGlobal(point)
         # offsetPoint = QPoint(self.rightButton.width() * 3.5, self.rightButton.height() * 3)
@@ -162,11 +163,14 @@ class AddonPopupSelect(PopupGridViewSelection):
         for index, addon in enumerate(self.addons):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
-            addonButton = QPushButton(addon)
-            addonButton.setFixedSize(30, 30)
+            addonButton = QPushButton()
+            addonButton.setFixedSize(OTHER_ICONS_SIZE[0], OTHER_ICONS_SIZE[1])
+            addonButton.setIconSize(QSize(OTHER_ICONS_SIZE[0], OTHER_ICONS_SIZE[1]))
             addonButton.clicked.connect(partial(self.selectItem, addon))
+            addonButton.setFlat(True)
             iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '')
-            addonButton.setIcon(QIcon(ADDON_ICONS[iconName]))
+            addonIcon = QIcon(ADDON_ICONS[iconName])
+            addonButton.setIcon(addonIcon)
             layout.addWidget(addonButton, rowIndex, columnIndex)
 
     def selectAddon(self) -> Optional[Union[KillerAddon, ItemAddon]]:

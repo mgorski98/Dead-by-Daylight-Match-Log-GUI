@@ -1,6 +1,6 @@
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit
+    QDateEdit, QTabWidget
 
 from constants import *
 from guicontrols import KillerSelect, AddonPopupSelect
@@ -12,9 +12,11 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
         self.setWindowTitle(title)
+        self.setContentsMargins(5, 5, 5, 5)
         self.resize(windowSize[0], windowSize[1])
-        centralWidget, centralLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-        self.setCentralWidget(centralWidget)
+        self.setCentralWidget(QTabWidget())
+        killerWidget, centralLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        self.centralWidget().addTab(killerWidget, "Killers")
         self.killerSelection = KillerSelect([], iconSize=CHARACTER_ICON_SIZE)
         upperLayout = QHBoxLayout()
         centralLayout.addLayout(upperLayout)
@@ -53,3 +55,10 @@ class MainWindow(QMainWindow):
         self.killerAddonSelection = None
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonPopupSelect([])
+
+
+    def setupKillerForm(self) -> QWidget:
+        pass
+
+    def setupSurvivorForm(self):
+        pass

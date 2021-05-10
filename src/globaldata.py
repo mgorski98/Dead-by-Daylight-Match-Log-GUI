@@ -24,4 +24,4 @@ def loadIcons(): #NOTE: this can only be called after creating QApplication obje
         for file in os.listdir(path):
             pixmap = QPixmap(path + file)
             filename, _ = os.path.splitext(file)
-            KILLER_ICONS[filename] = pixmap
+            iconDict[filename] = pixmap
