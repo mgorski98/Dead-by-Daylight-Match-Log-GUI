@@ -1,13 +1,16 @@
 from __future__ import annotations
-import sqlalchemy
-import sqlite3
-from bs4 import BeautifulSoup
-from util import saveImageFromURL
-import requests
-from sqlalchemy.orm import Session
-from models import Killer, Survivor, Perk, PerkType, ItemType
+
 import os
+
+import requests
+import sqlalchemy
 from PIL import Image
+from bs4 import BeautifulSoup
+from sqlalchemy.orm import Session
+
+from models import Killer, Survivor, Perk, PerkType, ItemType
+from util import saveImageFromURL
+
 
 class Database:
     __instance = None

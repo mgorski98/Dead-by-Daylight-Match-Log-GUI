@@ -2,7 +2,6 @@ from abc import abstractmethod
 from functools import partial
 from typing import Optional, Union
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
@@ -10,11 +9,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 
 from globaldata import KILLER_ICONS
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
-# control allowing selection by using arrow pushbuttons or a combobox
 from util import clampReverse
-
-
-# todo: create a control that displays a popup with all of the items (like perks, addons, etc.)
 
 
 class ItemSelect(QWidget):

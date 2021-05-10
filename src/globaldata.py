@@ -1,8 +1,8 @@
 from __future__ import annotations
-import os
-from collections import defaultdict
 
-from PyQt5.QtGui import QPixmap, QImage
+import os
+
+from PyQt5.QtGui import QPixmap
 
 KILLER_ICONS = {}
 SURVIVOR_ICONS = {}

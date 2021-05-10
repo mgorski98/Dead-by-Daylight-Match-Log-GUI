@@ -1,5 +1,4 @@
 import requests
-import os
 
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QLayout, QWidget

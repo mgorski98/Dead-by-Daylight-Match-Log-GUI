@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import sys
-import os
 
 from PyQt5.QtCore import QLocale
-from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 
 from MainWindow import MainWindow

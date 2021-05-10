@@ -1,13 +1,11 @@
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QCalendarWidget
-import sys
-from guicontrols import ItemSelect, KillerSelect, AddonPopupSelect
-import struct
-from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
+    QDateEdit
 
 from constants import *
+from guicontrols import KillerSelect, AddonPopupSelect
+from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
+
 
 #todo: wrap everything in tab widget
 class MainWindow(QMainWindow):
