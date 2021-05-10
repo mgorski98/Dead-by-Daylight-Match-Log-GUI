@@ -14,7 +14,7 @@ def saveImageFromURL(url: str, dest: str):
 def clamp(value, minValue, maxValue):
     return minValue if value < minValue else maxValue if value > maxValue else value
 
-def clamp_reverse(value, minValue, maxValue):
+def clampReverse(value, minValue, maxValue):
     return minValue if value > maxValue else maxValue if value < minValue else value
 
 def setQWidgetLayout(widget: QWidget, layout: QLayout) -> tuple:

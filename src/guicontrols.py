@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 from globaldata import KILLER_ICONS
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
 # control allowing selection by using arrow pushbuttons or a combobox
-from util import clamp_reverse
+from util import clampReverse
 
 
 # todo: create a control that displays a popup with all of the items (like perks, addons, etc.)
@@ -46,9 +46,10 @@ class ItemSelect(QWidget):
         layout.addWidget(self.itemSelectionComboBox)
         self.nameDisplayLabel.setAlignment(Qt.AlignCenter)
         self.nameDisplayLabel.setFixedHeight(35)
+        self.nameDisplayLabel.setStyleSheet("font-weight: bold;")
         self.imageLabel.setScaledContents(True)
         self.imageLabel.setFixedSize(iconSize[0],iconSize[1])
-        self.currentIndex = -1
+        self.currentIndex = 0
         self.selectedItem = None
 
     @abstractmethod
@@ -63,16 +64,20 @@ class ItemSelect(QWidget):
     def getSelectedItem(self):
         pass
 
-
 class KillerSelect(ItemSelect):
 
     def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
         super().__init__(parent=parent, iconSize=iconSize)
         self.killers = killers
+        self.itemSelectionComboBox.setFixedHeight(60)
+        self.itemSelectionComboBox.setIconSize(QSize(iconSize[0] / 4,iconSize[1] / 4))
         self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
-        self.itemSelectionComboBox.addItems(map(str, self.killers))
-        # self.itemSelectionComboBox.setCurrentIndex(0)
+        killerItems = map(str, self.killers)
+        killerIconsCombo = map(lambda killer: QIcon(KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
+        for killerStr, icon in zip(killerItems, killerIconsCombo):
+            self.itemSelectionComboBox.addItem(icon, killerStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
+        self.selectFromIndex(0)
 
     def selectFromIndex(self, index):
         self.selectedItem = self.killers[index]
@@ -83,21 +88,21 @@ class KillerSelect(ItemSelect):
         return len(self.killers) > 0
 
     def next(self):
-        if not self._itemsPresent():
-            return
+        self.__updateIndex(self.currentIndex + 1)
         # selectPopup = AddonPopupSelect([str(i) for i in range(32)])
         # point = self.rightButton.rect().bottomRight()
         # globalPoint = self.mapToGlobal(point)
         # offsetPoint = QPoint(self.rightButton.width() * 3.5, self.rightButton.height() * 3)
         # selectPopup.move(globalPoint + offsetPoint)
         # result = selectPopup.selectAddon()
-        self.currentIndex = clamp_reverse(self.currentIndex + 1, 0, len(self.killers) - 1)
-        self.updateSelected()
 
     def prev(self):
+        self.__updateIndex(self.currentIndex - 1)
+
+    def __updateIndex(self, value: int):
         if not self._itemsPresent():
             return
-        self.currentIndex = clamp_reverse(self.currentIndex - 1, 0, len(self.killers) - 1)
+        self.currentIndex = clampReverse(value, 0, len(self.killers) - 1)
         self.updateSelected()
 
     def updateSelected(self):

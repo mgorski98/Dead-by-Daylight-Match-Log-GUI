@@ -11,9 +11,7 @@ ADDON_ICONS = {}
 OFFERING_ICONS = {}
 PERK_ICONS = {}
 
-CHARACTER_ICON_SIZE = (150, 208) #width, height
-
-def load_icons(): #NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
+def loadIcons(): #NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
     killerIconsPath = '../images/killers/'
     survivorIconsPath = '../images/survivors/'
     addonsIconsPath = '../images/addons/'
@@ -23,9 +21,7 @@ def load_icons(): #NOTE: this can only be called after creating QApplication obj
     paths = [killerIconsPath, survivorIconsPath, addonsIconsPath, offeringsIconsPath, perksIconsPath, itemsIconsPath]
     dicts = [KILLER_ICONS, SURVIVOR_ICONS, ADDON_ICONS, OFFERING_ICONS, PERK_ICONS, ITEM_ICONS]
     for path, iconDict in zip(paths, dicts):
-        files = os.listdir(path)
-        for file in files:
-            filepath = path + file
-            pixmap = QPixmap(filepath)
+        for file in os.listdir(path):
+            pixmap = QPixmap(path + file)
             filename, _ = os.path.splitext(file)
             KILLER_ICONS[filename] = pixmap

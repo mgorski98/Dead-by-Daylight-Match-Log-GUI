@@ -1,0 +1,6 @@
+
+
+LOWEST_RANK = 20
+HIGHEST_RANK = 1
+CHARACTER_ICON_SIZE = (150, 208) #width, height
+OTHER_ICONS_SIZE = (96, 96) #width, height

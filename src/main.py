@@ -3,12 +3,13 @@ from __future__ import annotations
 import sys
 import os
 
+from PyQt5.QtCore import QLocale
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 
 from MainWindow import MainWindow
 from database import Database
-from globaldata import load_icons
+from globaldata import loadIcons
 
 
 def main() -> None:
@@ -35,7 +36,8 @@ def main() -> None:
         # print(matches)
         # dbSession.commit()
     app = QApplication(sys.argv)
-    load_icons()
+    QLocale.setDefault(QLocale(QLocale.English))
+    loadIcons()
     window = MainWindow(title='Dead by Daylight match log', windowSize=(960, 700))
     window.show()
     sys.exit(app.exec_())

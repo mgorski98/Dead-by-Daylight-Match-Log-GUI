@@ -6,17 +6,16 @@ import sys
 from guicontrols import ItemSelect, KillerSelect, AddonPopupSelect
 import struct
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
-from globaldata import CHARACTER_ICON_SIZE
 
+from constants import *
 
+#todo: wrap everything in tab widget
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
         self.setWindowTitle(title)
         self.resize(windowSize[0], windowSize[1])
-        centralWidget = QWidget()
-        centralLayout = QVBoxLayout()
-        centralWidget.setLayout(centralLayout)
+        centralWidget, centralLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.setCentralWidget(centralWidget)
         self.killerSelection = KillerSelect([], iconSize=CHARACTER_ICON_SIZE)
         upperLayout = QHBoxLayout()
@@ -24,11 +23,8 @@ class MainWindow(QMainWindow):
         upperLayout.addWidget(self.killerSelection)
 
         eliminationsInfoWidget, eliminationsInfoLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        labels = ['Sacrifices', 'Kills (moris)', 'Disconnects']
-        self.killsTextBox = QLineEdit()
-        self.sacrificesTextBox = QLineEdit()
-        self.disconnectsTextBox = QLineEdit()
-        for label, textbox in zip(labels, [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
+        self.killsTextBox, self.sacrificesTextBox, self.disconnectsTextBox = QLineEdit(), QLineEdit(), QLineEdit()
+        for label, textbox in zip(['Sacrifices', 'Kills (moris)', 'Disconnects'], [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
             textbox.setValidator(nonNegativeIntValidator())
             cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), textbox)
@@ -40,15 +36,14 @@ class MainWindow(QMainWindow):
         self.killerMatchDatePicker = QDateEdit(calendarPopup=True)
         self.killerMatchDatePicker.setDate(QDate.currentDate())
         self.killerRankSpinner = QSpinBox()
+        self.killerRankSpinner.setRange(HIGHEST_RANK, LOWEST_RANK)#lowest rank is 20, DBD ranks are going down the better they are, so rank 1 is the best
         otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
-        labels = ['Match date','Points','Killer rank']
-        for label, obj in zip(labels, [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
+        for label, obj in zip(['Match date','Points','Killer rank'], [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
             cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
         upperLayout.addWidget(otherInfoWidget)
 
-        # centralLayout.addWidget(upperLayoutWidget)
         middleLayoutWidget, middleLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(middleLayoutWidget)
         killerAddonsWidget, killerAddonsSelectLayout = setQWidgetLayout(QWidget(),QHBoxLayout())
