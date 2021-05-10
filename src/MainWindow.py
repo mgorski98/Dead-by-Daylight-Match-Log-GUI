@@ -5,7 +5,9 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 import sys
 from guicontrols import ItemSelect, KillerSelect, AddonPopupSelect
 import struct
-from util import setQWidgetLayout
+from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
+from globaldata import CHARACTER_ICON_SIZE
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
@@ -16,10 +18,9 @@ class MainWindow(QMainWindow):
         centralLayout = QVBoxLayout()
         centralWidget.setLayout(centralLayout)
         self.setCentralWidget(centralWidget)
-        self.killerSelection = KillerSelect([])
-
-        upperLayoutWidget, upperLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
-        upperLayoutWidget.setLayout(upperLayout)
+        self.killerSelection = KillerSelect([], iconSize=CHARACTER_ICON_SIZE)
+        upperLayout = QHBoxLayout()
+        centralLayout.addLayout(upperLayout)
         upperLayout.addWidget(self.killerSelection)
 
         eliminationsInfoWidget, eliminationsInfoLayout = setQWidgetLayout(QWidget(), QGridLayout())
@@ -28,49 +29,32 @@ class MainWindow(QMainWindow):
         self.sacrificesTextBox = QLineEdit()
         self.disconnectsTextBox = QLineEdit()
         for label, textbox in zip(labels, [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
-            validator = QIntValidator()
-            validator.setBottom(0)
-            textbox.setValidator(validator)
-            cellWidget = QWidget()
-            cellLayout = QVBoxLayout()
-            cellWidget.setLayout(cellLayout)
-            cellLayout.addWidget(QLabel(label))
-            cellLayout.addWidget(textbox)
+            textbox.setValidator(nonNegativeIntValidator())
+            cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+            addWidgets(cellLayout, QLabel(label), textbox)
             eliminationsInfoLayout.addWidget(cellWidget)
         upperLayout.addWidget(eliminationsInfoWidget)
 
         self.pointsTextBox = QLineEdit()
-        validator = QIntValidator()
-        validator.setBottom(0)
-        self.pointsTextBox.setValidator(validator)
+        self.pointsTextBox.setValidator(nonNegativeIntValidator())
         self.killerMatchDatePicker = QDateEdit(calendarPopup=True)
+        self.killerMatchDatePicker.setDate(QDate.currentDate())
         self.killerRankSpinner = QSpinBox()
-        otherInfoWidget = QWidget()
-        otherInfoLayout = QGridLayout()
-        otherInfoWidget.setLayout(otherInfoLayout)
+        otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
         labels = ['Match date','Points','Killer rank']
         for label, obj in zip(labels, [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
-            cellWidget = QWidget()
-            cellLayout = QVBoxLayout()
-            cellWidget.setLayout(cellLayout)
-            cellLayout.addWidget(QLabel(label))
-            cellLayout.addWidget(obj)
+            cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
+            addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
         upperLayout.addWidget(otherInfoWidget)
 
-        centralLayout.addWidget(upperLayoutWidget)
-        middleLayoutWidget = QWidget()
-        middleLayout = QHBoxLayout()
-        middleLayoutWidget.setLayout(middleLayout)
+        # centralLayout.addWidget(upperLayoutWidget)
+        middleLayoutWidget, middleLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(middleLayoutWidget)
-
-        killerAddonsWidget = QWidget()
-        killerAddonsSelectLayout = QHBoxLayout()
-        killerAddonsWidget.setLayout(killerAddonsSelectLayout)
+        killerAddonsWidget, killerAddonsSelectLayout = setQWidgetLayout(QWidget(),QHBoxLayout())
         middleLayout.addWidget(killerAddonsWidget)
-        lowerLayoutWidget = QWidget()
-        lowerLayout = QHBoxLayout()
-        lowerLayoutWidget.setLayout(lowerLayout)
+
+        lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(lowerLayoutWidget)
 
         self.killerAddonSelection = None

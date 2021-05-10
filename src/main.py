@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import sys
+import os
+
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
+
 from MainWindow import MainWindow
 from database import Database
-from src.models import Killer, KillerAddon, GameMap, Realm, Item, ItemType, SurvivorMatch, SurvivorMatchResult, \
-    Offering, OfferingType, Perk, SurvivorMatchPerk, PerkType, MatchKillerAddon, Survivor
-from sqlalchemy import insert, select
-from datetime import date
+from globaldata import load_icons
 
 
 def main() -> None:
@@ -33,6 +35,7 @@ def main() -> None:
         # print(matches)
         # dbSession.commit()
     app = QApplication(sys.argv)
+    load_icons()
     window = MainWindow(title='Dead by Daylight match log', windowSize=(960, 700))
     window.show()
     sys.exit(app.exec_())

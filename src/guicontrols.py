@@ -1,26 +1,25 @@
+from abc import abstractmethod
 from functools import partial
 from typing import Optional, Union
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QAbstractItemView, \
-    QDialog, QScrollArea, QGridLayout
+from PyQt5 import QtCore
+from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
+    QGridLayout, QSizePolicy
 
-from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, PerkType, Offering, Item, ItemType
+from globaldata import KILLER_ICONS
+from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
+# control allowing selection by using arrow pushbuttons or a combobox
+from util import clamp_reverse
 
-from abc import ABC, abstractmethod
 
-#todo: create a control that displays a popup with all of the items (like perks, addons, etc.)
-
-#control allowing selection by using arrow pushbuttons or a combobox
-from util import clamp
-from globaldata import *
+# todo: create a control that displays a popup with all of the items (like perks, addons, etc.)
 
 
 class ItemSelect(QWidget):
 
-    def __init__(self, parent=None):
+    def __init__(self, iconSize=(100,100), parent=None):
         super().__init__(parent=parent)
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -35,7 +34,9 @@ class ItemSelect(QWidget):
             imageSelectLayout.addWidget(i)
         layout.addWidget(imageSelectWidget)
         self.nameDisplayLabel = QLabel('<Select with arrows or from combobox>')
+        # self.nameDisplayLabel.setFixedSize(self.nameDisplayLabel.width(), self.nameDisplayLabel.height())
         self.itemSelectionComboBox = QComboBox(parent=self)
+        self.itemSelectionComboBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
         width = 25
@@ -45,6 +46,8 @@ class ItemSelect(QWidget):
         layout.addWidget(self.itemSelectionComboBox)
         self.nameDisplayLabel.setAlignment(Qt.AlignCenter)
         self.nameDisplayLabel.setFixedHeight(35)
+        self.imageLabel.setScaledContents(True)
+        self.imageLabel.setFixedSize(iconSize[0],iconSize[1])
         self.currentIndex = -1
         self.selectedItem = None
 
@@ -63,9 +66,18 @@ class ItemSelect(QWidget):
 
 class KillerSelect(ItemSelect):
 
-    def __init__(self, killers: list[Killer], parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
+        super().__init__(parent=parent, iconSize=iconSize)
         self.killers = killers
+        self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
+        self.itemSelectionComboBox.addItems(map(str, self.killers))
+        # self.itemSelectionComboBox.setCurrentIndex(0)
+        self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
+
+    def selectFromIndex(self, index):
+        self.selectedItem = self.killers[index]
+        self.currentIndex = index
+        self.updateSelected()
 
     def _itemsPresent(self) -> bool:
         return len(self.killers) > 0
@@ -79,21 +91,23 @@ class KillerSelect(ItemSelect):
         # offsetPoint = QPoint(self.rightButton.width() * 3.5, self.rightButton.height() * 3)
         # selectPopup.move(globalPoint + offsetPoint)
         # result = selectPopup.selectAddon()
-        self.currentIndex = clamp(self.currentIndex + 1, 0, len(self.killers) - 1)
+        self.currentIndex = clamp_reverse(self.currentIndex + 1, 0, len(self.killers) - 1)
         self.updateSelected()
 
     def prev(self):
         if not self._itemsPresent():
             return
-        self.currentIndex = clamp(self.currentIndex - 1, 0, len(self.killers) - 1)
+        self.currentIndex = clamp_reverse(self.currentIndex - 1, 0, len(self.killers) - 1)
         self.updateSelected()
 
     def updateSelected(self):
         if self.selectedItem is None:
             return
         self.selectedItem = self.killers[self.currentIndex]
-        self.nameDisplayLabel.setText(f'{self.selectedItem.killerName} - {self.selectedItem.killerAlias}')
-        # self.imageLabel.setPixmap() #load icons and import them here
+        self.nameDisplayLabel.setText(str(self.selectedItem))
+        icon = KILLER_ICONS[self.selectedItem.killerAlias.lower().replace(' ', '-')]
+        self.imageLabel.setFixedSize(icon.width(),icon.height())
+        self.imageLabel.setPixmap(icon) #load icons and import them here
 
     def getSelectedItem(self):
         return self.selectedItem

@@ -53,6 +53,8 @@ class Killer:
     killerName: str
     killerAlias: str
 
+    def __str__(self):
+        return f'{self.killerName} - {self.killerAlias}'
 
 @mapperRegistry.mapped
 @dataclass
@@ -65,6 +67,9 @@ class Survivor:
     )
     survivorID: int = field(init=False)
     survivorName: str
+
+    def __str__(self):
+        return self.survivorName
 
 
 @mapperRegistry.mapped
