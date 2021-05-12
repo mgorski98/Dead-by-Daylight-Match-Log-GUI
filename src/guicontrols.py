@@ -247,4 +247,6 @@ class PerkSelect(QWidget):
     def __init__(self, perks: list[Perk], parent=None):
         super().__init__(parent)
         self.perks = perks
+        self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
+
 
