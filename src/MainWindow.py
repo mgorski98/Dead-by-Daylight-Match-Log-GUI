@@ -1,13 +1,15 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox
+    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem
 
+from database import Database
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelect
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
 
+#todo: remove textboxes for eliminations (we will have eliminations info from the actual list of faced survivors)
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
@@ -24,15 +26,15 @@ class MainWindow(QMainWindow):
 
         self.__setupMenuBar()
 
-        eliminationsInfoWidget, eliminationsInfoLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        self.killsTextBox, self.sacrificesTextBox, self.disconnectsTextBox = QLineEdit(), QLineEdit(), QLineEdit()
-        validator = QRegularExpressionValidator(QRegularExpression('[0-4]{1}'))
-        for label, textbox in zip(['Sacrifices', 'Kills (moris)', 'Disconnects'], [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
-            textbox.setValidator(validator)
-            cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-            addWidgets(cellLayout, QLabel(label), textbox)
-            eliminationsInfoLayout.addWidget(cellWidget)
-        upperLayout.addWidget(eliminationsInfoWidget)
+        # eliminationsInfoWidget, eliminationsInfoLayout = setQWidgetLayout(QWidget(), QGridLayout())
+        # self.killsTextBox, self.sacrificesTextBox, self.disconnectsTextBox = QLineEdit(), QLineEdit(), QLineEdit()
+        # validator = QRegularExpressionValidator(QRegularExpression('[0-4]{1}'))
+        # for label, textbox in zip(['Sacrifices', 'Kills (moris)', 'Disconnects'], [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
+        #     textbox.setValidator(validator)
+        #     cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        #     addWidgets(cellLayout, QLabel(label), textbox)
+        #     eliminationsInfoLayout.addWidget(cellWidget)
+        # upperLayout.addWidget(eliminationsInfoWidget)
 
         self.pointsTextBox = QLineEdit()
         self.pointsTextBox.setValidator(nonNegativeIntValidator())
@@ -45,7 +47,9 @@ class MainWindow(QMainWindow):
             cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
+        upperLayout.addSpacerItem(QSpacerItem(75,1))
         upperLayout.addWidget(otherInfoWidget)
+        upperLayout.addSpacerItem(QSpacerItem(75,1))
 
         middleLayoutWidget, middleLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(middleLayoutWidget)
@@ -90,7 +94,7 @@ class MainWindow(QMainWindow):
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         result = msgBox.exec_()
         if result == QMessageBox.Yes:
-            pass #update here
+            Database.update() #update here
 
     def __loadMatchLogs(self):
         pass

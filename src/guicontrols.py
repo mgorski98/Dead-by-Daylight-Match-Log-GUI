@@ -67,14 +67,14 @@ class KillerSelect(ItemSelect):
         super().__init__(parent=parent, iconSize=iconSize)
         self.killers = killers
         self.itemSelectionComboBox.setFixedHeight(60)
-        self.itemSelectionComboBox.setIconSize(QSize(iconSize[0] / 4,iconSize[1] / 4))
-        self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
+        self.itemSelectionComboBox.setIconSize(QSize(iconSize[0] // 4,iconSize[1] // 4))
+        # self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
         killerItems = map(str, self.killers)
         killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
         for killerStr, icon in zip(killerItems, killerIconsCombo):
             self.itemSelectionComboBox.addItem(icon, killerStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        self.selectFromIndex(0)
+        # self.selectFromIndex(0)
 
     def selectFromIndex(self, index):
         self.selectedItem = self.killers[index]
