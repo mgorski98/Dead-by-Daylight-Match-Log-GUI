@@ -187,11 +187,11 @@ class AddonSelect(QWidget):
     def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
         super().__init__(parent)
         self.addons = addons
-        self.selectedAddons: tuple[AddonSelectionResult, AddonSelectionResult] = (None, None)
+        self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
         self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
-        self.addon1Button = self.__createIconButton(self.defaultIcon)
-        self.addon2Button = self.__createIconButton(self.defaultIcon)
+        self.addon1Button = self.__createIconButton(self.defaultIcon, index=0)
+        self.addon2Button = self.__createIconButton(self.defaultIcon, index=1)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
@@ -223,21 +223,22 @@ class AddonSelect(QWidget):
         lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         return lbl
 
-    def __createIconButton(self, icon=None):
+    def __createIconButton(self, icon=None, index: int=0):
         btn = QPushButton()
         if icon is not None:
             btn.setIcon(icon)
         btn.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
         btn.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
         btn.setFlat(True)
-        btn.clicked.connect(partial(self.__showAddonPopup, btn))
+        btn.clicked.connect(partial(self.__showAddonPopup, btn, index))
         return btn
 
-    def __showAddonPopup(self, btnToUpdate: QPushButton):
+    def __showAddonPopup(self, btnToUpdate: QPushButton, index: int):
         point = btnToUpdate.rect().bottomLeft()
         globalPoint = btnToUpdate.mapToGlobal(point)
         self.popupSelect.move(globalPoint)
         addon = self.popupSelect.selectAddon()
+        self.selectedAddons[index] = addon
         #todo: if addon is not none then set icon on button
 
 
