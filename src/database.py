@@ -66,10 +66,11 @@ class Database:
             index = 0
             for row in rows:
                 perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
-                perks += [
-                    Perk(perkTier=i + 1, perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (i + 1)}') for i in range(3)
+                parsedPerks = [
+                    Perk(perkTier=j + 1, perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (j + 1)}') for j in range(3)
                 ] #range 3 because there are only 3 perk tiers
-                index += 3
+                perks += parsedPerks
+                index += len(parsedPerks)
                 #download and save images
                 imgTag = row.find('img')
                 gifUrl = imgTag.get('src', '')
@@ -109,7 +110,7 @@ class Database:
             for row in rows:
                 perkName = row.find_all('th')[1].find('a').get('title', '')#perk name is in second column
                 perks += [
-                    Perk(perkTier=i + 1, perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (i + 1)}') for i in range(3)
+                    Perk(perkTier=j + 1, perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (j + 1)}') for j in range(3)
                 ] #range 3 because there are only 3 perk tiers
                 index += 3
                 #download and save images
@@ -140,3 +141,6 @@ class Database:
 
         offeringsDoc = requests.get(OFFERINGS_URL).content
         offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
+
+        realmsDoc = requests.get(REALM_URL).content
+        realmsParser = BeautifulSoup(realmsDoc, 'html.parser')

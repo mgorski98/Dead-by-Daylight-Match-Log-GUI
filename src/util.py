@@ -1,3 +1,5 @@
+from typing import Optional
+
 import requests
 
 from PyQt5.QtGui import QIntValidator
@@ -20,9 +22,11 @@ def setQWidgetLayout(widget: QWidget, layout: QLayout) -> tuple:
     widget.setLayout(layout)
     return widget, layout
 
-def nonNegativeIntValidator() -> QIntValidator:
+def nonNegativeIntValidator(upperBound: Optional[int]=None) -> QIntValidator:
     validator = QIntValidator()
     validator.setBottom(0)
+    if upperBound is not None and upperBound > 0:
+        validator.setTop(upperBound)
     return validator
 
 def addWidgets(layout: QLayout, *widgets) -> None:

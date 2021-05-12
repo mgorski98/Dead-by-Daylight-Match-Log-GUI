@@ -5,12 +5,11 @@ from typing import Optional, Union
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
-    QGridLayout, QSizePolicy
+    QGridLayout, QSizePolicy, QSpacerItem
 
-from constants import OTHER_ICONS_SIZE
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
-from util import clampReverse
+from util import clampReverse, setQWidgetLayout
 
 
 class ItemSelect(QWidget):
@@ -69,7 +68,7 @@ class KillerSelect(ItemSelect):
         self.itemSelectionComboBox.setIconSize(QSize(iconSize[0] / 4,iconSize[1] / 4))
         self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
         killerItems = map(str, self.killers)
-        killerIconsCombo = map(lambda killer: QIcon(KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
+        killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
         for killerStr, icon in zip(killerItems, killerIconsCombo):
             self.itemSelectionComboBox.addItem(icon, killerStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
@@ -85,12 +84,13 @@ class KillerSelect(ItemSelect):
 
     def next(self):
         self.__updateIndex(self.currentIndex + 1)
-        # selectPopup = AddonPopupSelect([KillerAddon(killer=self.killers[0],addonName='Party Bottle')])
+        # selectPopup = AddonSelectPopup([KillerAddon(killer=self.killers[0],addonName='Party Bottle')])
         # point = self.rightButton.rect().bottomRight()
         # globalPoint = self.mapToGlobal(point)
         # offsetPoint = QPoint(self.rightButton.width() * 3.5, self.rightButton.height() * 3)
         # selectPopup.move(globalPoint + offsetPoint)
         # result = selectPopup.selectAddon()
+        # print(result)
 
     def prev(self):
         self.__updateIndex(self.currentIndex - 1)
@@ -106,7 +106,7 @@ class KillerSelect(ItemSelect):
             return
         self.selectedItem = self.killers[self.currentIndex]
         self.nameDisplayLabel.setText(str(self.selectedItem))
-        icon = KILLER_ICONS[self.selectedItem.killerAlias.lower().replace(' ', '-')]
+        icon = Globals.KILLER_ICONS[self.selectedItem.killerAlias.lower().replace(' ', '-')]
         self.imageLabel.setFixedSize(icon.width(),icon.height())
         self.imageLabel.setPixmap(icon) #load icons and import them here
 
@@ -125,7 +125,7 @@ class SurvivorItemSelect(ItemSelect):
         self.filter = itemFilter
 
 
-class PopupGridViewSelection(QDialog):
+class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
         layout = QGridLayout()
@@ -136,7 +136,7 @@ class PopupGridViewSelection(QDialog):
         mainWidget = QWidget()
         mainWidget.setLayout(self.itemsLayout)
         scroll = QScrollArea(self)
-        scroll.setWidgetResizable(True)#okurwachybawiem
+        scroll.setWidgetResizable(True)
         scroll.setWidget(mainWidget)
         layout.addWidget(scroll)
 
@@ -149,17 +149,16 @@ class PopupGridViewSelection(QDialog):
         self.accept()
 
 
-class AddonPopupSelect(PopupGridViewSelection):
+class AddonSelectPopup(GridViewSelectionPopup):
 
 
-    def __init__(self, addons: list, parent=None):
+    def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
         super().__init__(5, parent=parent)
         self.addons = addons
         self.initPopupGrid()
 
 
     def initPopupGrid(self):
-        layout: QGridLayout = self.itemsLayout
         for index, addon in enumerate(self.addons):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
@@ -171,16 +170,17 @@ class AddonPopupSelect(PopupGridViewSelection):
             iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '')
             addonIcon = QIcon(ADDON_ICONS[iconName])
             addonButton.setIcon(addonIcon)
-            layout.addWidget(addonButton, rowIndex, columnIndex)
+            self.itemsLayout.addWidget(addonButton, rowIndex, columnIndex)
 
     def selectAddon(self) -> Optional[Union[KillerAddon, ItemAddon]]:
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
 
-class PerkPopupSelect(PopupGridViewSelection):
+class PerkPopupSelect(GridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
         super().__init__(5, parent)
+        self.perks = perks
         self.initPopupGrid()
 
     def initPopupGrid(self):
@@ -188,7 +188,57 @@ class PerkPopupSelect(PopupGridViewSelection):
 
 
 class AddonSelect(QWidget):
-    pass
+
+    def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
+        super().__init__(parent)
+        self.addons = addons
+        self.popupSelect = AddonSelectPopup(self.addons)
+        self.addon1Button = QPushButton()
+        self.addon2Button = QPushButton()
+        self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
+        self.addon1Button.setIcon(self.defaultIcon)
+        self.addon2Button.setIcon(self.defaultIcon)
+        self.addon1Button.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
+        self.addon2Button.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
+        self.addon1Button.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
+        self.addon2Button.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
+        self.addon1Button.setFlat(True)
+        self.addon2Button.setFlat(True)
+        self.addon1Button.clicked.connect(lambda: print())
+        self.addon2Button.clicked.connect(lambda: print())
+        mainLayout = QVBoxLayout()
+        self.setLayout(mainLayout)
+        layout = QHBoxLayout()
+        addonsLabel = QLabel('Killer addons')
+        addonsLabel.setFixedHeight(25)
+        addonsLabel.setAlignment(Qt.AlignCenter)
+        mainLayout.addWidget(addonsLabel)
+        mainLayout.addLayout(layout)
+        leftLayout = QVBoxLayout()
+        rightLayout = QVBoxLayout()
+        self.addon1NameLabel = QLabel('')
+        self.addon1NameLabel.setAlignment(Qt.AlignCenter)
+        self.addon2NameLabel = QLabel('')
+        self.addon2NameLabel.setAlignment(Qt.AlignCenter)
+        self.addon1NameLabel.setFixedHeight(25)
+        self.addon2NameLabel.setFixedHeight(25)
+        self.addon1NameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.addon2NameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        layout.addLayout(leftLayout)
+        layout.addLayout(rightLayout)
+        leftLayout.addWidget(self.addon1Button)
+        rightLayout.addWidget(self.addon2Button)
+        leftLayout.addWidget(self.addon1NameLabel)
+        rightLayout.addWidget(self.addon2NameLabel)
+        leftLayout.setAlignment(self.addon1Button, Qt.AlignCenter)
+        rightLayout.setAlignment(self.addon2Button, Qt.AlignCenter)
+        leftLayout.addSpacerItem(QSpacerItem(5, 125))
+        rightLayout.addSpacerItem(QSpacerItem(5, 125))
+
 
 class PerkSelect(QWidget):
-    pass
+
+    def __init__(self, perks: list[Perk], parent=None):
+        super().__init__(parent)
+        self.perks = perks
+
