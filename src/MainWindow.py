@@ -51,11 +51,6 @@ class MainWindow(QMainWindow):
         upperLayout.addWidget(otherInfoWidget)
         upperLayout.addSpacerItem(QSpacerItem(75,1))
 
-        middleLayoutWidget, middleLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
-        centralLayout.addWidget(middleLayoutWidget)
-        killerAddonsWidget, killerAddonsSelectLayout = setQWidgetLayout(QWidget(),QHBoxLayout())
-        middleLayout.addWidget(killerAddonsWidget)
-
         lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(lowerLayoutWidget)
 
@@ -63,6 +58,7 @@ class MainWindow(QMainWindow):
         upperLayout.addWidget(self.killerAddonSelection)
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
+        centralLayout.addSpacerItem(QSpacerItem(1, 150))
 
 
     def setupKillerForm(self) -> QWidget:

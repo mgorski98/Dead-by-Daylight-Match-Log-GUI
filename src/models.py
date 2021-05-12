@@ -4,7 +4,7 @@ import enum
 from abc import ABC
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Optional
+from typing import Optional, Callable
 
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, Date, Enum
 from sqlalchemy.orm import registry, relationship
@@ -37,6 +37,13 @@ class OfferingType(enum.Enum):
     Killer = 0,
     Survivor = 1,
     Both = 2
+
+class FacedSurvivorState(enum.Enum):
+    Sacrificed = 0,
+    Killed = 1,
+    BledOut = 2,
+    Disconnected = 3,
+    Escaped = 4
 #</editor-fold>
 
 @mapperRegistry.mapped
@@ -283,6 +290,7 @@ class FacedSurvivor:
         "faced_survivors",
         mapperRegistry.metadata,
         Column("facedSurvivorID", Integer, primary_key=True),
+        Column("state", Enum(FacedSurvivorState), nullable=False),
         Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False),
         Column("survivorID", Integer, ForeignKey("survivors.survivorID"), nullable=False)
     )
@@ -290,6 +298,7 @@ class FacedSurvivor:
     survivorID: int = field(init=False)
     facedSurvivor: Survivor
     killerMatchID: int = field(init=False)
+    state: FacedSurvivorState
 
     __mapper_args__ = {
         "properties": {
@@ -361,22 +370,31 @@ class KillerMatch(DBDMatch):
         Column("matchID", Integer, primary_key=True),
         Column("killerID", Integer, ForeignKey("killers.killerID"), nullable=False),
         Column("points", Integer, default=0),
-        Column("sacrifices", Integer, default=0, nullable=False),
-        Column("kills", Integer, default=0, nullable=False),
-        Column("disconnects", Integer, default=0, nullable=False),
         Column("matchDate", Date, nullable=False),
         Column("rank", Integer, nullable=True, default=20),
         Column("offeringID", Integer, ForeignKey("offerings.offeringID"), nullable=True),
         Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True)
     )
     killer: Killer
-    sacrifices: int
-    kills: int
-    disconnects: int
     killerID: int = field(init=False)
     facedSurvivors: list[FacedSurvivor] = field(default_factory=list)
     perks: list[KillerMatchPerk] = field(default_factory=list)
     killerAddons: list[MatchKillerAddon] = field(default_factory=list)
+
+    @property
+    def disconnects(self) -> int:
+        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Disconnected)
+
+    @property
+    def sacrifices(self) -> int:
+        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Sacrificed)
+
+    @property
+    def kills(self) -> int:
+        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Killed)
+
+    def __countOf(self, filterFunc: Callable[[FacedSurvivor], int]):
+        return sum(1 if filterFunc(survivor) else 0 for survivor in self.facedSurvivors)
 
     __mapper_args__ = {
         "properties": {
