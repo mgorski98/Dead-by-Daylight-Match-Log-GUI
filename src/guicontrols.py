@@ -11,6 +11,8 @@ from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
 from util import clampReverse, setQWidgetLayout
 
+AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
+
 
 class ItemSelect(QWidget):
 
@@ -84,13 +86,6 @@ class KillerSelect(ItemSelect):
 
     def next(self):
         self.__updateIndex(self.currentIndex + 1)
-        # selectPopup = AddonSelectPopup([KillerAddon(killer=self.killers[0],addonName='Party Bottle')])
-        # point = self.rightButton.rect().bottomRight()
-        # globalPoint = self.mapToGlobal(point)
-        # offsetPoint = QPoint(self.rightButton.width() * 3.5, self.rightButton.height() * 3)
-        # selectPopup.move(globalPoint + offsetPoint)
-        # result = selectPopup.selectAddon()
-        # print(result)
 
     def prev(self):
         self.__updateIndex(self.currentIndex - 1)
@@ -163,16 +158,16 @@ class AddonSelectPopup(GridViewSelectionPopup):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             addonButton = QPushButton()
-            addonButton.setFixedSize(OTHER_ICONS_SIZE[0], OTHER_ICONS_SIZE[1])
-            addonButton.setIconSize(QSize(OTHER_ICONS_SIZE[0], OTHER_ICONS_SIZE[1]))
+            addonButton.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
+            addonButton.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
             addonButton.clicked.connect(partial(self.selectItem, addon))
             addonButton.setFlat(True)
             iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '')
-            addonIcon = QIcon(ADDON_ICONS[iconName])
+            addonIcon = QIcon(Globals.ADDON_ICONS[iconName])
             addonButton.setIcon(addonIcon)
             self.itemsLayout.addWidget(addonButton, rowIndex, columnIndex)
 
-    def selectAddon(self) -> Optional[Union[KillerAddon, ItemAddon]]:
+    def selectAddon(self) -> AddonSelectionResult:
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
 
@@ -192,38 +187,24 @@ class AddonSelect(QWidget):
     def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
         super().__init__(parent)
         self.addons = addons
+        self.selectedAddons: tuple[AddonSelectionResult, AddonSelectionResult] = (None, None)
         self.popupSelect = AddonSelectPopup(self.addons)
-        self.addon1Button = QPushButton()
-        self.addon2Button = QPushButton()
         self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
-        self.addon1Button.setIcon(self.defaultIcon)
-        self.addon2Button.setIcon(self.defaultIcon)
-        self.addon1Button.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
-        self.addon2Button.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
-        self.addon1Button.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
-        self.addon2Button.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
-        self.addon1Button.setFlat(True)
-        self.addon2Button.setFlat(True)
-        self.addon1Button.clicked.connect(lambda: print())
-        self.addon2Button.clicked.connect(lambda: print())
+        self.addon1Button = self.__createIconButton(self.defaultIcon)
+        self.addon2Button = self.__createIconButton(self.defaultIcon)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
         addonsLabel = QLabel('Killer addons')
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
+        mainLayout.addSpacerItem(QSpacerItem(5, 25))
         mainLayout.addWidget(addonsLabel)
         mainLayout.addLayout(layout)
         leftLayout = QVBoxLayout()
         rightLayout = QVBoxLayout()
-        self.addon1NameLabel = QLabel('')
-        self.addon1NameLabel.setAlignment(Qt.AlignCenter)
-        self.addon2NameLabel = QLabel('')
-        self.addon2NameLabel.setAlignment(Qt.AlignCenter)
-        self.addon1NameLabel.setFixedHeight(25)
-        self.addon2NameLabel.setFixedHeight(25)
-        self.addon1NameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.addon2NameLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.addon1NameLabel = self.__createLabel()
+        self.addon2NameLabel = self.__createLabel()
         layout.addLayout(leftLayout)
         layout.addLayout(rightLayout)
         leftLayout.addWidget(self.addon1Button)
@@ -232,8 +213,32 @@ class AddonSelect(QWidget):
         rightLayout.addWidget(self.addon2NameLabel)
         leftLayout.setAlignment(self.addon1Button, Qt.AlignCenter)
         rightLayout.setAlignment(self.addon2Button, Qt.AlignCenter)
-        leftLayout.addSpacerItem(QSpacerItem(5, 125))
-        rightLayout.addSpacerItem(QSpacerItem(5, 125))
+        leftLayout.addSpacerItem(QSpacerItem(5, 75))
+        rightLayout.addSpacerItem(QSpacerItem(5, 75))
+
+    def __createLabel(self):
+        lbl = QLabel('No addon')
+        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setFixedHeight(25)
+        lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        return lbl
+
+    def __createIconButton(self, icon=None):
+        btn = QPushButton()
+        if icon is not None:
+            btn.setIcon(icon)
+        btn.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
+        btn.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
+        btn.setFlat(True)
+        btn.clicked.connect(partial(self.__showAddonPopup, btn))
+        return btn
+
+    def __showAddonPopup(self, btnToUpdate: QPushButton):
+        point = btnToUpdate.rect().bottomLeft()
+        globalPoint = btnToUpdate.mapToGlobal(point)
+        self.popupSelect.move(globalPoint)
+        addon = self.popupSelect.selectAddon()
+        #todo: if addon is not none then set icon on button
 
 
 class PerkSelect(QWidget):
