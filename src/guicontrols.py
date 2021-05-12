@@ -36,9 +36,9 @@ class ItemSelect(QWidget):
         self.itemSelectionComboBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
-        width = 25
-        self.leftButton.setFixedWidth(width)
-        self.rightButton.setFixedWidth(width)
+        width, height = 35, 50
+        self.leftButton.setFixedSize(width, height)
+        self.rightButton.setFixedSize(width, height)
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
         self.nameDisplayLabel.setAlignment(Qt.AlignCenter)
@@ -190,8 +190,7 @@ class AddonSelect(QWidget):
         self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
         self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
-        self.addon1Button = self.__createIconButton(self.defaultIcon, index=0)
-        self.addon2Button = self.__createIconButton(self.defaultIcon, index=1)
+
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
@@ -205,6 +204,8 @@ class AddonSelect(QWidget):
         rightLayout = QVBoxLayout()
         self.addon1NameLabel = self.__createLabel()
         self.addon2NameLabel = self.__createLabel()
+        self.addon1Button = self.__createIconButton(self.addon1NameLabel, self.defaultIcon, index = 0)
+        self.addon2Button = self.__createIconButton(self.addon2NameLabel, self.defaultIcon, index = 1)
         layout.addLayout(leftLayout)
         layout.addLayout(rightLayout)
         leftLayout.addWidget(self.addon1Button)
@@ -223,23 +224,27 @@ class AddonSelect(QWidget):
         lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         return lbl
 
-    def __createIconButton(self, icon=None, index: int=0):
+    def __createIconButton(self, label: QLabel, icon=None, index: int=0):
         btn = QPushButton()
         if icon is not None:
             btn.setIcon(icon)
         btn.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
         btn.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
         btn.setFlat(True)
-        btn.clicked.connect(partial(self.__showAddonPopup, btn, index))
+        btn.clicked.connect(partial(self.__showAddonPopup, btn, label, index))
         return btn
 
-    def __showAddonPopup(self, btnToUpdate: QPushButton, index: int):
+    def __showAddonPopup(self, btnToUpdate: QPushButton, lblToUpdate: QLabel, index: int):
         point = btnToUpdate.rect().bottomLeft()
         globalPoint = btnToUpdate.mapToGlobal(point)
         self.popupSelect.move(globalPoint)
         addon = self.popupSelect.selectAddon()
         self.selectedAddons[index] = addon
         #todo: if addon is not none then set icon on button
+        if addon is not None:
+            btnToUpdate.setIcon(QIcon(Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-')]))
+            lblToUpdate.setText(addon.addonName)
+
 
 
 class PerkSelect(QWidget):
