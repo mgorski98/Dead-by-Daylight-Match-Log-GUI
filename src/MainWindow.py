@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
@@ -16,13 +18,21 @@ class MainWindow(QMainWindow):
         self.setContentsMargins(5, 5, 5, 5)
         self.resize(windowSize[0], windowSize[1])
         self.setCentralWidget(QTabWidget())
-        killerWidget, killerLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
         survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.centralWidget().addTab(killerWidget, "Killers")
         self.centralWidget().addTab(survivorWidget, "Survivors")
+        killerMatchInfoTabWidget = QTabWidget()
+        killerInfoWidget, killerInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerMatchInfoWidget, killerMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerMatchInfoTabWidget.addTab(killerInfoWidget, "Killer info")
+        killerMatchInfoTabWidget.addTab(killerMatchInfoWidget, "Match info")
+        killerLayout.addWidget(killerMatchInfoTabWidget, 0, 0, 1, 3)
+        killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
 
         self.killerSelection = KillerSelect([], iconSize=Globals.CHARACTER_ICON_SIZE)
-
+        #todo: first tab: killer info (killer, perks, add ons, etc.), second tab: match info (points, date, faced survivors, etc.)
         self.__setupMenuBar()
 
         self.pointsTextBox = QLineEdit()
@@ -37,13 +47,20 @@ class MainWindow(QMainWindow):
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
 
-        lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow([])
         self.killerPerkSelection = PerkSelection([])
         self.killerAddonSelection = AddonSelection([])
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
+
+        killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        killerInfoUpperRowLayout.addWidget(self.killerSelection)
+        killerInfoUpperRowLayout.addWidget(self.killerAddonSelection)
+        killerInfoLayout.addWidget(killerInfoUpperRowWidget)
+        killerInfoLowerRowWidget, killerInfoLowerRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        killerInfoLowerRowLayout.addWidget(self.killerPerkSelection)
+        killerInfoLayout.addWidget(killerInfoLowerRowWidget)
 
 
     def setupKillerForm(self) -> QWidget:

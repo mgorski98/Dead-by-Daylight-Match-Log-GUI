@@ -273,6 +273,7 @@ class PerkSelection(QWidget):
         self.layout().addWidget(perksWidget)
         for i in range(4):
             sublayout = QVBoxLayout()
+            sublayout.addSpacerItem(QSpacerItem(1,50))
             perksLayout.addLayout(sublayout)
             button = QPushButton()
             button.setFlat(True)
@@ -283,6 +284,7 @@ class PerkSelection(QWidget):
             label.setAlignment(Qt.AlignCenter)
             sublayout.addSpacerItem(QSpacerItem(1, 50))
             sublayout.addWidget(label)
+            sublayout.setAlignment(button, Qt.AlignCenter)
             button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
 
     def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
