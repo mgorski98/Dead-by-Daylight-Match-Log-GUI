@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from functools import partial
-from typing import Optional, Union
+from typing import Union
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
-from util import clampReverse, setQWidgetLayout
+from util import clampReverse
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -113,6 +113,7 @@ class SurvivorSelect(ItemSelect):
         super().__init__(parent)
         self.survivors = survivors
 
+
 class SurvivorItemSelect(ItemSelect):
     def __init__(self, items: list[Item], itemFilter: Optional[ItemType], parent=None):
         super().__init__(parent)
@@ -190,7 +191,6 @@ class AddonSelect(QWidget):
         self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
         self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
-
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
@@ -247,11 +247,38 @@ class AddonSelect(QWidget):
 
 
 
-class PerkSelect(QWidget):
+class PerkSelection(QWidget):
 
     def __init__(self, perks: list[Perk], parent=None):
         super().__init__(parent)
         self.perks = perks
+        self.popupSelection = PerkPopupSelect(self.perks)
         self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
 
 
+class FacedSurvivorSelect(ItemSelect):
+
+    def __init__(self, survivors: list[Survivor], parent=None):
+        super().__init__(parent=parent)
+        self.survivors = survivors
+
+
+    def getSelectedItem(self):
+        pass
+
+    def next(self):
+        pass
+
+    def prev(self):
+        pass
+
+class FacedSurvivorSelectionWindow(QWidget):
+
+    def __init__(self, survivors: list[Survivor], parent=None):
+        super().__init__(parent)
+        self.survivors = survivors
+        self.selections = {n: FacedSurvivorSelect(self.survivors) for n in range(4)}
+        mainLayout = QHBoxLayout()
+        self.setLayout(mainLayout)
+        for key, value in self.selections.items():
+            mainLayout.addWidget(value)

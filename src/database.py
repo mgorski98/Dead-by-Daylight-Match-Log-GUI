@@ -141,12 +141,12 @@ class Database:
             img = Image.open(tempGifPath)
             for frameIndex in range(img.n_frames):
                 filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                gifPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(gifPath):
+                perkPath = f'../images/perks/{filename}.png'
+                if not os.path.exists(perkPath):
                     img.seek(frameIndex)
                     frameRGBA = img.convert("RGBA")
                     print(f"saving gif: {filename}")
-                    frameRGBA.save(gifPath)
+                    frameRGBA.save(perkPath)
 
         for perkRow in killerTable.find('tbody').find_all('tr')[1:]:
             targetHeader = perkRow.find_all('th')[1]
@@ -164,12 +164,12 @@ class Database:
             img = Image.open(tempGifPath)
             for frameIndex in range(img.n_frames):
                 filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                gifPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(gifPath):
+                perkPath = f'../images/perks/{filename}.png'
+                if not os.path.exists(perkPath):
                     img.seek(frameIndex)
                     frameRGBA = img.convert("RGBA")
                     print(f"saving gif: {filename}")
-                    frameRGBA.save(gifPath)
+                    frameRGBA.save(perkPath)
         # itemsDoc = requests.get(ITEMS_URL).content
         # itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
         # itemTypesInParsingOrder = [

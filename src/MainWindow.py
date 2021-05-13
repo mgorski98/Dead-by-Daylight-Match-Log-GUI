@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem
 
 from database import Database
-from guicontrols import KillerSelect, AddonSelectPopup, AddonSelect
+from guicontrols import KillerSelect, AddonSelectPopup, AddonSelect, FacedSurvivorSelectionWindow, PerkSelection
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -54,6 +54,10 @@ class MainWindow(QMainWindow):
         lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(lowerLayoutWidget)
 
+        self.facedSurvivorSelection = FacedSurvivorSelectionWindow([])
+        self.killerPerkSelection = PerkSelection([])
+        lowerLayout.addWidget(self.killerPerkSelection)
+        lowerLayout.addWidget(self.facedSurvivorSelection)
         self.killerAddonSelection = AddonSelect([])
         upperLayout.addWidget(self.killerAddonSelection)
         self.itemAddonSelection = None
