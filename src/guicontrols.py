@@ -2,6 +2,7 @@ from abc import abstractmethod
 from functools import partial
 from typing import Union
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
@@ -170,8 +171,8 @@ class AddonSelectPopup(GridViewSelectionPopup):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             addonButton = QPushButton()
-            addonButton.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
-            addonButton.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
+            addonButton.setFixedSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1])
+            addonButton.setIconSize(QSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1]))
             addonButton.clicked.connect(partial(self.selectItem, addon))
             addonButton.setFlat(True)
             iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '')
@@ -193,6 +194,8 @@ class PerkPopupSelect(GridViewSelectionPopup):
     def initPopupGrid(self):
         pass
 
+    def selectPerk(self) -> Optional[Perk]:
+        return self.selectedItem if self.exec_() == QDialog.accepted else None
 
 class AddonSelection(QWidget):
 
@@ -239,8 +242,8 @@ class AddonSelection(QWidget):
         btn = QPushButton()
         if icon is not None:
             btn.setIcon(icon)
-        btn.setIconSize(QSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1]))
-        btn.setFixedSize(Globals.OTHER_ICONS_SIZE[0], Globals.OTHER_ICONS_SIZE[1])
+        btn.setIconSize(QSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1]))
+        btn.setFixedSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1])
         btn.setFlat(True)
         btn.clicked.connect(partial(self.__showAddonPopup, btn, label, index))
         return btn
@@ -253,7 +256,8 @@ class AddonSelection(QWidget):
         self.selectedAddons[index] = addon
         #todo: if addon is not none then set icon on button
         if addon is not None:
-            btnToUpdate.setIcon(QIcon(Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-')]))
+            pixmap = Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-')]
+            btnToUpdate.setIcon(QIcon(pixmap))
             lblToUpdate.setText(addon.addonName)
 
 
@@ -264,7 +268,7 @@ class PerkSelection(QWidget):
         self.perks = perks
         self.popupSelection = PerkPopupSelect(self.perks)
         self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
-        self.defaultPerkIcon = None
+        self.defaultPerkIcon = QIcon(Globals.DEFAULT_PERK_ICON)
         self.setLayout(QVBoxLayout())
         l = QLabel("Killer perks")
         l.setAlignment(Qt.AlignCenter)
@@ -279,6 +283,7 @@ class PerkSelection(QWidget):
             button.setFlat(True)
             button.setFixedSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1])
             button.setIconSize(QSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1]))
+            button.setIcon(self.defaultPerkIcon)
             sublayout.addWidget(button)
             label = QLabel('No perk')
             label.setAlignment(Qt.AlignCenter)
@@ -288,7 +293,10 @@ class PerkSelection(QWidget):
             button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
 
     def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
-        print(f"{btn.text()}, {label.text()}, {index}")
+        point = btn.rect().bottomLeft()
+        globalPoint = btn.mapToGlobal(point)
+        self.popupSelection.move(globalPoint)
+        perk = self.popupSelection.selectPerk()
 
 
 
