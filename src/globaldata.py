@@ -14,7 +14,7 @@ class Globals:
     ADDON_ICONS = {}
     OFFERING_ICONS = {}
     PERK_ICONS = {}
-    DEFAULT_ICON_OTHER: Optional[QPixmap] = None
+    DEFAULT_ADDON_ICON: Optional[QPixmap] = None
     LOWEST_RANK = 20  # dbd ranks are going in reverse, 20 is the wors
     HIGHEST_RANK = 1  # and 1 is the best
     CHARACTER_ICON_SIZE = (150, 208)  # width, height
@@ -23,7 +23,7 @@ class Globals:
 
     @staticmethod
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
-        Globals.DEFAULT_ICON_OTHER = QPixmap('../images/default-icon-other.png')
+        Globals.DEFAULT_ADDON_ICON = QPixmap('../images/default-addon-icon.png')
         killerIconsPath = '../images/killers/'
         survivorIconsPath = '../images/survivors/'
         addonsIconsPath = '../images/addons/'

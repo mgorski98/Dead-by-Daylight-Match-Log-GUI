@@ -16,14 +16,12 @@ class MainWindow(QMainWindow):
         self.setContentsMargins(5, 5, 5, 5)
         self.resize(windowSize[0], windowSize[1])
         self.setCentralWidget(QTabWidget())
-        killerWidget, centralLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerWidget, killerLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.centralWidget().addTab(killerWidget, "Killers")
         self.centralWidget().addTab(survivorWidget, "Survivors")
+
         self.killerSelection = KillerSelect([], iconSize=Globals.CHARACTER_ICON_SIZE)
-        upperLayout = QHBoxLayout()
-        centralLayout.addLayout(upperLayout)
-        upperLayout.addWidget(self.killerSelection)
 
         self.__setupMenuBar()
 
@@ -34,25 +32,18 @@ class MainWindow(QMainWindow):
         self.killerRankSpinner = QSpinBox()
         self.killerRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)#lowest rank is 20, DBD ranks are going down the better they are, so rank 1 is the best
         otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
-        otherInfoWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding)
         for label, obj in zip(['Match date','Points','Killer rank'], [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
             cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
-        upperLayout.addWidget(otherInfoWidget)
 
         lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
-        centralLayout.addWidget(lowerLayoutWidget)
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow([])
         self.killerPerkSelection = PerkSelection([])
-        upperLayout.addWidget(self.killerPerkSelection)
-        lowerLayout.addWidget(self.facedSurvivorSelection)
         self.killerAddonSelection = AddonSelection([])
-        upperLayout.addWidget(self.killerAddonSelection)
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
-        centralLayout.addSpacerItem(QSpacerItem(1, 150))
 
 
     def setupKillerForm(self) -> QWidget:

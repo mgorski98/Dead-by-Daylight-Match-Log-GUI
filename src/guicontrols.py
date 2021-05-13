@@ -201,7 +201,7 @@ class AddonSelection(QWidget):
         self.addons = addons
         self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
-        self.defaultIcon = QIcon(Globals.DEFAULT_ICON_OTHER)
+        self.defaultIcon = QIcon(Globals.DEFAULT_ADDON_ICON)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
