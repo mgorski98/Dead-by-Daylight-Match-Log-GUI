@@ -5,11 +5,11 @@ from typing import Union
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
-    QGridLayout, QSizePolicy, QSpacerItem
+    QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton
 
 from globaldata import *
-from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType
-from util import clampReverse
+from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState
+from util import clampReverse, splitUpper, setQWidgetLayout
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -109,9 +109,20 @@ class KillerSelect(ItemSelect):
         return self.selectedItem
 
 class SurvivorSelect(ItemSelect):
+
+
     def __init__(self, survivors: list[Survivor], parent=None):
         super().__init__(parent)
         self.survivors = survivors
+
+    def next(self):
+        pass
+
+    def prev(self):
+        pass
+
+    def getSelectedItem(self):
+        pass
 
 
 class SurvivorItemSelect(ItemSelect):
@@ -183,7 +194,7 @@ class PerkPopupSelect(GridViewSelectionPopup):
         pass
 
 
-class AddonSelect(QWidget):
+class AddonSelection(QWidget):
 
     def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
         super().__init__(parent)
@@ -246,7 +257,6 @@ class AddonSelect(QWidget):
             lblToUpdate.setText(addon.addonName)
 
 
-
 class PerkSelection(QWidget):
 
     def __init__(self, perks: list[Perk], parent=None):
@@ -254,14 +264,44 @@ class PerkSelection(QWidget):
         self.perks = perks
         self.popupSelection = PerkPopupSelect(self.perks)
         self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
+        self.defaultPerkIcon = None
+        self.setLayout(QVBoxLayout())
+        l = QLabel("Killer perks")
+        l.setAlignment(Qt.AlignCenter)
+        self.layout().addWidget(l)
+        perksWidget, perksLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        self.layout().addWidget(perksWidget)
+        for i in range(4):
+            sublayout = QVBoxLayout()
+            perksLayout.addLayout(sublayout)
+            button = QPushButton()
+            button.setFlat(True)
+            button.setFixedSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1])
+            button.setIconSize(QSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1]))
+            sublayout.addWidget(button)
+            label = QLabel('No perk')
+            label.setAlignment(Qt.AlignCenter)
+            sublayout.addSpacerItem(QSpacerItem(1, 50))
+            sublayout.addWidget(label)
+            button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
+
+    def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
+        print(f"{btn.text()}, {label.text()}, {index}")
+
 
 
 class FacedSurvivorSelect(ItemSelect):
 
-    def __init__(self, survivors: list[Survivor], parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, survivors: list[Survivor], iconSize=(112,156), parent=None):
+        super().__init__(parent=parent, iconSize=iconSize)
         self.survivors = survivors
-
+        self.statusButtonGroup = QButtonGroup()
+        self.survivorState: Optional[FacedSurvivorState] = None
+        for state in FacedSurvivorState:
+            buttonText = ' '.join(splitUpper(state.name)).lower().capitalize()
+            selectButton = QRadioButton(buttonText)
+            selectButton.clicked.connect(partial(self.setState, state))
+            self.layout().addWidget(selectButton)
 
     def getSelectedItem(self):
         pass
@@ -271,6 +311,9 @@ class FacedSurvivorSelect(ItemSelect):
 
     def prev(self):
         pass
+
+    def setState(self, state: FacedSurvivorState):
+        self.survivorState = state
 
 class FacedSurvivorSelectionWindow(QWidget):
 

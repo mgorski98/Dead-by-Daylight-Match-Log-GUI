@@ -18,7 +18,8 @@ class Globals:
     LOWEST_RANK = 20  # dbd ranks are going in reverse, 20 is the wors
     HIGHEST_RANK = 1  # and 1 is the best
     CHARACTER_ICON_SIZE = (150, 208)  # width, height
-    OTHER_ICONS_SIZE = (96, 96)  # width, height
+    PERK_ICON_SIZE = (128, 128)
+    OTHER_ICONS_SIZE = (128, 128)  # width, height
 
     @staticmethod
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program

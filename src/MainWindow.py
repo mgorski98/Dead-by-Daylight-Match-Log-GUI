@@ -1,15 +1,14 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem
+    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy
 
 from database import Database
-from guicontrols import KillerSelect, AddonSelectPopup, AddonSelect, FacedSurvivorSelectionWindow, PerkSelection
+from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
 
-#todo: remove textboxes for eliminations (we will have eliminations info from the actual list of faced survivors)
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
@@ -18,23 +17,15 @@ class MainWindow(QMainWindow):
         self.resize(windowSize[0], windowSize[1])
         self.setCentralWidget(QTabWidget())
         killerWidget, centralLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.centralWidget().addTab(killerWidget, "Killers")
+        self.centralWidget().addTab(survivorWidget, "Survivors")
         self.killerSelection = KillerSelect([], iconSize=Globals.CHARACTER_ICON_SIZE)
         upperLayout = QHBoxLayout()
         centralLayout.addLayout(upperLayout)
         upperLayout.addWidget(self.killerSelection)
 
         self.__setupMenuBar()
-
-        # eliminationsInfoWidget, eliminationsInfoLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        # self.killsTextBox, self.sacrificesTextBox, self.disconnectsTextBox = QLineEdit(), QLineEdit(), QLineEdit()
-        # validator = QRegularExpressionValidator(QRegularExpression('[0-4]{1}'))
-        # for label, textbox in zip(['Sacrifices', 'Kills (moris)', 'Disconnects'], [self.sacrificesTextBox, self.killsTextBox, self.disconnectsTextBox]):
-        #     textbox.setValidator(validator)
-        #     cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-        #     addWidgets(cellLayout, QLabel(label), textbox)
-        #     eliminationsInfoLayout.addWidget(cellWidget)
-        # upperLayout.addWidget(eliminationsInfoWidget)
 
         self.pointsTextBox = QLineEdit()
         self.pointsTextBox.setValidator(nonNegativeIntValidator())
@@ -43,22 +34,21 @@ class MainWindow(QMainWindow):
         self.killerRankSpinner = QSpinBox()
         self.killerRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)#lowest rank is 20, DBD ranks are going down the better they are, so rank 1 is the best
         otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
+        otherInfoWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding)
         for label, obj in zip(['Match date','Points','Killer rank'], [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
             cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
-        upperLayout.addSpacerItem(QSpacerItem(75,1))
         upperLayout.addWidget(otherInfoWidget)
-        upperLayout.addSpacerItem(QSpacerItem(75,1))
 
         lowerLayoutWidget, lowerLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         centralLayout.addWidget(lowerLayoutWidget)
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow([])
         self.killerPerkSelection = PerkSelection([])
-        lowerLayout.addWidget(self.killerPerkSelection)
+        upperLayout.addWidget(self.killerPerkSelection)
         lowerLayout.addWidget(self.facedSurvivorSelection)
-        self.killerAddonSelection = AddonSelect([])
+        self.killerAddonSelection = AddonSelection([])
         upperLayout.addWidget(self.killerAddonSelection)
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])

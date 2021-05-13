@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 import requests
@@ -32,3 +33,6 @@ def nonNegativeIntValidator(upperBound: Optional[int]=None) -> QIntValidator:
 def addWidgets(layout: QLayout, *widgets) -> None:
     for widget in widgets:
         layout.addWidget(widget)
+
+def splitUpper(s: str) -> list[str]:
+    return re.findall(r'[A-Z][^A-Z]*', s)
