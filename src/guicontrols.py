@@ -2,15 +2,14 @@ from abc import abstractmethod
 from functools import partial
 from typing import Union
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton
 
 from globaldata import *
-from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState
-from util import clampReverse, splitUpper, setQWidgetLayout
+from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering
+from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -209,6 +208,7 @@ class AddonSelection(QWidget):
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
         addonsLabel = QLabel('Killer addons')
+        addonsLabel.setStyleSheet("font-weight: bold")
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addSpacerItem(QSpacerItem(5, 25))
@@ -236,6 +236,7 @@ class AddonSelection(QWidget):
         lbl.setAlignment(Qt.AlignCenter)
         lbl.setFixedHeight(25)
         lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        lbl.setWordWrap(True)
         return lbl
 
     def __createIconButton(self, label: QLabel, icon=None, index: int=0):
@@ -271,6 +272,7 @@ class PerkSelection(QWidget):
         self.defaultPerkIcon = QIcon(Globals.DEFAULT_PERK_ICON)
         self.setLayout(QVBoxLayout())
         l = QLabel("Killer perks")
+        l.setStyleSheet("font-weight: bold")
         l.setAlignment(Qt.AlignCenter)
         self.layout().addWidget(l)
         perksWidget, perksLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
@@ -287,6 +289,7 @@ class PerkSelection(QWidget):
             sublayout.addWidget(button)
             label = QLabel('No perk')
             label.setAlignment(Qt.AlignCenter)
+            label.setWordWrap(True)
             sublayout.addSpacerItem(QSpacerItem(1, 50))
             sublayout.addWidget(label)
             sublayout.setAlignment(button, Qt.AlignCenter)
@@ -297,6 +300,11 @@ class PerkSelection(QWidget):
         globalPoint = btn.mapToGlobal(point)
         self.popupSelection.move(globalPoint)
         perk = self.popupSelection.selectPerk()
+        if perk is not None:
+            label.setText(f'{perk.perkName} {"I" * perk.perkTier}')
+            self.selectedPerks[index] = perk
+            #todo: set perk icon
+
 
 
 
@@ -335,3 +343,74 @@ class FacedSurvivorSelectionWindow(QWidget):
         self.setLayout(mainLayout)
         for key, value in self.selections.items():
             mainLayout.addWidget(value)
+
+
+class OfferingSelectPopup(GridViewSelectionPopup):
+
+    def __init__(self, offerings: list[Offering], parent=None):
+        super().__init__(5, parent)
+        self.offerings = offerings
+        self.selectedItem = None
+        self.initPopupGrid()
+
+    def initPopupGrid(self):
+        for index, offering in enumerate(self.offerings):
+            columnIndex = index % self.columns
+            rowIndex = index // self.columns
+            btn = QPushButton()
+            btn.setFixedSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1])
+            btn.setIconSize(QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1]))
+            btn.clicked.connect(partial(self.selectItem, offering))
+            btn.setFlat(True)
+            iconName = offering.offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '')
+            icon = QIcon(Globals.OFFERING_ICONS[iconName])
+            btn.setIcon(icon)
+            self.itemsLayout.addWidget(btn, rowIndex, columnIndex)
+
+    def selectOffering(self):
+        return self.selectedItem if self.exec_() == QDialog.Accepted else None
+
+    def selectItem(self, item):
+        self.selectedItem = item
+        self.accept()
+
+class OfferingSelection(QWidget):
+
+    def __init__(self, offerings: list[Offering], parent=None):
+        super().__init__(parent)
+        self.offerings = offerings
+        self.popupSelection = OfferingSelectPopup(self.offerings)
+        self.defaultIcon = QIcon(Globals.DEFAULT_OFFERING_ICON)
+        self.selectedItem = None
+        offeringLabel = QLabel('No offering')
+        label = QLabel('Offering')
+        label.setAlignment(Qt.AlignCenter)
+        label.setStyleSheet("font-weight: bold")
+        label.setFixedHeight(20)
+        offeringLabel.setAlignment(Qt.AlignCenter)
+        offeringLabel.setFixedHeight(20)
+        offeringLabel.setWordWrap(True)
+        selectionButton = QPushButton()
+        selectionButton.setFlat(True)
+        size = QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1])
+        selectionButton.setIconSize(size)
+        selectionButton.setFixedSize(size)
+        selectionButton.setIcon(self.defaultIcon)
+        selectionButton.clicked.connect(partial(self.__showOfferingPopup, selectionButton, offeringLabel))
+        self.setLayout(QVBoxLayout())
+        self.layout().addSpacerItem(QSpacerItem(1, 30))
+        self.layout().addWidget(label)
+        self.layout().addWidget(selectionButton)
+        self.layout().addWidget(offeringLabel)
+        self.layout().addSpacerItem(QSpacerItem(1, 77.5))
+        self.layout().setAlignment(selectionButton, Qt.AlignCenter)
+
+    def __showOfferingPopup(self, btn: QPushButton, label: QLabel):
+        point = btn.rect().bottomLeft()
+        globalPoint = btn.mapToGlobal(point)
+        self.popupSelection.move(globalPoint)
+        offering = self.popupSelection.selectOffering()
+        if offering is not None:
+            pixmap: QPixmap = Globals.OFFERING_ICONS[offering.offeringName.lower().replace(':','').replace(' ', '-').replace('"', '')]
+            btn.setIcon(QIcon(pixmap))
+            label.setText(offering.offeringName)

@@ -6,8 +6,9 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy
 
 from database import Database
-from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection
-from models import KillerAddon, Killer
+from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
+    OfferingSelection
+from models import KillerAddon, Killer, Offering, OfferingType
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -54,10 +55,12 @@ class MainWindow(QMainWindow):
         self.killerAddonSelection = AddonSelection([KillerAddon(addonName='Bloody Coil', killer=testKiller)])
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
+        self.killerOfferingSelection = OfferingSelection([Offering(offeringName='Ebony Memento Mori', offeringType=OfferingType.Killer)])
 
         killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         killerInfoUpperRowLayout.addWidget(self.killerSelection)
         killerInfoUpperRowLayout.addWidget(self.killerAddonSelection)
+        killerInfoUpperRowLayout.addWidget(self.killerOfferingSelection)
         killerInfoLayout.addWidget(killerInfoUpperRowWidget)
         killerInfoLowerRowWidget, killerInfoLowerRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         killerInfoLowerRowLayout.addWidget(self.killerPerkSelection)
