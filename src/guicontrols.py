@@ -3,9 +3,10 @@ from functools import partial
 from typing import Union
 
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
-    QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton
+    QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton, QStylePainter, QStyleOptionComboBox, QStyle, \
+    QStyledItemDelegate, QStyleOptionViewItem
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering
@@ -13,6 +14,17 @@ from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
+class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
+
+    def paintEvent(self, e: QPaintEvent) -> None:
+        painter = QStylePainter(self)
+        painter.setPen(self.palette().color(QPalette.Text))
+        opt = QStyleOptionComboBox()
+        self.initStyleOption(opt)
+        opt.currentIcon = QIcon()
+        opt.iconSize = QSize()
+        painter.drawComplexControl(QStyle.CC_ComboBox, opt)
+        painter.drawControl(QStyle.CE_ComboBoxLabel, opt)
 
 class ItemSelect(QWidget):
 
@@ -30,10 +42,10 @@ class ItemSelect(QWidget):
         for i in [self.leftButton, self.imageLabel, self.rightButton]:
             imageSelectLayout.addWidget(i)
         layout.addWidget(imageSelectWidget)
-        self.nameDisplayLabel = QLabel('<Select with arrows or from combobox>')
+        self.nameDisplayLabel = QLabel('Select an item')
         # self.nameDisplayLabel.setFixedSize(self.nameDisplayLabel.width(), self.nameDisplayLabel.height())
-        self.itemSelectionComboBox = QComboBox(parent=self)
-        self.itemSelectionComboBox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.itemSelectionComboBox = IconDropDownComboBox()
+        self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//4,iconSize[1]//4))
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
         width, height = 35, 50
@@ -66,9 +78,6 @@ class KillerSelect(ItemSelect):
     def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
         super().__init__(parent=parent, iconSize=iconSize)
         self.killers = killers
-        self.itemSelectionComboBox.setFixedHeight(60)
-        self.itemSelectionComboBox.setIconSize(QSize(iconSize[0] // 4,iconSize[1] // 4))
-        # self.killers.append(Killer(killerName='Evan Macmillan', killerAlias='The Trapper'))
         killerItems = map(str, self.killers)
         killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
         for killerStr, icon in zip(killerItems, killerIconsCombo):
@@ -310,39 +319,78 @@ class PerkSelection(QWidget):
 
 class FacedSurvivorSelect(ItemSelect):
 
+    __availableStates = list(FacedSurvivorState)
+
     def __init__(self, survivors: list[Survivor], iconSize=(112,156), parent=None):
         super().__init__(parent=parent, iconSize=iconSize)
         self.survivors = survivors
-        self.statusButtonGroup = QButtonGroup()
         self.survivorState: Optional[FacedSurvivorState] = None
+        self.survivorStateComboBox = QComboBox()
+        self.layout().addWidget(self.survivorStateComboBox)
         for state in FacedSurvivorState:
-            buttonText = ' '.join(splitUpper(state.name)).lower().capitalize()
-            selectButton = QRadioButton(buttonText)
-            selectButton.clicked.connect(partial(self.setState, state))
-            self.layout().addWidget(selectButton)
+            text = ' '.join(splitUpper(state.name)).lower().capitalize()
+            self.survivorStateComboBox.addItem(text)
+        self.survivorStateComboBox.activated.connect(self.selectState)
+        comboItems = map(str, self.survivors)
+        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[survivor.survivorName.lower().replace(' ', '-')]),
+                               self.survivors)
+        for survivor, icon in zip(comboItems, iconsCombo):
+            self.itemSelectionComboBox.addItem(icon, survivor)
+        self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
+        self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//2,iconSize[1]//2))
+        self.selectFromIndex(0)
+
+    def selectState(self, index: int=0):
+        self.survivorState = FacedSurvivorSelect.__availableStates[index]
+
+    def selectFromIndex(self, index: int):
+        self.selectedItem = self.survivors[index]
+        self.currentIndex = index
+        self.updateSelected()
+
+    def updateSelected(self):
+        if self.selectedItem is None:
+            return
+        self.nameDisplayLabel.setText(self.selectedItem.survivorName)
+        icon = Globals.SURVIVOR_ICONS[self.selectedItem.survivorName.lower().replace('"', '').replace(' ', '-')]
+        self.imageLabel.setPixmap(icon)
 
     def getSelectedItem(self):
-        pass
+        return self.selectedItem
+
+    def __updateIndex(self, value: int):
+        if not self._itemsPresent():
+            return
+        self.currentIndex = clampReverse(value, 0, len(self.survivors) - 1)
+        self.updateSelected()
+
+    def _itemsPresent(self) -> bool:
+        return len(self.survivors) > 0
 
     def next(self):
-        pass
+        self.__updateIndex(self.currentIndex + 1)
 
     def prev(self):
-        pass
-
-    def setState(self, state: FacedSurvivorState):
-        self.survivorState = state
+        self.__updateIndex(self.currentIndex - 1)
 
 class FacedSurvivorSelectionWindow(QWidget):
 
-    def __init__(self, survivors: list[Survivor], parent=None):
+    def __init__(self, survivors: list[Survivor], size=(1,4), parent=None):
         super().__init__(parent)
+        acceptableSizes = ((1,4), (4, 1), (2,2))
+        if size not in acceptableSizes:
+            raise ValueError(f"Value of rows can only be one of these values: [{','.join(map(str, acceptableSizes))}]")
         self.survivors = survivors
-        self.selections = {n: FacedSurvivorSelect(self.survivors) for n in range(4)}
-        mainLayout = QHBoxLayout()
+        self.selections = {n: FacedSurvivorSelect(self.survivors, iconSize=(Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)) for n in range(4)}
+        mainLayout = QGridLayout()
         self.setLayout(mainLayout)
-        for key, value in self.selections.items():
-            mainLayout.addWidget(value)
+        rows, cols = size
+        index = 0
+        for i in range(rows):
+            for j in range(cols):
+                selection = self.selections[index]
+                mainLayout.addWidget(selection, i, j)
+                index += 1
 
 
 class OfferingSelectPopup(GridViewSelectionPopup):
@@ -414,3 +462,10 @@ class OfferingSelection(QWidget):
             pixmap: QPixmap = Globals.OFFERING_ICONS[offering.offeringName.lower().replace(':','').replace(' ', '-').replace('"', '')]
             btn.setIcon(QIcon(pixmap))
             label.setText(offering.offeringName)
+
+
+class MapSelect(QWidget):
+
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)

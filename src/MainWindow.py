@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 from database import Database
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection
-from models import KillerAddon, Killer, Offering, OfferingType
+from models import KillerAddon, Killer, Offering, OfferingType, Survivor
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
         testKiller = Killer(killerAlias='The Trapper', killerName='Evan Macmillan')
         self.killerSelection = KillerSelect([testKiller], iconSize=Globals.CHARACTER_ICON_SIZE)
-        #todo: first tab: killer info (killer, perks, add ons, etc.), second tab: match info (points, date, faced survivors, etc.)
+
         self.__setupMenuBar()
 
         self.pointsTextBox = QLineEdit()
@@ -49,8 +49,7 @@ class MainWindow(QMainWindow):
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
 
-
-        self.facedSurvivorSelection = FacedSurvivorSelectionWindow([])
+        self.facedSurvivorSelection = FacedSurvivorSelectionWindow([Survivor(survivorName='Claudette Morel')], size=(2,2))
         self.killerPerkSelection = PerkSelection([])
         self.killerAddonSelection = AddonSelection([KillerAddon(addonName='Bloody Coil', killer=testKiller)])
         self.itemAddonSelection = None
@@ -66,6 +65,8 @@ class MainWindow(QMainWindow):
         killerInfoLowerRowLayout.addWidget(self.killerPerkSelection)
         killerInfoLayout.addWidget(killerInfoLowerRowWidget)
 
+        killerMatchInfoLayout.addWidget(otherInfoWidget)
+        killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
 
     def setupKillerForm(self) -> QWidget:
         pass
