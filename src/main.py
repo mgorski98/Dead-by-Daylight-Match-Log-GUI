@@ -15,7 +15,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     QLocale.setDefault(QLocale(QLocale.English))
     Globals.init()
-    window = MainWindow(title='Dead by Daylight match log', windowSize=(1280, 900))
+    window = MainWindow(title='Dead by Daylight match log', windowSize=(1280, 760))
     window.show()
     sys.exit(app.exec_())
 
