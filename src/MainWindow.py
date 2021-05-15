@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 
 from database import Database
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
-    OfferingSelection
-from models import KillerAddon, Killer, Offering, OfferingType, Survivor
+    OfferingSelection, MapSelect
+from models import KillerAddon, Killer, Offering, OfferingType, Survivor, Realm, GameMap
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -65,7 +65,11 @@ class MainWindow(QMainWindow):
         killerInfoLowerRowLayout.addWidget(self.killerPerkSelection)
         killerInfoLayout.addWidget(killerInfoLowerRowWidget)
 
-        killerMatchInfoLayout.addWidget(otherInfoWidget)
+        self.killerMapSelection = MapSelect([Realm(realmName='Macmillan Estate', maps=[GameMap(mapName='Coal Tower')])])
+        widget, layout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        layout.addWidget(otherInfoWidget)
+        layout.addWidget(self.killerMapSelection)
+        killerMatchInfoLayout.addWidget(widget)
         killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
 
     def setupKillerForm(self) -> QWidget:

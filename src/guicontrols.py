@@ -9,10 +9,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
     QStyledItemDelegate, QStyleOptionViewItem
 
 from globaldata import *
-from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering
+from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
+    GameMap, Realm
 from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
+
+#todo: change access to Globals to passing certain parameters in a set function or a constructor
 
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
@@ -466,6 +469,54 @@ class OfferingSelection(QWidget):
 
 class MapSelect(QWidget):
 
-
-    def __init__(self, parent=None):
+    def __init__(self, realms: list[Realm], parent=None):
         super().__init__(parent=parent)
+        self.selectedMap: Optional[GameMap] = None
+        self.realms = realms
+        self.currentMaps = realms[0].maps
+        self.realmSelectionComboBox = QComboBox()
+        for realm in realms:
+            self.realmSelectionComboBox.addItem(realm.realmName)
+        self.realmSelectionComboBox.activated.connect(self.__switchRealmMaps)
+        self.mapImageLabel = QLabel()
+        self.mapImageLabel.setFixedSize(QSize(Globals.MAP_ICON_SIZE[0], Globals.MAP_ICON_SIZE[1]))
+        self.mapNameLabel = QLabel('No map selected')
+        buttonWidth = 25
+        self.leftMapSelectButton = QPushButton('<')
+        self.leftMapSelectButton.setFixedWidth(buttonWidth)
+        self.rightMapSelectButton = QPushButton('>')
+        self.rightMapSelectButton.setFixedWidth(buttonWidth)
+        mainLayout = QVBoxLayout()
+        self.setLayout(mainLayout)
+        realmSubLayout = QVBoxLayout()
+        mapSubLayout = QVBoxLayout()
+        mainLayout.addLayout(realmSubLayout)
+        mainLayout.addLayout(mapSubLayout)
+        realmSelectionLayout = QHBoxLayout()
+        mapSelectionLayout = QHBoxLayout()
+        realmSubLayout.addLayout(realmSelectionLayout)
+        realmHeaderLabel = QLabel("Realm name")
+        realmHeaderLabel.setAlignment(Qt.AlignTop)
+        realmSubLayout.addSpacerItem(QSpacerItem(1, 15))
+        realmSubLayout.addWidget(realmHeaderLabel)
+        realmSubLayout.addWidget(self.realmSelectionComboBox)
+        realmSubLayout.addSpacerItem(QSpacerItem(1, 50))
+        mapSubLayout.addLayout(mapSelectionLayout)
+        mapSelectionLayout.addWidget(self.leftMapSelectButton)
+        mapSelectionLayout.addWidget(self.mapImageLabel)
+        mapSelectionLayout.addWidget(self.rightMapSelectButton)
+        mapSubLayout.addWidget(self.mapNameLabel)
+        self.mapNameLabel.setAlignment(Qt.AlignHCenter)
+
+    def __switchRealmMaps(self, index: int):
+        realm = self.realms[index]
+        self.currentMaps = realm.maps
+        if len(self.currentMaps) > 0:
+            self.selectedMap = self.currentMaps[0]
+            self.__updateUI()
+
+    def __updateUI(self):
+        if self.selectedMap is not None:
+            self.mapNameLabel.setText(self.selectedMap.mapName)
+            pixmap = Globals.MAP_ICONS[self.selectedMap.mapName.lower().replace(' ', '-').replace(':', '').replace('"','')]
+            self.mapImageLabel.setPixmap(pixmap)
