@@ -8,9 +8,10 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
-from models import Killer, Survivor, Perk, PerkType, ItemType, Item
+from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap
 from util import saveImageFromURL
 
+#todo: make a DatabaseUpdateService class (or named similarly) to perform database update with GUI progress dialog displaying current progress
 
 class Database:
     __instance = None
@@ -198,14 +199,51 @@ class Database:
                 itemImageTableHeader, itemNameTableHeader = children[0], children[1]
                 itemName = itemNameTableHeader.find('a').get('title','').replace("(Item)", "").strip()
                 items.append(Item(itemName=itemName, itemType=currentItemType))
-                #todo: download item icon
                 itemImageSrc = itemImageTableHeader.find('img').get('src','')
+                filename = itemName.lower().replace('"','').replace(' ', '-').replace("'", '')
+                itemImgPath = f'../images/items/{filename}.png'
+                if not os.path.exists(itemImgPath):
+                    saveImageFromURL(itemImageSrc, itemImgPath)
 
-        # addonsDoc = requests.get(ADDONS_URL).content
-        # addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
-        #
-        # offeringsDoc = requests.get(OFFERINGS_URL).content
-        # offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
-        #
-        # realmsDoc = requests.get(REALM_URL).content
-        # realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
+        addonsDoc = requests.get(ADDONS_URL).content
+        addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
+
+        addonsRoot = addonsParser.find('div', class_='mw-parser-output')
+
+        offeringsDoc = requests.get(OFFERINGS_URL).content
+        offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
+
+        offeringTables = offeringsParser.find_all('table', class_='wikitable')
+        offerings = []
+        for table in offeringTables:
+            rows = table.find('tbody').find_all('tr')
+            for row in rows:
+                headers = row.find_all('th')
+                imgSrc = headers[0].find('img').get('src', '')
+                offeringName = headers[1].find('a').get('title', '')
+                offerings.append(Offering(offeringName=offeringName))
+                filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
+                imgFilePath = f'../images/offerings/{filename}.png'
+                if not os.path.exists(imgFilePath):
+                    saveImageFromURL(imgSrc, imgFilePath)
+
+        realmsDoc = requests.get(REALM_URL).content
+        realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
+        realmsRoot = realmsParser.find('div', class_="mw-parser-output")
+        children = realmsRoot.find_all(recursive=False)
+        childCount = len(children)
+        startIndex = next((i for i in range(0, childCount) if children[i].name == 'h3'), 0)
+        endIndex = next((i for i in range(0, childCount) if children[i].name == 'h3' and any(c.text == 'Recurring Locations' for c in children[i].find_all(recursive=False))), 0)
+        realms = []
+        for i in range(startIndex, endIndex, 2):
+            realmName = children[i].find('a').get('title', '').replace("(Realm)", "").strip()
+            maps = []
+            for tag in children[i].find_all('td'):
+                mapName = tag.find('center').find('a').get('title', '')
+                maps.append(GameMap(mapName=mapName))
+                imgSrc = tag.find('div', class_='center').find('img').get('src', '')
+                filename = mapName.lower().replace("\"",'').replace(" ", "-").replace(":","").replace("'", "")
+                imgFilePath = f'../images/maps/{filename}.png'
+                if not os.path.exists(imgFilePath):
+                    saveImageFromURL(imgSrc, imgFilePath)
+            realms.append(Realm(maps=maps,realmName=realmName))

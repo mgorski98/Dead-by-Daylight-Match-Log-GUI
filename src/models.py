@@ -33,10 +33,10 @@ class PerkType(enum.Enum):
     Killer = 0,
     Survivor = 1
 
-class OfferingType(enum.Enum):
-    Killer = 0,
-    Survivor = 1,
-    Both = 2
+# class OfferingType(enum.Enum):
+#     Killer = 0,
+#     Survivor = 1,
+#     Both = 2
 
 class FacedSurvivorState(enum.Enum):
     Sacrificed = 0,
@@ -191,12 +191,10 @@ class Offering:
         "offerings",
         mapperRegistry.metadata,
         Column("offeringID", Integer, primary_key=True),
-        Column("offeringName", Text, nullable=False, unique=True),
-        Column("offeringType", Enum(OfferingType), nullable=False)
+        Column("offeringName", Text, nullable=False, unique=True)
     )
     offeringID: int = field(init=False)
     offeringName: str
-    offeringType: OfferingType
 
 
 @mapperRegistry.mapped

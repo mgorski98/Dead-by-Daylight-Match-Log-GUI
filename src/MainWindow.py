@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 from database import Database
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect
-from models import KillerAddon, Killer, Offering, OfferingType, Survivor, Realm, GameMap
+from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         self.killerAddonSelection = AddonSelection([KillerAddon(addonName='Bloody Coil', killer=testKiller)])
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
-        self.killerOfferingSelection = OfferingSelection([Offering(offeringName='Ebony Memento Mori', offeringType=OfferingType.Killer)])
+        self.killerOfferingSelection = OfferingSelection([Offering(offeringName='Ebony Memento Mori')])
 
         killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         killerInfoUpperRowLayout.addWidget(self.killerSelection)
