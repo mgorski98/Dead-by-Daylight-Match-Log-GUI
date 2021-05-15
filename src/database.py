@@ -8,7 +8,7 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
-from models import Killer, Survivor, Perk, PerkType, ItemType
+from models import Killer, Survivor, Perk, PerkType, ItemType, Item
 from util import saveImageFromURL
 
 
@@ -119,7 +119,7 @@ class Database:
             #             frameRGBA = img.convert("RGBA")
             #             frameRGBA.save(gifPath)
 
-        perksDoc = requests.get(PERKS_URL).content
+        '''perksDoc = requests.get(PERKS_URL).content
         perksParser = BeautifulSoup(perksDoc, 'html.parser')
         tables = perksParser.find_all('table', attrs={'class': 'wikitable sortable'})
         killerTable, survivorTable = tables[1], tables[0]
@@ -170,15 +170,37 @@ class Database:
                     frameRGBA = img.convert("RGBA")
                     print(f"saving gif: {filename}")
                     frameRGBA.save(perkPath)
-        # itemsDoc = requests.get(ITEMS_URL).content
-        # itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
-        # itemTypesInParsingOrder = [
-        #     ItemType.Firecracker, ItemType.Flashlight, ItemType.Key,
-        #     ItemType.Map, ItemType.Medkit, ItemType.Toolbox
-        # ]
-        # for itemType in itemTypesInParsingOrder:
-        #     pass
-        #
+
+        '''
+        itemsDoc = requests.get(ITEMS_URL).content
+        itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
+        itemTypesInParsingOrder = [
+            ItemType.Firecracker, ItemType.Flashlight, ItemType.Key,
+            ItemType.Map, ItemType.Medkit, ItemType.Toolbox
+        ]
+        itemsTable = itemsParser.find_all('table', class_='wikitable')[1] #we need the second one, first one has rarities
+        itemRows = itemsTable.find('tbody').find_all('tr')
+        ITEM_ROW_CHILD_COUNT = 3
+        currentIndex = -1
+        currentItemType = itemTypesInParsingOrder[0]
+        items = []
+        for itemRow in itemRows:
+            big = itemRow.find('big')
+            if big is not None and big.text == 'Unused Items':
+                break
+
+            children = itemRow.find_all(recursive=False)
+            childCount = len(children)
+            if childCount != ITEM_ROW_CHILD_COUNT and children[0].name == 'th': #it means new section has begun
+                currentIndex += 1
+                currentItemType = itemTypesInParsingOrder[currentIndex]
+            elif childCount == ITEM_ROW_CHILD_COUNT: #else we parse every new item
+                itemImageTableHeader, itemNameTableHeader = children[0], children[1]
+                itemName = itemNameTableHeader.find('a').get('title','').replace("(Item)", "").strip()
+                items.append(Item(itemName=itemName, itemType=currentItemType))
+                #todo: download item icon
+                itemImageSrc = itemImageTableHeader.find('img').get('src','')
+
         # addonsDoc = requests.get(ADDONS_URL).content
         # addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
         #
