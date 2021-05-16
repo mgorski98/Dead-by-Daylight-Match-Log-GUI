@@ -298,9 +298,13 @@ class DatabaseUpdateWorker(QRunnable):
             for itemList, message in zip([killers, survivors, items, perks, addons, offerings, realms],guiMessageTemplates):
                 currentItems, totalItems = 0, len(itemList)
                 for item in itemList:
-                    with dbSession.begin():
-                        dbSession.add(item)
-                        dbSession.commit()
+                    try:
+                        with dbSession.begin():
+                            dbSession.add(item)
+                            dbSession.commit()
+                    except Exception as e:
+                        pass
+                    finally:
                         currentItems += 1
                         self.signals.progressUpdated.emit(message.format(currentItems, totalItems))
 
@@ -315,43 +319,48 @@ class DatabaseUpdateWorker(QRunnable):
         aTags = mainDiv.find_all('a')
         killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The ' + aTags[j + 1].get('title', '')) for
                    i, j in enumerate(range(0, len(aTags), 2))]
-        killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
-        self.signals.progressUpdated.emit("Updating killer portraits...")
-        for i, url in enumerate(killerUrls):
-            killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
-            infoTable = killerPageParser.find('table', attrs={"class": "infoboxtable"})
-            imgTag = infoTable.find('img')
-            imgUrl = imgTag.get('src', '')
-            name = killers[i].killerAlias.lower().replace(' ', '-')
-            dest = f'../images/killers/{name}.png'
-            if not os.path.exists(dest):
-                self.signals.progressUpdated.emit(f"Saving portrait: {name}.png")
-                saveImageFromURL(imgUrl, dest)
-            else:
-                self.signals.progressUpdated.emit(f"Skipping portrait for killer: {killers[i].killerAlias} because it already exists")
+        # killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
+        # self.signals.progressUpdated.emit("Updating killer portraits...")
+        # for i, url in enumerate(killerUrls):
+        #     killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
+        #     infoTable = killerPageParser.find('table', attrs={"class": "infoboxtable"})
+        #     imgTag = infoTable.find('img')
+        #     imgUrl = imgTag.get('src', '')
+        #     name = killers[i].killerAlias.lower().replace(' ', '-')
+        #     dest = f'../images/killers/{name}.png'
+        #     if not os.path.exists(dest):
+        #         self.signals.progressUpdated.emit(f"Saving portrait: {name}.png")
+        #         saveImageFromURL(imgUrl, dest)
+        #     else:
+        #         self.signals.progressUpdated.emit(f"Skipping portrait for {killers[i].killerAlias} because it already exists")
         return killers
 
     def __updateSurvivorInfo(self, url: str) -> list[Survivor]:
+        self.signals.progressUpdated.emit("Updating survivors...")
         survivorsDoc = requests.get(url).content
         survivorsParser = BeautifulSoup(survivorsDoc, 'html.parser')
         mainDiv = survivorsParser.find('div', attrs={'style': 'color: #fff;'})
         aTags = mainDiv.find_all('a')
         survivors = [Survivor(survivorName=a.get('title', '')) for i, a in enumerate(aTags[::2])]
-        survivorUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
-
-        for i, url in enumerate(survivorUrls):
-            survivorPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
-            infoTable = survivorPageParser.find('table', attrs={"class": "infoboxtable"})
-            imgTag = infoTable.find('img')
-            imgUrl = imgTag.get('src', '')
-            name = survivors[i].survivorName.lower().replace(' ', '-').replace('"', '')
-            dest = f'../images/survivors/{name}.png'
-            if not os.path.exists(dest):
-                saveImageFromURL(imgUrl, dest)
+        # survivorUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
+        # self.signals.progressUpdated.emit("Updating survivor portraits...")
+        # for i, url in enumerate(survivorUrls):
+        #     survivorPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
+        #     infoTable = survivorPageParser.find('table', attrs={"class": "infoboxtable"})
+        #     imgTag = infoTable.find('img')
+        #     imgUrl = imgTag.get('src', '')
+        #     name = survivors[i].survivorName.lower().replace(' ', '-').replace('"', '')
+        #     dest = f'../images/survivors/{name}.png'
+        #     if not os.path.exists(dest):
+        #         self.signals.progressUpdated.emit(f"Saving portrait: {name}.png")
+        #         saveImageFromURL(imgUrl, dest)
+        #     else:
+        #         self.signals.progressUpdated.emit(f"Skipping portrait for {survivors[i].survivorName} because it already exists")
 
         return survivors
 
     def __updateItems(self, url: str) -> list[Item]:
+        self.signals.progressUpdated.emit('Updating survivor items...')
         itemsDoc = requests.get(url).content
         itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
         itemTypesInParsingOrder = [
@@ -375,15 +384,20 @@ class DatabaseUpdateWorker(QRunnable):
             if childCount != ITEM_ROW_CHILD_COUNT and children[0].name == 'th':  # it means new section has begun
                 currentIndex += 1
                 currentItemType = itemTypesInParsingOrder[currentIndex]
+                self.signals.progressUpdated.emit(f"Parsing items for type: {currentItemType.name}")
             elif childCount == ITEM_ROW_CHILD_COUNT:  # else we parse every new item
                 itemImageTableHeader, itemNameTableHeader = children[0], children[1]
                 itemName = itemNameTableHeader.find('a').get('title', '').replace("(Item)", "").strip()
-                items.append(Item(itemName=itemName, itemType=currentItemType))
+                item = Item(itemName=itemName, itemType=currentItemType)
+                items.append(item)
                 itemImageSrc = itemImageTableHeader.find('img').get('src', '')
                 filename = itemName.lower().replace('"', '').replace(' ', '-').replace("'", '')
                 itemImgPath = f'../images/items/{filename}.png'
                 if not os.path.exists(itemImgPath):
+                    self.signals.progressUpdated.emit(f"Saving item icon: {filename}.png")
                     saveImageFromURL(itemImageSrc, itemImgPath)
+                else:
+                    self.signals.progressUpdated.emit(f"Skipping icon for {item.itemName} because it already exists")
         return items
 
     def __updatePerks(self, url: str) -> list[Perk]:
@@ -393,6 +407,7 @@ class DatabaseUpdateWorker(QRunnable):
         killerTable, survivorTable = tables[1], tables[0]
         tempGifPath = '../temp/temp.gif'
         perks = []
+        self.signals.progressUpdated.emit("Updating survivor perks...")
         for perkRow in survivorTable.find('tbody').find_all('tr')[1:]:
             targetHeader = perkRow.find_all('th')[1]
             targetAnchor = targetHeader.find('a')
@@ -400,22 +415,27 @@ class DatabaseUpdateWorker(QRunnable):
             perkName = targetAnchor.get('title', '')
             perks += [Perk(perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
                       range(3)]
-            fullUrl = f'{self._BASE_URL}{perkUrl}'
-            doc = requests.get(fullUrl).content
-            parser = BeautifulSoup(doc, 'html.parser')
-            table = parser.find('table', attrs={'class': 'wikitable'})
-            targetRow = table.find_all('tr')[1]  # second row contains gif info
-            imgSrc = targetRow.find('img').get('src', '')
-            saveImageFromURL(imgSrc, tempGifPath)
-            img = Image.open(tempGifPath)
-            for frameIndex in range(img.n_frames):
-                filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                perkPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(perkPath):
-                    img.seek(frameIndex)
-                    frameRGBA = img.convert("RGBA")
-                    frameRGBA.save(perkPath)
+            # fullUrl = f'{self._BASE_URL}{perkUrl}'
+            # doc = requests.get(fullUrl).content
+            # parser = BeautifulSoup(doc, 'html.parser')
+            # table = parser.find('table', attrs={'class': 'wikitable'})
+            # targetRow = table.find_all('tr')[1]  # second row contains gif info
+            # imgSrc = targetRow.find('img').get('src', '')
+            # saveImageFromURL(imgSrc, tempGifPath)
+            # img = Image.open(tempGifPath)
+            # for frameIndex in range(img.n_frames):
+            #     filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+            #     perkPath = f'../images/perks/{filename}.png'
+            #     if not os.path.exists(perkPath):
+            #         img.seek(frameIndex)
+            #         frameRGBA = img.convert("RGBA")
+            #         self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
+            #         frameRGBA.save(perkPath)
+            #     else:
+            #         self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex+1)} because it already exists")
+            #
 
+        self.signals.progressUpdated.emit("Updating killer perks...")
         for perkRow in killerTable.find('tbody').find_all('tr')[1:]:
             targetHeader = perkRow.find_all('th')[1]
             targetAnchor = targetHeader.find('a')
@@ -423,24 +443,28 @@ class DatabaseUpdateWorker(QRunnable):
             perkName = targetAnchor.get('title', '')
             perks += [Perk(perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
                       range(3)]
-            fullUrl = f'{self._BASE_URL}{perkUrl}'
-            doc = requests.get(fullUrl).content
-            parser = BeautifulSoup(doc, 'html.parser')
-            table = parser.find('table', attrs={'class': 'wikitable'})
-            targetRow = table.find_all('tr')[1]  # second row contains gif info
-            imgSrc = targetRow.find('img').get('src', '')
-            saveImageFromURL(imgSrc, tempGifPath)
-            img = Image.open(tempGifPath)
-            for frameIndex in range(img.n_frames):
-                filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                perkPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(perkPath):
-                    img.seek(frameIndex)
-                    frameRGBA = img.convert("RGBA")
-                    frameRGBA.save(perkPath)
+            # fullUrl = f'{self._BASE_URL}{perkUrl}'
+            # doc = requests.get(fullUrl).content
+            # parser = BeautifulSoup(doc, 'html.parser')
+            # table = parser.find('table', attrs={'class': 'wikitable'})
+            # targetRow = table.find_all('tr')[1]  # second row contains gif info
+            # imgSrc = targetRow.find('img').get('src', '')
+            # saveImageFromURL(imgSrc, tempGifPath)
+            # img = Image.open(tempGifPath)
+            # for frameIndex in range(img.n_frames):
+            #     filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+            #     perkPath = f'../images/perks/{filename}.png'
+            #     if not os.path.exists(perkPath):
+            #         img.seek(frameIndex)
+            #         frameRGBA = img.convert("RGBA")
+            #         self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
+            #         frameRGBA.save(perkPath)
+            #     else:
+            #         self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex + 1)} because it already exists")
         return perks
 
     def __updateOfferings(self, url: str) -> list[Offering]:
+        self.signals.progressUpdated.emit("Updating offerings...")
         offeringsDoc = requests.get(url).content
         offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
 
@@ -457,10 +481,14 @@ class DatabaseUpdateWorker(QRunnable):
                 filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
                 imgFilePath = f'../images/offerings/{filename}.png'
                 if not os.path.exists(imgFilePath):
+                    self.signals.progressUpdated.emit(f"Saving icon {filename}.png")
                     saveImageFromURL(imgSrc, imgFilePath)
+                else:
+                    self.signals.progressUpdated.emit(f"Skipping icon for {offeringName} because it already exists")
         return offerings
 
     def __updateRealms(self, url: str) -> list[Realm]:
+        self.signals.progressUpdated.emit("Updating realms...")
         realmsDoc = requests.get(url).content
         realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
         realmsRoot = realmsParser.find('div', class_="mw-parser-output")
@@ -473,14 +501,19 @@ class DatabaseUpdateWorker(QRunnable):
         for i in range(startIndex, endIndex, 2):
             realmName = children[i].find('a').get('title', '').replace("(Realm)", "").strip()
             maps = []
+            self.signals.progressUpdated.emit(f"Parsing maps for {realmName}...")
             for tag in children[i + 1].find_all('td'):
                 mapName = tag.find('center').find('a').get('title', '')
-                maps.append(GameMap(mapName=mapName))
+                _map = GameMap(mapName=mapName)
+                maps.append(_map)
                 imgSrc = tag.find('div', class_='center').find('img').get('src', '')
                 filename = mapName.lower().replace("\"", '').replace(" ", "-").replace(":", "").replace("'", "")
                 imgFilePath = f'../images/maps/{filename}.png'
                 if not os.path.exists(imgFilePath):
+                    self.signals.progressUpdated.emit(f"Saving icon {filename}.png")
                     saveImageFromURL(imgSrc, imgFilePath)
+                else:
+                    self.signals.progressUpdated.emit(f"Skipping icon for {_map.mapName} because it already exists")
             realms.append(Realm(maps=maps, realmName=realmName))
         return realms
 
@@ -498,6 +531,7 @@ class DatabaseUpdateWorker(QRunnable):
         count = 0
         startIndex = 0
         killersCount = len(killers)
+        self.signals.progressUpdated.emit("Updating killer add-ons...")
         for i, child in enumerate(children):
             if child.name == 'table':
                 count += 1
@@ -517,7 +551,7 @@ class DatabaseUpdateWorker(QRunnable):
                 paragraphText = ''.join(children[i].find_all(text=True)).strip()
                 if paragraphText:
                     currentKiller = next((k for k in killers if k.killerAlias in paragraphText), None)
-                    print(f"Current killer: {currentKiller}")
+                    self.signals.progressUpdated.emit(f"Parsing add-ons for killer: {currentKiller.killerAlias}")
             elif tagName == 'table' and tableClass == 'wikitable':
                 addonRows = children[i].find('tbody').find_all('tr')[1:]
                 for row in addonRows:
@@ -529,14 +563,19 @@ class DatabaseUpdateWorker(QRunnable):
                     filename = addonName.lower().replace(" ", "-").replace('"', '').replace("'", "")
                     imgPath = f'../images/addons/{filename}.png'
                     if not os.path.exists(imgPath):
+                        self.signals.progressUpdated.emit(f"Saving icon {filename}.png")
                         saveImageFromURL(imgSrc, imgPath)
+                    else:
+                        self.signals.progressUpdated.emit(f"Skipping icon for {addonName} because it already exists")
                 killersDone.append(currentKiller)
 
+        self.signals.progressUpdated.emit("Updating item add-ons...")
         itemTypesInParsingOrder = itemTypesInParsingOrder[1:]
         addonTables = addonsRoot.find_all('table', class_='wikitable')
 
         itemAddonTables = addonTables[len(addonTables) - 2 - len(itemTypesInParsingOrder) - 1:len(addonTables) - 3]
         for i, table in enumerate(itemAddonTables):
+            self.signals.progressUpdated.emit(f"Parsing add-ons for item type: {itemTypesInParsingOrder[i].name}")
             rows = table.find('tbody').find_all('tr')[1:]  # we skip first row because its just headers
             for row in rows:
                 headers = row.find_all('th')
@@ -547,5 +586,8 @@ class DatabaseUpdateWorker(QRunnable):
                 filename = addonName.lower().replace('"', '').replace("'", "").replace(' ', '-')
                 imgPath = f'../images/addons/{filename}.png'
                 if not os.path.exists(imgPath):
+                    self.signals.progressUpdated.emit(f"Saving icon {filename}.png")
                     saveImageFromURL(imgSrc, imgPath)
+                else:
+                    self.signals.progressUpdated.emit(f"Skipping icon for {addonName} because it already exists")
         return itemAddons + killerAddons
