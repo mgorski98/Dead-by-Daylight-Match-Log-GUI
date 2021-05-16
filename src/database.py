@@ -300,15 +300,33 @@ class DatabaseUpdateWorker(QRunnable):
 
 
     def run(self) -> None:
-        self.__updateKillerInfo(f'{self._BASE_WIKI_URL}Killers')
-        self.__updateSurvivors(f'')
-        self.__updateItems(f'')
-        self.__updatePerks(f'')
-        self.__updateAddons(f'')
-        self.__updateOfferings(f'')
-        self.__updateRealms(f'')
+        killers = self.__updateKillerInfo(f'{self._BASE_WIKI_URL}Killers')
+        survivors = self.__updateSurvivorInfo(f'{self._BASE_WIKI_URL}Survivors')
+        items = self.__updateItems(f'{self._BASE_WIKI_URL}Items')
+        perks = self.__updatePerks(f'{self._BASE_WIKI_URL}Perks')
+        addons = self.__updateAddons(f'{self._BASE_WIKI_URL}Add-ons')
+        offerings = self.__updateOfferings(f'{self._BASE_WIKI_URL}Offerings')
+        realms = self.__updateRealms(f'{self._BASE_WIKI_URL}Realms')
 
-        #todo: save to database here
+        guiMessageTemplates = [
+            "Saving killers: progress {0}/{1}",
+            "Saving survivors: progress {0}/{1}",
+            "Saving items: progress {0}/{1}",
+            "Saving perks: progress {0}/{1}",
+            "Saving addons: progress {0}/{1}",
+            "Saving offerings: progress {0}/{1}",
+            "Saving realms: progress {0}/{1}",
+        ]
+
+        with Database.instance().getNewSession() as dbSession:
+            for itemList, message in zip([killers, survivors, items, perks, addons, offerings, realms],guiMessageTemplates):
+                currentItems, totalItems = 0, len(itemList)
+                for item in itemList:
+                    with dbSession.begin():
+                        dbSession.add(item)
+                        dbSession.commit()
+                        currentItems += 1
+                        self.signals.progressUpdated.emit(message.format(currentItems, totalItems))
 
         self.signals.finished.emit()
 
@@ -337,7 +355,7 @@ class DatabaseUpdateWorker(QRunnable):
                 self.signals.progressUpdated.emit(f"Skipping portrait for killer: {killers[i].killerAlias} because it already exists")
         return killers
 
-    def __updateSurvivors(self, url: str) -> list[Survivor]:
+    def __updateSurvivorInfo(self, url: str) -> list[Survivor]:
         pass
 
     def __updateItems(self, url: str) -> list[Item]:
