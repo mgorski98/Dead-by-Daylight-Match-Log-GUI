@@ -221,23 +221,23 @@ class Database:
         #         imgPath = f'../images/addons/{filename}.png'
         #         if not os.path.exists(imgPath):
         #             saveImageFromURL(imgSrc, imgPath)
-        offeringsDoc = requests.get(OFFERINGS_URL).content
-        offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
-
-        offeringTables = offeringsParser.find_all('table', class_='wikitable')
-        offeringTables = offeringTables[:len(offeringTables)-2]
-        offerings = []
-        for table in offeringTables:
-            rows = table.find('tbody').find_all('tr')
-            for row in rows:
-                headers = row.find_all('th')
-                imgSrc = headers[0].find('img').get('src', '')
-                offeringName = headers[1].find('a').get('title', '')
-                offerings.append(Offering(offeringName=offeringName))
-                filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
-                imgFilePath = f'../images/offerings/{filename}.png'
-                if not os.path.exists(imgFilePath):
-                    saveImageFromURL(imgSrc, imgFilePath)
+        # offeringsDoc = requests.get(OFFERINGS_URL).content
+        # offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
+        #
+        # offeringTables = offeringsParser.find_all('table', class_='wikitable')
+        # offeringTables = offeringTables[:len(offeringTables)-2]
+        # offerings = []
+        # for table in offeringTables:
+        #     rows = table.find('tbody').find_all('tr')
+        #     for row in rows:
+        #         headers = row.find_all('th')
+        #         imgSrc = headers[0].find('img').get('src', '')
+        #         offeringName = headers[1].find('a').get('title', '')
+        #         offerings.append(Offering(offeringName=offeringName))
+        #         filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
+        #         imgFilePath = f'../images/offerings/{filename}.png'
+        #         if not os.path.exists(imgFilePath):
+        #             saveImageFromURL(imgSrc, imgFilePath)
 
         realmsDoc = requests.get(REALM_URL).content
         realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
@@ -250,7 +250,7 @@ class Database:
         for i in range(startIndex, endIndex, 2):
             realmName = children[i].find('a').get('title', '').replace("(Realm)", "").strip()
             maps = []
-            for tag in children[i].find_all('td'):
+            for tag in children[i+1].find_all('td'):
                 mapName = tag.find('center').find('a').get('title', '')
                 maps.append(GameMap(mapName=mapName))
                 imgSrc = tag.find('div', class_='center').find('img').get('src', '')
