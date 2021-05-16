@@ -1,9 +1,11 @@
 from collections import namedtuple
+from functools import partial
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication
+    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
+    QProgressDialog
 
 from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -71,7 +73,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.killerMapSelection)
         killerMatchInfoLayout.addWidget(widget)
         killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
-        self.threadPool = QThreadPool()
+        self.threadPool = QThreadPool.globalInstance()
+        self.worker = None
 
     def setupKillerForm(self) -> QWidget:
         pass
@@ -102,9 +105,18 @@ class MainWindow(QMainWindow):
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         result = msgBox.exec_()
         if result == QMessageBox.Yes:
-            worker = DatabaseUpdateWorker()
-            worker.signals.progressUpdated.connect(lambda s: print(s))
-            self.threadPool.start(worker)
+            progressDialog = QProgressDialog()
+            progressDialog.setWindowTitle("Updating database")
+            progressDialog.setModal(True)
+            progressDialog.setCancelButton(None)
+            progressDialog.setFixedSize(450, 75)
+            progressDialog.setRange(0,0)
+            self.worker = DatabaseUpdateWorker()
+            self.worker.signals.progressUpdated.connect(lambda s: progressDialog.setLabelText(s))
+            self.worker.signals.finished.connect(progressDialog.close)
+            self.threadPool.start(self.worker)
+            progressDialog.show()
+
 
 
     def __loadMatchLogs(self):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Optional, Union
 
 import requests
@@ -297,29 +298,44 @@ class DatabaseUpdateWorker(QRunnable):
         self._BASE_WIKI_URL = 'https://deadbydaylight.fandom.com/wiki/'
         self.signals = DatabaseWorkerSignals()
 
+
     def run(self) -> None:
         self.__updateKillerInfo(f'{self._BASE_WIKI_URL}Killers')
+        self.__updateSurvivors(f'')
+        self.__updateItems(f'')
+        self.__updatePerks(f'')
+        self.__updateAddons(f'')
+        self.__updateOfferings(f'')
+        self.__updateRealms(f'')
+
+        #todo: save to database here
+
+        self.signals.finished.emit()
+
 
     def __updateKillerInfo(self, url: str) -> list[Killer]:
-        self.signals.progressUpdated.emit("Here")
-        # killersDoc = requests.get(url).content
-        # killersParser = BeautifulSoup(killersDoc, 'html.parser')
-        # mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
-        # aTags = mainDiv.find_all('a')
-        # killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The ' + aTags[j + 1].get('title', '')) for
-        #            i, j in enumerate(range(0, len(aTags), 2))]
-        # killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
-        # for i, url in enumerate(killerUrls):
-        #     killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
-        #     infoTable = killerPageParser.find('table', attrs={"class": "infoboxtable"})
-        #     imgTag = infoTable.find('img')
-        #     imgUrl = imgTag.get('src', '')
-        #     name = killers[i].killerAlias.lower().replace(' ', '-')
-        #     dest = f'../images/killers/the-{name}.png'
-        #     if not os.path.exists(dest):
-        #         saveImageFromURL(imgUrl, dest)
-        # return killers
-        return []
+        self.signals.progressUpdated.emit("Updating killers...")
+        killersDoc = requests.get(url).content
+        killersParser = BeautifulSoup(killersDoc, 'html.parser')
+        mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
+        aTags = mainDiv.find_all('a')
+        killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The ' + aTags[j + 1].get('title', '')) for
+                   i, j in enumerate(range(0, len(aTags), 2))]
+        killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
+        self.signals.progressUpdated.emit("Updating killer portraits...")
+        for i, url in enumerate(killerUrls):
+            killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
+            infoTable = killerPageParser.find('table', attrs={"class": "infoboxtable"})
+            imgTag = infoTable.find('img')
+            imgUrl = imgTag.get('src', '')
+            name = killers[i].killerAlias.lower().replace(' ', '-')
+            dest = f'../images/killers/{name}.png'
+            if not os.path.exists(dest):
+                self.signals.progressUpdated.emit(f"Saving portrait: {name}.png")
+                saveImageFromURL(imgUrl, dest)
+            else:
+                self.signals.progressUpdated.emit(f"Skipping portrait for killer: {killers[i].killerAlias} because it already exists")
+        return killers
 
     def __updateSurvivors(self, url: str) -> list[Survivor]:
         pass
