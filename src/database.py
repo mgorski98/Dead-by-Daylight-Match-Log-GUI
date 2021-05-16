@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 import sqlalchemy
 from PIL import Image
-from PyQt5.QtCore import QThread, pyqtSlot
+from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
@@ -288,8 +288,34 @@ class Database:
 
 class DatabaseUpdateWorker(QThread):
 
-    progressUpdated = pyqtSlot(str, int, int) #message, current progress, total progress
-    finished = pyqtSlot()
+    progressUpdated = pyqtSignal(str, int, int) #message, current progress, total progress
+    finished = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self._BASE_URL = 'https://deadbydaylight.fandom.com'
+        self._BASE_WIKI_URL = 'https://deadbydaylight.fandom.com/wiki/'
 
     def run(self) -> None:
+        pass
+
+    def __updateKillerInfo(self, url: str) -> list[Killer]:
+        pass
+
+    def __updateSurvivors(self, url: str) -> list[Survivor]:
+        pass
+
+    def __updateItems(self, url: str) -> list[Item]:
+        pass
+
+    def __updatePerks(self, url: str) -> list[Perk]:
+        pass
+
+    def __updateOfferings(self, url: str) -> list[Offering]:
+        pass
+
+    def __updateRealms(self, url: str) -> list[Realm]:
+        pass
+
+    def __updateAddons(self, url: str) -> list[Union[KillerAddon, ItemAddon]]:
         pass
