@@ -46,11 +46,11 @@ class Database:
         REALM_URL = f'{BASE_WIKI_URL}Realms'
         PERKS_URL = f'{BASE_WIKI_URL}Perks'
 
-        killersDoc = requests.get(KILLERS_URL).content
-        killersParser = BeautifulSoup(killersDoc, 'html.parser')
-        mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
-        aTags = mainDiv.find_all('a')
-        killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The '+aTags[j + 1].get('title', '')) for i, j in enumerate(range(0, len(aTags), 2))]
+        # killersDoc = requests.get(KILLERS_URL).content
+        # killersParser = BeautifulSoup(killersDoc, 'html.parser')
+        # mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
+        # aTags = mainDiv.find_all('a')
+        # killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The '+aTags[j + 1].get('title', '')) for i, j in enumerate(range(0, len(aTags), 2))]
         # killerUrls = [f"{BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
         # for i, url in enumerate(killerUrls):
         #     killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
@@ -61,7 +61,7 @@ class Database:
         #     dest = f'../images/killers/the-{name}.png'
         #     if not os.path.exists(dest):
         #         saveImageFromURL(imgUrl, dest)
-
+        #
         # survivorsDoc = requests.get(SURVIVORS_URL).content
         # survivorsParser = BeautifulSoup(survivorsDoc, 'html.parser')
         # mainDiv = survivorsParser.find('div', attrs={'style': 'color: #fff;'})
@@ -105,7 +105,6 @@ class Database:
         #         if not os.path.exists(perkPath):
         #             img.seek(frameIndex)
         #             frameRGBA = img.convert("RGBA")
-        #             print(f"saving gif: {filename}")
         #             frameRGBA.save(perkPath)
         #
         # for perkRow in killerTable.find('tbody').find_all('tr')[1:]:
@@ -128,16 +127,15 @@ class Database:
         #         if not os.path.exists(perkPath):
         #             img.seek(frameIndex)
         #             frameRGBA = img.convert("RGBA")
-        #             print(f"saving gif: {filename}")
         #             frameRGBA.save(perkPath)
         #
         #
         # itemsDoc = requests.get(ITEMS_URL).content
         # itemsParser = BeautifulSoup(itemsDoc, 'html.parser')
-        itemTypesInParsingOrder = [
-            ItemType.Firecracker, ItemType.Flashlight, ItemType.Key,
-            ItemType.Map, ItemType.Medkit, ItemType.Toolbox
-        ]
+        # itemTypesInParsingOrder = [
+        #     ItemType.Firecracker, ItemType.Flashlight, ItemType.Key,
+        #     ItemType.Map, ItemType.Medkit, ItemType.Toolbox
+        # ]
         # itemsTable = itemsParser.find_all('table', class_='wikitable')[1] #we need the second one, first one has rarities
         # itemRows = itemsTable.find('tbody').find_all('tr')
         # ITEM_ROW_CHILD_COUNT = 3
@@ -164,55 +162,53 @@ class Database:
         #         if not os.path.exists(itemImgPath):
         #             saveImageFromURL(itemImageSrc, itemImgPath)
         #
-        addonsDoc = requests.get(ADDONS_URL).content
-        addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
+        # addonsDoc = requests.get(ADDONS_URL).content
+        # addonsParser = BeautifulSoup(addonsDoc, 'html.parser')
         #
-        addonsRoot = addonsParser.find('div', class_='mw-parser-output')
-        killerAddons, itemAddons = [], []
-        #last 2 addon tables are not needed (they are for unused/decommisioned addons)
-        children = addonsRoot.find_all(recursive=False)
-        count = 0
-        startIndex = 0
-        killersCount = len(killers)
-        for i, child in enumerate(children):
-            if child.name == 'table':
-                count += 1
-            if count == 3: #third table
-                startIndex = i + 2 #we need to skip one div
-                break
-
-        currentKiller = None
-        killersDone = []
-        for i in range(startIndex, len(children)):
-            if len(killersDone) == killersCount:
-                break
-            tagName = children[i].name
-            tableClass = children[i].get('class', 'none')[0] #for some reason this get() call returns a single element list
-            if tagName == 'p':
-                paragraphText = ''.join(children[i].find_all(text=True)).strip()
-                if paragraphText:
-                    currentKiller = next((k for k in killers if k.killerAlias in paragraphText), None)
-                    print(f"Current killer: {currentKiller}")
-            elif tagName == 'table' and tableClass == 'wikitable':
-                addonRows = children[i].find('tbody').find_all('tr')[1:]
-                for row in addonRows:
-                    headers = row.find_all('th')
-                    addonNameHeader, addonImageHeader = headers[1], headers[0]
-                    addonName = addonNameHeader.find('a').get('title', '')
-                    killerAddons.append(KillerAddon(killer=currentKiller, addonName=addonName))
-                    imgSrc = addonImageHeader.find('img').get('src','')
-                    filename = addonName.lower().replace(" ", "-").replace('"', '').replace("'", "")
-                    imgPath = f'../images/addons/{filename}.png'
-                    if not os.path.exists(imgPath):
-                        saveImageFromURL(imgSrc, imgPath)
-                killersDone.append(currentKiller)
-
-        print(killerAddons)
+        # addonsRoot = addonsParser.find('div', class_='mw-parser-output')
+        # killerAddons, itemAddons = [], []
+        # #last 2 addon tables are not needed (they are for unused/decommisioned addons)
+        # children = addonsRoot.find_all(recursive=False)
+        # count = 0
+        # startIndex = 0
+        # killersCount = len(killers)
+        # for i, child in enumerate(children):
+        #     if child.name == 'table':
+        #         count += 1
+        #     if count == 3: #third table
+        #         startIndex = i + 2 #we need to skip one div
+        #         break
+        #
+        # currentKiller = None
+        # killersDone = []
+        # for i in range(startIndex, len(children)):
+        #     if len(killersDone) == killersCount:
+        #         break
+        #     tagName = children[i].name
+        #     tableClass = children[i].get('class', 'none')[0] #for some reason this get() call returns a single element list
+        #     if tagName == 'p':
+        #         paragraphText = ''.join(children[i].find_all(text=True)).strip()
+        #         if paragraphText:
+        #             currentKiller = next((k for k in killers if k.killerAlias in paragraphText), None)
+        #             print(f"Current killer: {currentKiller}")
+        #     elif tagName == 'table' and tableClass == 'wikitable':
+        #         addonRows = children[i].find('tbody').find_all('tr')[1:]
+        #         for row in addonRows:
+        #             headers = row.find_all('th')
+        #             addonNameHeader, addonImageHeader = headers[1], headers[0]
+        #             addonName = addonNameHeader.find('a').get('title', '')
+        #             killerAddons.append(KillerAddon(killer=currentKiller, addonName=addonName))
+        #             imgSrc = addonImageHeader.find('img').get('src','')
+        #             filename = addonName.lower().replace(" ", "-").replace('"', '').replace("'", "")
+        #             imgPath = f'../images/addons/{filename}.png'
+        #             if not os.path.exists(imgPath):
+        #                 saveImageFromURL(imgSrc, imgPath)
+        #         killersDone.append(currentKiller)
+        #
         # itemTypesInParsingOrder = itemTypesInParsingOrder[1:]
         # addonTables = addonsRoot.find_all('table', class_='wikitable')
         #
         # itemAddonTables = addonTables[len(addonTables) - 2 - len(itemTypesInParsingOrder) - 1:len(addonTables) - 3]
-        # print(len(itemAddonTables))
         # for i, table in enumerate(itemAddonTables):
         #     rows = table.find('tbody').find_all('tr')[1:] #we skip first row because its just headers
         #     for row in rows:
@@ -223,45 +219,68 @@ class Database:
         #         imgSrc = addonImageHeader.find('img').get('src', '')
         #         filename = addonName.lower().replace('"', '').replace("'", "").replace(' ', '-')
         #         imgPath = f'../images/addons/{filename}.png'
-        #         print(itemAddons)
         #         if not os.path.exists(imgPath):
         #             saveImageFromURL(imgSrc, imgPath)
-        # offeringsDoc = requests.get(OFFERINGS_URL).content
-        # offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
+        offeringsDoc = requests.get(OFFERINGS_URL).content
+        offeringsParser = BeautifulSoup(offeringsDoc, 'html.parser')
 
-        # offeringTables = offeringsParser.find_all('table', class_='wikitable')
-        # offerings = []
-        # for table in offeringTables:
-        #     rows = table.find('tbody').find_all('tr')
-        #     for row in rows:
-        #         headers = row.find_all('th')
-        #         imgSrc = headers[0].find('img').get('src', '')
-        #         offeringName = headers[1].find('a').get('title', '')
-        #         offerings.append(Offering(offeringName=offeringName))
-        #         filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
-        #         imgFilePath = f'../images/offerings/{filename}.png'
-        #         if not os.path.exists(imgFilePath):
-        #             saveImageFromURL(imgSrc, imgFilePath)
+        offeringTables = offeringsParser.find_all('table', class_='wikitable')
+        offeringTables = offeringTables[:len(offeringTables)-2]
+        offerings = []
+        for table in offeringTables:
+            rows = table.find('tbody').find_all('tr')
+            for row in rows:
+                headers = row.find_all('th')
+                imgSrc = headers[0].find('img').get('src', '')
+                offeringName = headers[1].find('a').get('title', '')
+                offerings.append(Offering(offeringName=offeringName))
+                filename = offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
+                imgFilePath = f'../images/offerings/{filename}.png'
+                if not os.path.exists(imgFilePath):
+                    saveImageFromURL(imgSrc, imgFilePath)
 
-        # realmsDoc = requests.get(REALM_URL).content
-        # realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
-        # realmsRoot = realmsParser.find('div', class_="mw-parser-output")
-        # children = realmsRoot.find_all(recursive=False)
-        # childCount = len(children)
-        # startIndex = next((i for i in range(0, childCount) if children[i].name == 'h3'), 0)
-        # endIndex = next((i for i in range(0, childCount) if children[i].name == 'h3' and any(c.text == 'Recurring Locations' for c in children[i].find_all(recursive=False))), 0)
-        # realms = []
-        # for i in range(startIndex, endIndex, 2):
-        #     realmName = children[i].find('a').get('title', '').replace("(Realm)", "").strip()
-        #     maps = []
-        #     for tag in children[i].find_all('td'):
-        #         mapName = tag.find('center').find('a').get('title', '')
-        #         maps.append(GameMap(mapName=mapName))
-        #         imgSrc = tag.find('div', class_='center').find('img').get('src', '')
-        #         filename = mapName.lower().replace("\"",'').replace(" ", "-").replace(":","").replace("'", "")
-        #         imgFilePath = f'../images/maps/{filename}.png'
-        #         if not os.path.exists(imgFilePath):
-        #             saveImageFromURL(imgSrc, imgFilePath)
-        #     realms.append(Realm(maps=maps,realmName=realmName))
+        realmsDoc = requests.get(REALM_URL).content
+        realmsParser = BeautifulSoup(realmsDoc, 'html.parser')
+        realmsRoot = realmsParser.find('div', class_="mw-parser-output")
+        children = realmsRoot.find_all(recursive=False)
+        childCount = len(children)
+        startIndex = next((i for i in range(0, childCount) if children[i].name == 'h3'), 0)
+        endIndex = next((i for i in range(0, childCount) if children[i].name == 'h3' and any(c.text == 'Recurring Locations' for c in children[i].find_all(recursive=False))), 0)
+        realms = []
+        for i in range(startIndex, endIndex, 2):
+            realmName = children[i].find('a').get('title', '').replace("(Realm)", "").strip()
+            maps = []
+            for tag in children[i].find_all('td'):
+                mapName = tag.find('center').find('a').get('title', '')
+                maps.append(GameMap(mapName=mapName))
+                imgSrc = tag.find('div', class_='center').find('img').get('src', '')
+                filename = mapName.lower().replace("\"",'').replace(" ", "-").replace(":","").replace("'", "")
+                imgFilePath = f'../images/maps/{filename}.png'
+                if not os.path.exists(imgFilePath):
+                    saveImageFromURL(imgSrc, imgFilePath)
+            realms.append(Realm(maps=maps,realmName=realmName))
 
-        #todo: save killers, survivors, etc. to database
+        print(realms)
+        # #todo: save killers, survivors, etc. to database
+        # with Database.instance().getNewSession() as dbSession:
+        #     for killer in killers:
+        #         dbSession.add(killer)
+        #         dbSession.commit()
+        #     for survivor in survivors:
+        #         dbSession.add(survivor)
+        #         dbSession.commit()
+        #     for realm in realms:
+        #         dbSession.add(realm)
+        #         dbSession.commit()
+        #     for offering in offerings:
+        #         dbSession.add(offering)
+        #         dbSession.commit()
+        #     for item in items:
+        #         dbSession.add(item)
+        #         dbSession.commit()
+        #     for addon in itemAddons + killerAddons:
+        #         dbSession.add(addon)
+        #         dbSession.commit()
+        #     for perk in perks:
+        #         dbSession.add(perk)
+        #         dbSession.commit()
