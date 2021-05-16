@@ -6,7 +6,7 @@ from typing import Optional, Union
 import requests
 import sqlalchemy
 from PIL import Image
-from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal, QObject, QRunnable
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
@@ -285,22 +285,41 @@ class Database:
         #         dbSession.add(perk)
         #         dbSession.commit()
 
-
-class DatabaseUpdateWorker(QThread):
-
-    progressUpdated = pyqtSignal(str, int, int) #message, current progress, total progress
+class DatabaseWorkerSignals(QObject):
+    progressUpdated = pyqtSignal(str)
     finished = pyqtSignal()
+
+class DatabaseUpdateWorker(QRunnable):
 
     def __init__(self):
         super().__init__()
         self._BASE_URL = 'https://deadbydaylight.fandom.com'
         self._BASE_WIKI_URL = 'https://deadbydaylight.fandom.com/wiki/'
+        self.signals = DatabaseWorkerSignals()
 
     def run(self) -> None:
-        pass
+        self.__updateKillerInfo(f'{self._BASE_WIKI_URL}Killers')
 
     def __updateKillerInfo(self, url: str) -> list[Killer]:
-        pass
+        self.signals.progressUpdated.emit("Here")
+        # killersDoc = requests.get(url).content
+        # killersParser = BeautifulSoup(killersDoc, 'html.parser')
+        # mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
+        # aTags = mainDiv.find_all('a')
+        # killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The ' + aTags[j + 1].get('title', '')) for
+        #            i, j in enumerate(range(0, len(aTags), 2))]
+        # killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
+        # for i, url in enumerate(killerUrls):
+        #     killerPageParser = BeautifulSoup(requests.get(url).content, 'html.parser')
+        #     infoTable = killerPageParser.find('table', attrs={"class": "infoboxtable"})
+        #     imgTag = infoTable.find('img')
+        #     imgUrl = imgTag.get('src', '')
+        #     name = killers[i].killerAlias.lower().replace(' ', '-')
+        #     dest = f'../images/killers/the-{name}.png'
+        #     if not os.path.exists(dest):
+        #         saveImageFromURL(imgUrl, dest)
+        # return killers
+        return []
 
     def __updateSurvivors(self, url: str) -> list[Survivor]:
         pass

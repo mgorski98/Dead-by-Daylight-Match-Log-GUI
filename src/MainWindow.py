@@ -3,9 +3,9 @@ from collections import namedtuple
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy
+    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication
 
-from database import Database
+from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap
@@ -71,6 +71,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.killerMapSelection)
         killerMatchInfoLayout.addWidget(widget)
         killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
+        self.threadPool = QThreadPool()
 
     def setupKillerForm(self) -> QWidget:
         pass
@@ -101,7 +102,10 @@ class MainWindow(QMainWindow):
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         result = msgBox.exec_()
         if result == QMessageBox.Yes:
-            Database.update() #update here
+            worker = DatabaseUpdateWorker()
+            worker.signals.progressUpdated.connect(lambda s: print(s))
+            self.threadPool.start(worker)
+
 
     def __loadMatchLogs(self):
         pass
