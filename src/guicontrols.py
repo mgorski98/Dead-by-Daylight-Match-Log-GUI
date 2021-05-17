@@ -186,9 +186,10 @@ class AddonSelectPopup(GridViewSelectionPopup):
             addonButton.setIconSize(QSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1]))
             addonButton.clicked.connect(partial(self.selectItem, addon))
             addonButton.setFlat(True)
-            iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '')
+            iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '').replace('\'', '')
             addonIcon = QIcon(Globals.ADDON_ICONS[iconName])
             addonButton.setIcon(addonIcon)
+            addonButton.setToolTip(addon.addonName)
             self.itemsLayout.addWidget(addonButton, rowIndex, columnIndex)
 
     def selectAddon(self) -> AddonSelectionResult:
