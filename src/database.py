@@ -407,6 +407,7 @@ class DatabaseUpdateWorker(QRunnable):
         killerTable, survivorTable = tables[1], tables[0]
         tempGifPath = '../temp/temp.gif'
         perks = []
+        currentFiles = os.listdir("../images/perks")
         self.signals.progressUpdated.emit("Updating survivor perks...")
         for perkRow in survivorTable.find('tbody').find_all('tr')[1:]:
             targetHeader = perkRow.find_all('th')[1]
@@ -415,24 +416,26 @@ class DatabaseUpdateWorker(QRunnable):
             perkName = targetAnchor.get('title', '')
             perks += [Perk(perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
                       range(3)]
-            fullUrl = f'{self._BASE_URL}{perkUrl}'
-            doc = requests.get(fullUrl).content
-            parser = BeautifulSoup(doc, 'html.parser')
-            table = parser.find('table', attrs={'class': 'wikitable'})
-            targetRow = table.find_all('tr')[1]  # second row contains gif info
-            imgSrc = targetRow.find('img').get('src', '')
-            saveImageFromURL(imgSrc, tempGifPath)
-            img = Image.open(tempGifPath)
-            for frameIndex in range(img.n_frames):
-                filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                perkPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(perkPath):
-                    img.seek(frameIndex)
-                    frameRGBA = img.convert("RGBA")
-                    self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
-                    frameRGBA.save(perkPath)
-                else:
-                    self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex+1)} because it already exists")
+            filenamePrefix = perkName.lower().replace(" ", "-").replace(':', '')
+            if not any(filenamePrefix in file for file in currentFiles):
+                fullUrl = f'{self._BASE_URL}{perkUrl}'
+                doc = requests.get(fullUrl).content
+                parser = BeautifulSoup(doc, 'html.parser')
+                table = parser.find('table', attrs={'class': 'wikitable'})
+                targetRow = table.find_all('tr')[1]  # second row contains gif info
+                imgSrc = targetRow.find('img').get('src', '')
+                saveImageFromURL(imgSrc, tempGifPath)
+                img = Image.open(tempGifPath)
+                for frameIndex in range(img.n_frames):
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    perkPath = f'../images/perks/{filename}.png'
+                    if not os.path.exists(perkPath):
+                        img.seek(frameIndex)
+                        frameRGBA = img.convert("RGBA")
+                        self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
+                        frameRGBA.save(perkPath)
+                    else:
+                        self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex+1)} because it already exists")
 
 
         self.signals.progressUpdated.emit("Updating killer perks...")
@@ -443,24 +446,26 @@ class DatabaseUpdateWorker(QRunnable):
             perkName = targetAnchor.get('title', '')
             perks += [Perk(perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
                       range(3)]
-            fullUrl = f'{self._BASE_URL}{perkUrl}'
-            doc = requests.get(fullUrl).content
-            parser = BeautifulSoup(doc, 'html.parser')
-            table = parser.find('table', attrs={'class': 'wikitable'})
-            targetRow = table.find_all('tr')[1]  # second row contains gif info
-            imgSrc = targetRow.find('img').get('src', '')
-            saveImageFromURL(imgSrc, tempGifPath)
-            img = Image.open(tempGifPath)
-            for frameIndex in range(img.n_frames):
-                filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
-                perkPath = f'../images/perks/{filename}.png'
-                if not os.path.exists(perkPath):
-                    img.seek(frameIndex)
-                    frameRGBA = img.convert("RGBA")
-                    self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
-                    frameRGBA.save(perkPath)
-                else:
-                    self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex + 1)} because it already exists")
+            filenamePrefix = perkName.lower().replace(" ", "-").replace(':', '')
+            if not any(filenamePrefix in file for file in currentFiles):
+                fullUrl = f'{self._BASE_URL}{perkUrl}'
+                doc = requests.get(fullUrl).content
+                parser = BeautifulSoup(doc, 'html.parser')
+                table = parser.find('table', attrs={'class': 'wikitable'})
+                targetRow = table.find_all('tr')[1]  # second row contains gif info
+                imgSrc = targetRow.find('img').get('src', '')
+                saveImageFromURL(imgSrc, tempGifPath)
+                img = Image.open(tempGifPath)
+                for frameIndex in range(img.n_frames):
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    perkPath = f'../images/perks/{filename}.png'
+                    if not os.path.exists(perkPath):
+                        img.seek(frameIndex)
+                        frameRGBA = img.convert("RGBA")
+                        self.signals.progressUpdated.emit(f"Saving perk icon: {filename}.png")
+                        frameRGBA.save(perkPath)
+                    else:
+                        self.signals.progressUpdated.emit(f"Skipping icon for {perkName + ' ' + 'I' * (frameIndex + 1)} because it already exists")
         return perks
 
     def __updateOfferings(self, url: str) -> list[Offering]:
