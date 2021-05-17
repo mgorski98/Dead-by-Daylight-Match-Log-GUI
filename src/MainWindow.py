@@ -7,12 +7,13 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
-    QProgressDialog
+    QProgressDialog, QListWidget, QPushButton
 
 from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect
-from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap
+from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
+    MatchKillerAddon, DBDMatch
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -20,6 +21,7 @@ from globaldata import Globals
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
+        self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
         self.resize(windowSize[0], windowSize[1])
@@ -37,31 +39,33 @@ class MainWindow(QMainWindow):
         killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
         with Database.instance().getNewSession() as s:
-            killers = list(map(operator.itemgetter(0), s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
-            realms = list(map(operator.itemgetter(0), s.execute(sqlalchemy.select(Realm)).all()))
+            extractor = operator.itemgetter(0)
+            killers = list(map(extractor, s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
+            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
+            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
 
         self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
         self.__setupMenuBar()
 
-        self.pointsTextBox = QLineEdit()
-        self.pointsTextBox.setValidator(nonNegativeIntValidator())
+        self.killerMatchPointsTextBox = QLineEdit()
+        self.killerMatchPointsTextBox.setValidator(nonNegativeIntValidator())
         self.killerMatchDatePicker = QDateEdit(calendarPopup=True)
         self.killerMatchDatePicker.setDate(QDate.currentDate())
         self.killerRankSpinner = QSpinBox()
         self.killerRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)#lowest rank is 20, DBD ranks are going down the better they are, so rank 1 is the best
         otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
-        for label, obj in zip(['Match date','Points','Killer rank'], [self.killerMatchDatePicker, self.pointsTextBox, self.killerRankSpinner]):
+        for label, obj in zip(['Match date','Points','Killer rank'], [self.killerMatchDatePicker, self.killerMatchPointsTextBox, self.killerRankSpinner]):
             cellWidget, cellLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
 
-        self.facedSurvivorSelection = FacedSurvivorSelectionWindow([Survivor(survivorName='Claudette Morel')], size=(2,2))
+        self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, size=(2,2))
         self.killerPerkSelection = PerkSelection([])
         self.killerAddonSelection = AddonSelection([])
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
-        self.killerOfferingSelection = OfferingSelection([Offering(offeringName='Ebony Memento Mori')])
+        self.killerOfferingSelection = OfferingSelection([])
 
         killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         killerInfoUpperRowLayout.addWidget(self.killerSelection)
@@ -80,6 +84,36 @@ class MainWindow(QMainWindow):
         killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
+
+        killerListLayout.setContentsMargins(5,23,5,0)
+        self.killerMatchListWidget = QListWidget()
+        killerListLayout.addWidget(self.killerMatchListWidget)
+        killerListLayout.addSpacerItem(QSpacerItem(1, 15))
+        self.addKillerMatchButton = QPushButton("Add new killer match")
+        self.addKillerMatchButton.clicked.connect(self.addNewKillerMatch)
+        self.addKillerMatchButton.setFixedWidth(150)
+        killerListLayout.addWidget(self.addKillerMatchButton)
+        killerListLayout.setAlignment(self.addKillerMatchButton, Qt.AlignHCenter)
+        killerListLayout.addSpacerItem(QSpacerItem(1, 90))
+
+    def addNewKillerMatch(self):
+        killer = self.killerSelection.getSelectedItem()
+        offering = self.killerOfferingSelection.selectedItem
+        addons = list(self.killerAddonSelection.selectedAddons.values())
+        perks = list(self.killerPerkSelection.selectedPerks.values())
+        pointsStr = self.killerMatchPointsTextBox.text().strip()
+        points = 0 if not pointsStr else int(pointsStr)
+        matchDate = self.killerMatchDatePicker.date().toPyDate()
+        rank = self.killerRankSpinner.value()
+        gameMap = self.killerMapSelection.selectedMap
+        facedSurvivors = [selection.getFacedSurvivor() for selection in self.facedSurvivorSelection.selections.values()]
+        killerMatchPerks = [KillerMatchPerk(perk=perk) for perk in perks]
+        killerAddons = [MatchKillerAddon(killerAddon=addon) for addon in addons]
+        killerMatch = KillerMatch(killer=killer, facedSurvivors=facedSurvivors, gameMap=gameMap,
+                                  points=points, offering=offering, rank=rank,
+                                  matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
+        self.currentlyAddedMatches.append(killerMatch)
+
 
     def setupKillerForm(self) -> QWidget:
         pass

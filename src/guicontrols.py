@@ -1,3 +1,4 @@
+import operator
 from abc import abstractmethod
 from functools import partial
 from typing import Union
@@ -10,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
-    GameMap, Realm
+    GameMap, Realm, FacedSurvivor
 from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
@@ -34,8 +35,9 @@ class ItemSelect(QWidget):
 
     selectionChanged = pyqtSignal(object)
 
-    def __init__(self, iconSize=(100,100), parent=None):
+    def __init__(self, items: list, iconSize=(100,100), parent=None):
         super().__init__(parent=parent)
+        self.items = items
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.leftButton, self.rightButton = QPushButton('<'), QPushButton('>')
@@ -67,53 +69,45 @@ class ItemSelect(QWidget):
         self.currentIndex = 0
         self.selectedItem = None
 
+    def _itemsPresent(self):
+        return len(self.items) > 0
+
+    def _updateIndex(self, index: int):
+        if not self._itemsPresent():
+            return
+        self.currentIndex = clampReverse(index, 0, len(self.items) - 1)
+        self.selectFromIndex(self.currentIndex)
+        self.updateSelected()
+
     @abstractmethod
+    def updateSelected(self):
+        pass
+
     def next(self):
-        pass
+        self._updateIndex(self.currentIndex + 1)
 
-    @abstractmethod
     def prev(self):
-        pass
+        self._updateIndex(self.currentIndex - 1)
 
-    @abstractmethod
     def getSelectedItem(self):
-        pass
+        return self.selectedItem
 
-class KillerSelect(ItemSelect):
-
-    def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
-        super().__init__(parent=parent, iconSize=iconSize)
-        self.killers = killers
-        killerItems = map(str, self.killers)
-        killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.killers)
-        for killerStr, icon in zip(killerItems, killerIconsCombo):
-            self.itemSelectionComboBox.addItem(icon, killerStr)
-        self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        self.selectFromIndex(0)
-
-    def selectFromIndex(self, index):
-        self.selectedItem = self.killers[index]
+    def selectFromIndex(self, index: int):
+        self.selectedItem = self.items[index]
         self.selectionChanged.emit(self.selectedItem)
         self.currentIndex = index
         self.updateSelected()
 
-    def _itemsPresent(self) -> bool:
-        return len(self.killers) > 0
+class KillerSelect(ItemSelect):
 
-    def next(self):
-        print(self.currentIndex)
-        self.__updateIndex(self.currentIndex + 1)
-        print(self.currentIndex)
-
-    def prev(self):
-        self.__updateIndex(self.currentIndex - 1)
-
-    def __updateIndex(self, value: int):
-        if not self._itemsPresent():
-            return
-        self.currentIndex = clampReverse(value, 0, len(self.killers) - 1)
-        self.selectFromIndex(self.currentIndex)
-        self.updateSelected()
+    def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
+        super().__init__(items=killers, parent=parent, iconSize=iconSize)
+        killerItems = map(str, self.items)
+        killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.items)
+        for killerStr, icon in zip(killerItems, killerIconsCombo):
+            self.itemSelectionComboBox.addItem(icon, killerStr)
+        self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
+        self.selectFromIndex(0)
 
     def updateSelected(self):
         if self.selectedItem is None:
@@ -123,32 +117,15 @@ class KillerSelect(ItemSelect):
         self.imageLabel.setFixedSize(icon.width(),icon.height())
         self.imageLabel.setPixmap(icon) #load icons and import them here
 
-    def getSelectedItem(self):
-        return self.selectedItem
 
 class SurvivorSelect(ItemSelect):
 
 
     def __init__(self, survivors: list[Survivor], parent=None):
-        super().__init__(parent)
-        self.survivors = survivors
+        super().__init__(parent=parent,items=survivors)
 
-    def next(self):
+    def updateSelected(self):
         pass
-
-    def prev(self):
-        pass
-
-    def getSelectedItem(self):
-        pass
-
-
-class SurvivorItemSelect(ItemSelect):
-    def __init__(self, items: list[Item], itemFilter: Optional[ItemType], parent=None):
-        super().__init__(parent)
-        self.items = items
-        self.filter = itemFilter
-
 
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
@@ -332,8 +309,7 @@ class FacedSurvivorSelect(ItemSelect):
     __availableStates = list(FacedSurvivorState)
 
     def __init__(self, survivors: list[Survivor], iconSize=(112,156), parent=None):
-        super().__init__(parent=parent, iconSize=iconSize)
-        self.survivors = survivors
+        super().__init__(parent=parent, iconSize=iconSize, items=survivors)
         self.survivorState: Optional[FacedSurvivorState] = None
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
@@ -341,9 +317,9 @@ class FacedSurvivorSelect(ItemSelect):
             text = ' '.join(splitUpper(state.name)).lower().capitalize()
             self.survivorStateComboBox.addItem(text)
         self.survivorStateComboBox.activated.connect(self.selectState)
-        comboItems = map(str, self.survivors)
-        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[survivor.survivorName.lower().replace(' ', '-')]),
-                               self.survivors)
+        comboItems = map(str, self.items)
+        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[survivor.survivorName.lower().replace(' ', '-').replace("\"", "")]),
+                               self.items)
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
@@ -353,11 +329,6 @@ class FacedSurvivorSelect(ItemSelect):
     def selectState(self, index: int=0):
         self.survivorState = FacedSurvivorSelect.__availableStates[index]
 
-    def selectFromIndex(self, index: int):
-        self.selectedItem = self.survivors[index]
-        self.currentIndex = index
-        self.updateSelected()
-
     def updateSelected(self):
         if self.selectedItem is None:
             return
@@ -365,23 +336,8 @@ class FacedSurvivorSelect(ItemSelect):
         icon = Globals.SURVIVOR_ICONS[self.selectedItem.survivorName.lower().replace('"', '').replace(' ', '-')]
         self.imageLabel.setPixmap(icon)
 
-    def getSelectedItem(self):
-        return self.selectedItem
-
-    def __updateIndex(self, value: int):
-        if not self._itemsPresent():
-            return
-        self.currentIndex = clampReverse(value, 0, len(self.survivors) - 1)
-        self.updateSelected()
-
-    def _itemsPresent(self) -> bool:
-        return len(self.survivors) > 0
-
-    def next(self):
-        self.__updateIndex(self.currentIndex + 1)
-
-    def prev(self):
-        self.__updateIndex(self.currentIndex - 1)
+    def getFacedSurvivor(self):
+        return FacedSurvivor(state=self.survivorState,facedSurvivor=self.selectedItem)
 
 class FacedSurvivorSelectionWindow(QWidget):
 
@@ -391,7 +347,7 @@ class FacedSurvivorSelectionWindow(QWidget):
         if size not in acceptableSizes:
             raise ValueError(f"Value of rows can only be one of these values: [{','.join(map(str, acceptableSizes))}]")
         self.survivors = survivors
-        self.selections = {n: FacedSurvivorSelect(self.survivors, iconSize=(Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)) for n in range(4)}
+        self.selections = {n: FacedSurvivorSelect(survivors=self.survivors, iconSize=(Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)) for n in range(4)}
         mainLayout = QGridLayout()
         self.setLayout(mainLayout)
         rows, cols = size
@@ -482,6 +438,7 @@ class MapSelect(QWidget):
         self.realms = realms
         self.currentMaps = realms[0].maps
         self.realmSelectionComboBox = QComboBox()
+        self.currentIndex = 0
         for realm in realms:
             self.realmSelectionComboBox.addItem(realm.realmName)
         self.realmSelectionComboBox.activated.connect(self.__switchRealmMaps)
@@ -490,8 +447,10 @@ class MapSelect(QWidget):
         self.mapNameLabel = QLabel('No map selected')
         buttonWidth = 25
         self.leftMapSelectButton = QPushButton('<')
+        self.leftMapSelectButton.clicked.connect(lambda: self.switchMap(operator.sub))
         self.leftMapSelectButton.setFixedWidth(buttonWidth)
         self.rightMapSelectButton = QPushButton('>')
+        self.rightMapSelectButton.clicked.connect(lambda: self.switchMap(operator.add))
         self.rightMapSelectButton.setFixedWidth(buttonWidth)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
@@ -515,11 +474,19 @@ class MapSelect(QWidget):
         mapSubLayout.addWidget(self.mapNameLabel)
         self.mapNameLabel.setAlignment(Qt.AlignHCenter)
 
+    def switchMap(self, op):
+        if len(self.currentMaps) == 0:
+            return
+        self.currentIndex = clampReverse(op(self.currentIndex, 1), 0, len(self.currentMaps) - 1)
+        self.selectedMap = self.currentMaps[self.currentIndex]
+        self.__updateUI()
+
     def __switchRealmMaps(self, index: int):
         realm = self.realms[index]
         self.currentMaps = realm.maps
         if len(self.currentMaps) > 0:
             self.selectedMap = self.currentMaps[0]
+            self.currentIndex = 0
             self.__updateUI()
 
     def __updateUI(self):
@@ -527,3 +494,10 @@ class MapSelect(QWidget):
             self.mapNameLabel.setText(self.selectedMap.mapName)
             pixmap = Globals.MAP_ICONS[self.selectedMap.mapName.lower().replace(' ', '-').replace(':', '').replace('"','')]
             self.mapImageLabel.setPixmap(pixmap)
+
+class SurvivorItemSelect(ItemSelect):
+
+
+    def __init__(self, items: list[Item], parent=None):
+        super().__init__(items=items, parent=parent)
+
