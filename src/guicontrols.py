@@ -29,7 +29,10 @@ class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but witho
         painter.drawComplexControl(QStyle.CC_ComboBox, opt)
         painter.drawControl(QStyle.CE_ComboBoxLabel, opt)
 
+#todo: make a selectionChanged signal
 class ItemSelect(QWidget):
+
+    selectionChanged = pyqtSignal(object)
 
     def __init__(self, iconSize=(100,100), parent=None):
         super().__init__(parent=parent)
@@ -86,10 +89,11 @@ class KillerSelect(ItemSelect):
         for killerStr, icon in zip(killerItems, killerIconsCombo):
             self.itemSelectionComboBox.addItem(icon, killerStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        # self.selectFromIndex(0)
+        self.selectFromIndex(0)
 
     def selectFromIndex(self, index):
         self.selectedItem = self.killers[index]
+        self.selectionChanged.emit(self.selectedItem)
         self.currentIndex = index
         self.updateSelected()
 
@@ -97,7 +101,9 @@ class KillerSelect(ItemSelect):
         return len(self.killers) > 0
 
     def next(self):
+        print(self.currentIndex)
         self.__updateIndex(self.currentIndex + 1)
+        print(self.currentIndex)
 
     def prev(self):
         self.__updateIndex(self.currentIndex - 1)
@@ -106,12 +112,12 @@ class KillerSelect(ItemSelect):
         if not self._itemsPresent():
             return
         self.currentIndex = clampReverse(value, 0, len(self.killers) - 1)
+        self.selectFromIndex(self.currentIndex)
         self.updateSelected()
 
     def updateSelected(self):
         if self.selectedItem is None:
             return
-        self.selectedItem = self.killers[self.currentIndex]
         self.nameDisplayLabel.setText(str(self.selectedItem))
         icon = Globals.KILLER_ICONS[self.selectedItem.killerAlias.lower().replace(' ', '-')]
         self.imageLabel.setFixedSize(icon.width(),icon.height())

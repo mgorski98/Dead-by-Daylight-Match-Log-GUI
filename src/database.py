@@ -34,7 +34,12 @@ class Database:
             Database.__instance = Database(dbUrl)
 
     @staticmethod
-    def update():
+    def fetchAll(t: type):
+        statement = sqlalchemy.select(t)
+        return list(Database.instance()._engine.execute(statement).all())
+
+    @staticmethod
+    def _update():
         if Database.__instance is None:
             raise ValueError("Database is not initialized. Call Database.init() before invoking any of its methods")
         BASE_URL = 'https://deadbydaylight.fandom.com'
@@ -414,7 +419,7 @@ class DatabaseUpdateWorker(QRunnable):
             targetAnchor = targetHeader.find('a')
             perkUrl = targetAnchor.get('href', '')
             perkName = targetAnchor.get('title', '')
-            perks += [Perk(perkType=PerkType.Survivor, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
+            perks += [Perk(perkType=PerkType.Survivor, perkName=perkName, perkTier=i + 1) for i in
                       range(3)]
             filenamePrefix = perkName.lower().replace(" ", "-").replace(':', '')
             if not any(filenamePrefix in file for file in currentFiles):
@@ -444,7 +449,7 @@ class DatabaseUpdateWorker(QRunnable):
             targetAnchor = targetHeader.find('a')
             perkUrl = targetAnchor.get('href', '')
             perkName = targetAnchor.get('title', '')
-            perks += [Perk(perkType=PerkType.Killer, perkName=f'{perkName} {"I" * (i + 1)}', perkTier=i + 1) for i in
+            perks += [Perk(perkType=PerkType.Killer, perkName=perkName, perkTier=i + 1) for i in
                       range(3)]
             filenamePrefix = perkName.lower().replace(" ", "-").replace(':', '')
             if not any(filenamePrefix in file for file in currentFiles):

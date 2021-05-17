@@ -1,6 +1,8 @@
 from collections import namedtuple
 from functools import partial
+import operator
 
+import sqlalchemy
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
@@ -34,8 +36,11 @@ class MainWindow(QMainWindow):
         killerLayout.addWidget(killerMatchInfoTabWidget, 0, 0, 1, 3)
         killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
-        testKiller = Killer(killerAlias='The Trapper', killerName='Evan Macmillan')
-        self.killerSelection = KillerSelect([testKiller], iconSize=Globals.CHARACTER_ICON_SIZE)
+        with Database.instance().getNewSession() as s:
+            killers = list(map(operator.itemgetter(0), s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
+            realms = list(map(operator.itemgetter(0), s.execute(sqlalchemy.select(Realm)).all()))
+
+        self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
         self.__setupMenuBar()
 
@@ -53,7 +58,7 @@ class MainWindow(QMainWindow):
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow([Survivor(survivorName='Claudette Morel')], size=(2,2))
         self.killerPerkSelection = PerkSelection([])
-        self.killerAddonSelection = AddonSelection([KillerAddon(addonName='Bloody Coil', killer=testKiller)])
+        self.killerAddonSelection = AddonSelection([])
         self.itemAddonSelection = None
         self.addonItemsSelectPopup = AddonSelectPopup([])
         self.killerOfferingSelection = OfferingSelection([Offering(offeringName='Ebony Memento Mori')])
@@ -67,7 +72,7 @@ class MainWindow(QMainWindow):
         killerInfoLowerRowLayout.addWidget(self.killerPerkSelection)
         killerInfoLayout.addWidget(killerInfoLowerRowWidget)
 
-        self.killerMapSelection = MapSelect([Realm(realmName='Macmillan Estate', maps=[GameMap(mapName='Coal Tower')])])
+        self.killerMapSelection = MapSelect(realms)
         widget, layout = setQWidgetLayout(QWidget(), QHBoxLayout())
         layout.addWidget(otherInfoWidget)
         layout.addWidget(self.killerMapSelection)

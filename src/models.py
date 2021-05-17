@@ -121,7 +121,7 @@ class Realm:
 
     __mapper_args__ = {
         "properties": {
-            "maps": relationship("GameMap")
+            "maps": relationship("GameMap", lazy='subquery')
         }
     }
 
