@@ -432,7 +432,7 @@ class DatabaseUpdateWorker(QRunnable):
                 saveImageFromURL(imgSrc, tempGifPath)
                 img = Image.open(tempGifPath)
                 for frameIndex in range(img.n_frames):
-                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '').replace('\'','').replace('"','')
                     perkPath = f'../images/perks/{filename}.png'
                     if not os.path.exists(perkPath):
                         img.seek(frameIndex)
@@ -462,7 +462,7 @@ class DatabaseUpdateWorker(QRunnable):
                 saveImageFromURL(imgSrc, tempGifPath)
                 img = Image.open(tempGifPath)
                 for frameIndex in range(img.n_frames):
-                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '')
+                    filename = f'{perkName} {"I" * (frameIndex + 1)}'.lower().replace(' ', '-').replace(':', '').replace('\'','').replace('"','')
                     perkPath = f'../images/perks/{filename}.png'
                     if not os.path.exists(perkPath):
                         img.seek(frameIndex)

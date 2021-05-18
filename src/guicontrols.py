@@ -196,10 +196,24 @@ class PerkPopupSelect(GridViewSelectionPopup):
         self.initPopupGrid()
 
     def initPopupGrid(self):
-        pass
+        clearLayout(self.itemsLayout)
+        for index, perk in enumerate(self.perks):
+            columnIndex = index % self.columns
+            rowIndex = index // self.columns
+            perkButton = QPushButton()
+            perkButton.setFixedSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1])
+            perkButton.setIconSize(QSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1]))
+            perkButton.clicked.connect(partial(self.selectItem, perk))
+            perkButton.setFlat(True)
+            iconName = perk.perkName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
+            iconName += f'-{"i" * perk.perkTier}'
+            perkIcon = QIcon(Globals.PERK_ICONS[iconName])
+            perkButton.setIcon(perkIcon)
+            perkButton.setToolTip(perk.perkName + f' {"I" * perk.perkTier}')
+            self.itemsLayout.addWidget(perkButton, rowIndex, columnIndex)
 
     def selectPerk(self) -> Optional[Perk]:
-        return self.selectedItem if self.exec_() == QDialog.accepted else None
+        return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
 class AddonSelection(QWidget):
 
@@ -315,9 +329,19 @@ class PerkSelection(QWidget):
         self.popupSelection.move(globalPoint)
         perk = self.popupSelection.selectPerk()
         if perk is not None:
-            label.setText(f'{perk.perkName} {"I" * perk.perkTier}')
-            self.selectedPerks[index] = perk
-            #todo: set perk icon
+            perkAlreadySelected = self.__validateIfPerkSelected(perk)
+            if not perkAlreadySelected or (self.selectedPerks[index] is not None and perk.perkName == self.selectedPerks[index].perkName):
+                label.setText(f'{perk.perkName} {"I" * perk.perkTier}')
+                self.selectedPerks[index] = perk
+                iconName = perk.perkName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
+                iconName += f'-{"i" * perk.perkTier}'
+                pixmap = Globals.PERK_ICONS[iconName]
+                btn.setIcon(QIcon(pixmap))
+            else:
+                pass #todo: show message window with information
+
+    def __validateIfPerkSelected(self, perk: Perk) -> bool:
+        return any(p.perkName == perk.perkName for p in self.selectedPerks.values() if p is not None)
 
 
 

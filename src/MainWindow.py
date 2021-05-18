@@ -13,7 +13,7 @@ from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch, ItemAddon
+    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -47,6 +47,8 @@ class MainWindow(QMainWindow):
             itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
             addons = killerAddons + itemAddons
             offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
+            killerPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
+            survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
 
         self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
@@ -65,7 +67,7 @@ class MainWindow(QMainWindow):
             otherInfoLayout.addWidget(cellWidget)
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, size=(2,2))
-        self.killerPerkSelection = PerkSelection([])
+        self.killerPerkSelection = PerkSelection(killerPerks)
         self.killerAddonSelection = AddonSelection(addons)
         self.itemAddonSelection = None
 
