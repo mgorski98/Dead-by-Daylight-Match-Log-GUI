@@ -273,18 +273,26 @@ class AddonSelection(QWidget):
         globalPoint = btnToUpdate.mapToGlobal(point)
         self.popupSelect.move(globalPoint)
         addon = self.popupSelect.selectAddon()
-        self.selectedAddons[index] = addon
-        #todo: if addon is not none then set icon on button
         if addon is not None:
-            pixmap = Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-')]
-            btnToUpdate.setIcon(QIcon(pixmap))
-            lblToUpdate.setText(addon.addonName)
+            addonAlreadySelected = self.__validateIfAddonSelected(addon)
+            if not addonAlreadySelected:
+                pixmap = Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-').replace('\'','')]
+                btnToUpdate.setIcon(QIcon(pixmap))
+                lblToUpdate.setText(addon.addonName)
+                self.selectedAddons[index] = addon
+            else:
+                pass #todo: show information that its selected already
+
+    def __validateIfAddonSelected(self, addon: Union[KillerAddon, ItemAddon]) -> bool:
+        return any(a.addonName == addon.addonName for a in self.selectedAddons.values() if a is not None)
 
     def clearSelected(self):
         self.addon1Button.setIcon(self.defaultIcon)
         self.addon2Button.setIcon(self.defaultIcon)
         for key in self.selectedAddons.keys():
             self.selectedAddons[key] = None
+        self.addon2NameLabel.setText('No addon')
+        self.addon1NameLabel.setText('No addon')
 
     def filterAddons(self, filterFunc: Callable):
         self.popupSelect.filterAddons(filterFunc)
