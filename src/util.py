@@ -42,5 +42,5 @@ def clearLayout(layout: QLayout):
         for i in reversed(range(layout.count())):
             layout.itemAt(i).widget().setParent(None)
 
-def toResourceFileName(s: str) -> str:
-    return re.sub(r'[:\'"]]', '', s).lower().replace(' ', '-')
+def toResourceName(s: str) -> str:
+    return re.sub(r'[:\'\"]', '', s).lower().replace(' ', '-')

@@ -21,23 +21,6 @@ from globaldata import Globals
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
-        self.currentlyAddedMatches: list[DBDMatch] = []
-        self.setWindowTitle(title)
-        self.setContentsMargins(5, 5, 5, 5)
-        self.resize(windowSize[0], windowSize[1])
-        self.setCentralWidget(QTabWidget())
-        killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        self.centralWidget().addTab(killerWidget, "Killers")
-        self.centralWidget().addTab(survivorWidget, "Survivors")
-        killerMatchInfoTabWidget = QTabWidget()
-        killerInfoWidget, killerInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-        killerMatchInfoWidget, killerMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-        killerMatchInfoTabWidget.addTab(killerInfoWidget, "Killer info")
-        killerMatchInfoTabWidget.addTab(killerMatchInfoWidget, "Match info")
-        killerLayout.addWidget(killerMatchInfoTabWidget, 0, 0, 1, 3)
-        killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-        killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
         with Database.instance().getNewSession() as s:
             extractor = operator.itemgetter(0)
             killers = list(map(extractor, s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
@@ -50,9 +33,30 @@ class MainWindow(QMainWindow):
             killerPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
 
+        self.currentlyAddedMatches: list[DBDMatch] = []
+        self.setWindowTitle(title)
+        self.setContentsMargins(5, 5, 5, 5)
+        self.resize(windowSize[0], windowSize[1])
+        self.setCentralWidget(QTabWidget())
+        killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
+        self.centralWidget().addTab(killerWidget, "Killers")
+        self.centralWidget().addTab(survivorWidget, "Survivors")
+        self.__setupMenuBar()
+        self.threadPool = QThreadPool.globalInstance()
+        self.worker = None
+        #<editor-fold desc="setting up killer form">
+        killerMatchInfoTabWidget = QTabWidget()
+        killerInfoWidget, killerInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerMatchInfoWidget, killerMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerMatchInfoTabWidget.addTab(killerInfoWidget, "Killer info")
+        killerMatchInfoTabWidget.addTab(killerMatchInfoWidget, "Match info")
+        killerLayout.addWidget(killerMatchInfoTabWidget, 0, 0, 1, 3)
+        killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
+
         self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
-        self.__setupMenuBar()
 
         self.killerMatchPointsTextBox = QLineEdit()
         self.killerMatchPointsTextBox.setValidator(nonNegativeIntValidator())
@@ -90,8 +94,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.killerMapSelection)
         killerMatchInfoLayout.addWidget(widget)
         killerMatchInfoLayout.addWidget(self.facedSurvivorSelection)
-        self.threadPool = QThreadPool.globalInstance()
-        self.worker = None
 
         killerListLayout.setContentsMargins(5,23,5,0)
         self.killerMatchListWidget = QListWidget()
@@ -103,6 +105,22 @@ class MainWindow(QMainWindow):
         killerListLayout.addWidget(self.addKillerMatchButton)
         killerListLayout.setAlignment(self.addKillerMatchButton, Qt.AlignHCenter)
         killerListLayout.addSpacerItem(QSpacerItem(1, 90))
+        #</editor-fold>
+        survivorMainTabWidget = QTabWidget()
+        self.survivorMatchListWidget = QListWidget()
+        survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorInfoWidget, survivorInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorMatchInfoWidget, survivorMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorMainTabWidget.addTab(survivorInfoWidget, "Survivor info")
+        survivorMainTabWidget.addTab(survivorMatchInfoWidget, "Match info")
+        survivorLayout.addWidget(survivorMainTabWidget, 0, 0, 1, 3)
+        survivorLayout.addWidget(survivorListWidget, 0, 4, 1, 2)
+        survivorListLayout.addWidget(self.survivorMatchListWidget)
+        self.addSurvivorMatchButton = QPushButton("Add new survivor match")
+        survivorListLayout.addWidget(self.addSurvivorMatchButton)
+        self.addSurvivorMatchButton.clicked.connect(self.addNewSurvivorMatch)
+        survivorListLayout.setAlignment(self.addSurvivorMatchButton, Qt.AlignCenter)
+
 
     def addNewKillerMatch(self):
         killer = self.killerSelection.getSelectedItem()
@@ -122,6 +140,8 @@ class MainWindow(QMainWindow):
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
 
+    def addNewSurvivorMatch(self):
+        pass
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)

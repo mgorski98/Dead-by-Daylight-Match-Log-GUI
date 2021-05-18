@@ -7,12 +7,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QStyledItemDelegate, QStyleOptionViewItem
+    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor
-from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLayout
+from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLayout, toResourceName
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -30,7 +30,7 @@ class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but witho
         painter.drawComplexControl(QStyle.CC_ComboBox, opt)
         painter.drawControl(QStyle.CE_ComboBoxLabel, opt)
 
-#todo: make a selectionChanged signal
+
 class ItemSelect(QWidget):
 
     selectionChanged = pyqtSignal(object)
@@ -51,7 +51,6 @@ class ItemSelect(QWidget):
             imageSelectLayout.addWidget(i)
         layout.addWidget(imageSelectWidget)
         self.nameDisplayLabel = QLabel('Select an item')
-        # self.nameDisplayLabel.setFixedSize(self.nameDisplayLabel.width(), self.nameDisplayLabel.height())
         self.itemSelectionComboBox = IconDropDownComboBox()
         self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//4,iconSize[1]//4))
         layout.addWidget(self.nameDisplayLabel)
@@ -103,7 +102,7 @@ class KillerSelect(ItemSelect):
     def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
         super().__init__(items=killers, parent=parent, iconSize=iconSize)
         killerItems = map(str, self.items)
-        killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[killer.killerAlias.lower().replace(' ', '-')]), self.items)
+        killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[toResourceName(killer.killerAlias)]), self.items)
         for killerStr, icon in zip(killerItems, killerIconsCombo):
             self.itemSelectionComboBox.addItem(icon, killerStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
@@ -113,7 +112,7 @@ class KillerSelect(ItemSelect):
         if self.selectedItem is None:
             return
         self.nameDisplayLabel.setText(str(self.selectedItem))
-        icon = Globals.KILLER_ICONS[self.selectedItem.killerAlias.lower().replace(' ', '-')]
+        icon = Globals.KILLER_ICONS[toResourceName(self.selectedItem.killerAlias)]
         self.imageLabel.setFixedSize(icon.width(),icon.height())
         self.imageLabel.setPixmap(icon) #load icons and import them here
 
@@ -126,6 +125,8 @@ class SurvivorSelect(ItemSelect):
 
     def updateSelected(self):
         pass
+
+
 
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
@@ -191,17 +192,26 @@ class AddonSelectPopup(GridViewSelectionPopup):
 class PerkPopupSelect(GridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
-        super().__init__(5, parent)
+        super().__init__(3, parent)
         self.perks = perks
+        self.currentPerks = perks
+        self.perkSearchBar = QLineEdit()
+        self.perkSearchBar.setPlaceholderText("Input perk name to search for")
+        self.perkSearchBar.textChanged.connect(self._filterPerks)
+        self.layout().addWidget(self.perkSearchBar)
+        self.initPopupGrid()
+
+    def _filterPerks(self, perkName: str):
+        self.currentPerks = self.perks if not perkName.strip() else list(filter(lambda perk: perk.perkName.startswith(perkName), self.perks))
         self.initPopupGrid()
 
     def initPopupGrid(self):
         clearLayout(self.itemsLayout)
-        for index, perk in enumerate(self.perks):
+        for index, perk in enumerate(self.currentPerks):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             perkButton = QPushButton()
-            perkButton.setFixedSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1])
+            perkButton.setFixedSize(*Globals.PERK_ICON_SIZE)
             perkButton.setIconSize(QSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1]))
             perkButton.clicked.connect(partial(self.selectItem, perk))
             perkButton.setFlat(True)
@@ -276,7 +286,7 @@ class AddonSelection(QWidget):
         if addon is not None:
             addonAlreadySelected = self.__validateIfAddonSelected(addon)
             if not addonAlreadySelected:
-                pixmap = Globals.ADDON_ICONS[addon.addonName.lower().replace('"', '').replace(" ", '-').replace('\'','')]
+                pixmap = Globals.ADDON_ICONS[toResourceName(addon.addonName)]
                 btnToUpdate.setIcon(QIcon(pixmap))
                 lblToUpdate.setText(addon.addonName)
                 self.selectedAddons[index] = addon
@@ -332,17 +342,16 @@ class PerkSelection(QWidget):
             button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
 
     def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
-        point = btn.rect().bottomLeft()
+        point = btn.rect().topRight()
         globalPoint = btn.mapToGlobal(point)
-        self.popupSelection.move(globalPoint)
+        self.popupSelection.move(globalPoint - QPoint(0, self.height() / 2))
         perk = self.popupSelection.selectPerk()
         if perk is not None:
             perkAlreadySelected = self.__validateIfPerkSelected(perk)
             if not perkAlreadySelected or (self.selectedPerks[index] is not None and perk.perkName == self.selectedPerks[index].perkName):
                 label.setText(f'{perk.perkName} {"I" * perk.perkTier}')
                 self.selectedPerks[index] = perk
-                iconName = perk.perkName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
-                iconName += f'-{"i" * perk.perkTier}'
+                iconName = toResourceName(perk.perkName) + f'-{"i" * perk.perkTier}'
                 pixmap = Globals.PERK_ICONS[iconName]
                 btn.setIcon(QIcon(pixmap))
             else:
@@ -383,7 +392,7 @@ class FacedSurvivorSelect(ItemSelect):
         if self.selectedItem is None:
             return
         self.nameDisplayLabel.setText(self.selectedItem.survivorName)
-        icon = Globals.SURVIVOR_ICONS[self.selectedItem.survivorName.lower().replace('"', '').replace(' ', '-')]
+        icon = Globals.SURVIVOR_ICONS[toResourceName(self.selectedItem.survivorName)]
         self.imageLabel.setPixmap(icon)
 
     def getFacedSurvivor(self):
@@ -426,7 +435,7 @@ class OfferingSelectPopup(GridViewSelectionPopup):
             btn.setIconSize(QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1]))
             btn.clicked.connect(partial(self.selectItem, offering))
             btn.setFlat(True)
-            iconName = offering.offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'','')
+            iconName = toResourceName(offering.offeringName)
             icon = QIcon(Globals.OFFERING_ICONS[iconName])
             btn.setIcon(icon)
             self.itemsLayout.addWidget(btn, rowIndex, columnIndex)
@@ -475,7 +484,7 @@ class OfferingSelection(QWidget):
         self.popupSelection.move(globalPoint)
         offering = self.popupSelection.selectOffering()
         if offering is not None:
-            pixmap: QPixmap = Globals.OFFERING_ICONS[offering.offeringName.lower().replace(':','').replace(' ', '-').replace('"', '')]
+            pixmap: QPixmap = Globals.OFFERING_ICONS[toResourceName(offering.offeringName)]
             btn.setIcon(QIcon(pixmap))
             label.setText(offering.offeringName)
 
@@ -542,12 +551,22 @@ class MapSelect(QWidget):
     def __updateUI(self):
         if self.selectedMap is not None:
             self.mapNameLabel.setText(self.selectedMap.mapName)
-            pixmap = Globals.MAP_ICONS[self.selectedMap.mapName.lower().replace(' ', '-').replace(':', '').replace('"','')]
+            pixmap = Globals.MAP_ICONS[toResourceName(self.selectedMap.mapName)]
             self.mapImageLabel.setPixmap(pixmap)
+
 
 class SurvivorItemSelect(ItemSelect):
 
 
-    def __init__(self, items: list[Item], parent=None):
+    def __init__(self, items: list[Item], iconSize=(100,100), parent=None):
         super().__init__(items=items, parent=parent)
+        self.currentItems = []
+        comboItems = list(ItemType)
+        self.itemTypeFilterComboBox = self.itemSelectionComboBox
+        delattr(self, "itemSelectionComboBox")
+        for item in comboItems:
+            self.itemTypeFilterComboBox.addItem(item.name)
+        self.itemTypeFilterComboBox.activated.connect(self.selectFromIndex)
 
+    def selectFromIndex(self, index: int):
+        itemType = ItemType(index)
