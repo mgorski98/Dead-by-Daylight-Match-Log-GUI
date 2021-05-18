@@ -4,7 +4,7 @@ import operator
 
 import sqlalchemy
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QRegularExpressionValidator
+from PyQt5.QtGui import QRegularExpressionValidator, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
     QProgressDialog, QListWidget, QPushButton
@@ -13,7 +13,7 @@ from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch
+    MatchKillerAddon, DBDMatch, ItemAddon
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.resize(windowSize[0], windowSize[1])
         self.setCentralWidget(QTabWidget())
         killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
-        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
         self.centralWidget().addTab(killerWidget, "Killers")
         self.centralWidget().addTab(survivorWidget, "Survivors")
         killerMatchInfoTabWidget = QTabWidget()
@@ -43,6 +43,9 @@ class MainWindow(QMainWindow):
             killers = list(map(extractor, s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
             realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
             survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
+            killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
+            itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
+            addons = killerAddons + itemAddons
 
         self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
@@ -62,9 +65,10 @@ class MainWindow(QMainWindow):
 
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, size=(2,2))
         self.killerPerkSelection = PerkSelection([])
-        self.killerAddonSelection = AddonSelection([])
+        self.killerAddonSelection = AddonSelection(addons)
         self.itemAddonSelection = None
-        self.addonItemsSelectPopup = AddonSelectPopup([])
+
+        self.killerSelection.selectionChanged.connect(lambda killer: self.killerAddonSelection.popupSelect.filterAddons(lambda addon: isinstance(addon, KillerAddon) and killer.killerAlias == addon.killer.killerAlias))
         self.killerOfferingSelection = OfferingSelection([])
 
         killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
@@ -107,19 +111,13 @@ class MainWindow(QMainWindow):
         rank = self.killerRankSpinner.value()
         gameMap = self.killerMapSelection.selectedMap
         facedSurvivors = [selection.getFacedSurvivor() for selection in self.facedSurvivorSelection.selections.values()]
-        killerMatchPerks = [KillerMatchPerk(perk=perk) for perk in perks]
-        killerAddons = [MatchKillerAddon(killerAddon=addon) for addon in addons]
+        killerMatchPerks = [KillerMatchPerk(perk=perk) for perk in perks if perk is not None]
+        killerAddons = [MatchKillerAddon(killerAddon=addon) for addon in addons if addon is not None]
         killerMatch = KillerMatch(killer=killer, facedSurvivors=facedSurvivors, gameMap=gameMap,
                                   points=points, offering=offering, rank=rank,
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
 
-
-    def setupKillerForm(self) -> QWidget:
-        pass
-
-    def setupSurvivorForm(self):
-        pass
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
@@ -128,13 +126,20 @@ class MainWindow(QMainWindow):
         loadLogAction.triggered.connect(self.__loadMatchLogs)
         logHelpAction = QAction('Show match log file help', self)
         logHelpAction.triggered.connect(self.__showLogHelpWindow)
+        saveMatchesAction = QAction("Save current match data", self)
+        saveMatchesAction.triggered.connect(self.__saveMatches)
+        saveMatchesAction.setShortcut(QKeySequence("Ctrl+S"))
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         optionsMenu = menubar.addMenu('&Options')
         helpMenu = menubar.addMenu('&Help')
+        optionsMenu.addAction(saveMatchesAction)
         optionsMenu.addAction(updateAction)
         fileMenu.addAction(loadLogAction)
         helpMenu.addAction(logHelpAction)
+
+    def __saveMatches(self):
+        pass
 
     def __confirmUpdate(self):
         msgBox = QMessageBox()

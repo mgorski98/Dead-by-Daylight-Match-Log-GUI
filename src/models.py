@@ -162,7 +162,7 @@ class KillerAddon:
 
     __mapper_args__ = {
         "properties": {
-            "killer": relationship("Killer", uselist=False)
+            "killer": relationship("Killer", uselist=False, lazy='subquery')
         }
     }
 
@@ -214,7 +214,7 @@ class KillerMatchPerk:
 
     __mapper_args__ = {
         "properties": {
-            "perk": relationship("Perk",uselist=False)
+            "perk": relationship("Perk",uselist=False, lazy='subquery')
         }
     }
 
@@ -235,7 +235,7 @@ class SurvivorMatchPerk:
 
     __mapper_args__ = {
         "properties": {
-            "perk": relationship("Perk",uselist=False)
+            "perk": relationship("Perk",uselist=False, lazy='subquery')
         }
     }
 
@@ -256,7 +256,7 @@ class MatchKillerAddon:
 
     __mapper_args__ = {
         "properties": {
-            "killerAddon": relationship("KillerAddon", uselist=False, backref="killer_addons")
+            "killerAddon": relationship("KillerAddon", uselist=False, backref="killer_addons", lazy='subquery')
         }
     }
 
@@ -277,7 +277,7 @@ class MatchItemAddon:
 
     __mapper_args__ = {
         "properties": {
-            "itemAddon": relationship("ItemAddon",uselist=False,backref="item_addons")
+            "itemAddon": relationship("ItemAddon",uselist=False,backref="item_addons", lazy='subquery')
         }
     }
 
@@ -300,7 +300,7 @@ class FacedSurvivor:
 
     __mapper_args__ = {
         "properties": {
-            "facedSurvivor": relationship("Survivor",uselist=False)
+            "facedSurvivor": relationship("Survivor",uselist=False, lazy='subquery')
         }
     }
 
@@ -348,13 +348,13 @@ class SurvivorMatch(DBDMatch):
 
     __mapper_args__ = {
         "properties": {
-            "facedKiller": relationship("Killer",uselist=False),
-            "item": relationship("Item",uselist=False),
-            "perks": relationship("SurvivorMatchPerk"),
-            "offering": relationship("Offering",uselist=False),
-            "gameMap": relationship("GameMap",uselist=False),
-            "itemAddons": relationship("MatchItemAddon"),
-            "survivor": relationship("Survivor", uselist=False)
+            "facedKiller": relationship("Killer",uselist=False, lazy='subquery'),
+            "item": relationship("Item",uselist=False, lazy='subquery'),
+            "perks": relationship("SurvivorMatchPerk", lazy='subquery'),
+            "offering": relationship("Offering",uselist=False, lazy='subquery'),
+            "gameMap": relationship("GameMap",uselist=False, lazy='subquery'),
+            "itemAddons": relationship("MatchItemAddon", lazy='subquery'),
+            "survivor": relationship("Survivor", uselist=False, lazy='subquery')
         }
     }
 
@@ -396,11 +396,11 @@ class KillerMatch(DBDMatch):
 
     __mapper_args__ = {
         "properties": {
-            "facedSurvivors": relationship("FacedSurvivor"),
-            "offering": relationship("Offering",uselist=False),
-            "gameMap": relationship("GameMap",uselist=False),
-            "perks": relationship("KillerMatchPerk"),
-            "killerAddons": relationship("MatchKillerAddon"),
-            "killer": relationship("Killer", uselist=False)
+            "facedSurvivors": relationship("FacedSurvivor", lazy='subquery'),
+            "offering": relationship("Offering",uselist=False, lazy='subquery'),
+            "gameMap": relationship("GameMap",uselist=False, lazy='subquery'),
+            "perks": relationship("KillerMatchPerk", lazy='subquery'),
+            "killerAddons": relationship("MatchKillerAddon", lazy='subquery'),
+            "killer": relationship("Killer", uselist=False, lazy='subquery')
         }
     }

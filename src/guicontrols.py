@@ -1,7 +1,7 @@
 import operator
 from abc import abstractmethod
 from functools import partial
-from typing import Union
+from typing import Union, Callable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor
-from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets
+from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLayout
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -130,13 +130,14 @@ class SurvivorSelect(ItemSelect):
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
-        layout = QGridLayout()
+        layout = QVBoxLayout()
         self.setLayout(layout)
         self.columns = columns
         self.itemsLayout = QGridLayout()
         self.selectedItem = None
         mainWidget = QWidget()
         mainWidget.setLayout(self.itemsLayout)
+        mainWidget.setAutoFillBackground(True)
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setWidget(mainWidget)
@@ -157,11 +158,13 @@ class AddonSelectPopup(GridViewSelectionPopup):
     def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
         super().__init__(5, parent=parent)
         self.addons = addons
+        self.currentAddons = []
         self.initPopupGrid()
 
 
     def initPopupGrid(self):
-        for index, addon in enumerate(self.addons):
+        clearLayout(self.itemsLayout)
+        for index, addon in enumerate(self.currentAddons):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             addonButton = QPushButton()
@@ -177,6 +180,10 @@ class AddonSelectPopup(GridViewSelectionPopup):
 
     def selectAddon(self) -> AddonSelectionResult:
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
+
+    def filterAddons(self, filterFunc: Callable):
+        self.currentAddons = list(filter(filterFunc, self.addons))[1:]
+        self.initPopupGrid()
 
 
 class PerkPopupSelect(GridViewSelectionPopup):

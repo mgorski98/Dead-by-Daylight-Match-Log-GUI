@@ -36,3 +36,8 @@ def addWidgets(layout: QLayout, *widgets) -> None:
 
 def splitUpper(s: str) -> list[str]:
     return re.findall(r'[A-Z][^A-Z]*', s)
+
+def clearLayout(layout: QLayout):
+    if layout is not None:
+        for i in reversed(range(layout.count())):
+            layout.itemAt(i).widget().setParent(None)
