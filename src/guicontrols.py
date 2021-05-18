@@ -131,6 +131,7 @@ class SurvivorSelect(ItemSelect):
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
+        self.items = []
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.columns = columns
@@ -144,9 +145,8 @@ class GridViewSelectionPopup(QDialog):
         scroll.setWidget(mainWidget)
         layout.addWidget(scroll)
 
-    @abstractmethod
     def initPopupGrid(self):
-        pass
+        clearLayout(self.itemsLayout)
 
     def selectItem(self, item):
         self.selectedItem = item
@@ -154,15 +154,18 @@ class GridViewSelectionPopup(QDialog):
 
 class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
 
-    def __init__(self, placeholderText: str, columns: int, parent=None):
+    def __init__(self, placeholderText: str, columns: int, filterFunction: Callable = lambda x: True, parent=None):
         super().__init__(columns, parent)
         self.searchBar = QLineEdit()
+        self.filterFunction = filterFunction
+        self.currentItems = self.items
         self.searchBar.setPlaceholderText(placeholderText)
+        self.searchBar.textChanged.connect(self.filterItems)
         self.layout().addWidget(self.searchBar)
 
-    @abstractmethod
-    def initPopupGrid(self):
-        pass
+    def filterItems(self, searchText: str):
+        self.currentItems = self.items if not searchText.strip() else [i for i in self.items if self.filterFunction(i,searchText)]
+        self.initPopupGrid()
 
 class AddonSelectPopup(GridViewSelectionPopup):
 
@@ -203,19 +206,14 @@ class AddonSelectPopup(GridViewSelectionPopup):
 class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
-        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3)
-        self.perks = perks
-        self.currentPerks = perks
-        self.searchBar.textChanged.connect(self._filterPerks)
-        self.initPopupGrid()
-
-    def _filterPerks(self, perkName: str):
-        self.currentPerks = self.perks if not perkName.strip() else list(filter(lambda perk: perk.perkName.startswith(perkName), self.perks))
+        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3, filterFunction=lambda p,s: p.perkName.startswith(s))
+        self.items = perks
+        self.currentItems = perks
         self.initPopupGrid()
 
     def initPopupGrid(self):
-        clearLayout(self.itemsLayout)
-        for index, perk in enumerate(self.currentPerks):
+        super().initPopupGrid()
+        for index, perk in enumerate(self.currentItems):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             perkButton = QPushButton()
@@ -428,16 +426,14 @@ class FacedSurvivorSelectionWindow(QWidget):
 class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
     def __init__(self, offerings: list[Offering], parent=None):
-        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...")
-        self.offerings = offerings
-        self.currentOfferings = offerings
-        self.searchBar.textChanged.connect(self._filterOfferings)
-        self.selectedItem = None
+        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...", filterFunction=lambda o,s: o.offeringName.startswith(s))
+        self.items = offerings
+        self.currentItems = offerings
         self.initPopupGrid()
 
     def initPopupGrid(self):
-        clearLayout(self.itemsLayout)
-        for index, offering in enumerate(self.currentOfferings):
+        super().initPopupGrid()
+        for index, offering in enumerate(self.currentItems):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             btn = QPushButton()
@@ -452,14 +448,6 @@ class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
     def selectOffering(self):
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
-
-    def selectItem(self, item):
-        self.selectedItem = item
-        self.accept()
-
-    def _filterOfferings(self, offeringName: str):
-        self.currentOfferings = self.offerings if not offeringName.strip() else list(filter(lambda off: off.offeringName.startswith(offeringName), self.offerings))
-        self.initPopupGrid()
 
 class OfferingSelection(QWidget):
 
