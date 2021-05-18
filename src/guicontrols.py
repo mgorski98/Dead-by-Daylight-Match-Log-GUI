@@ -155,8 +155,10 @@ class GridViewSelectionPopup(QDialog):
 class AddonSelectPopup(GridViewSelectionPopup):
 
 
-    def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], parent=None):
+    def __init__(self, addons: list[Union[ItemAddon, KillerAddon]], iconSize=(100,100), parent=None):
         super().__init__(5, parent=parent)
+        self.resize(self.columns * iconSize[0], self.columns * iconSize[1])
+        self.iconSize = iconSize
         self.addons = addons
         self.currentAddons = []
         self.initPopupGrid()
@@ -182,7 +184,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
     def filterAddons(self, filterFunc: Callable):
-        self.currentAddons = list(filter(filterFunc, self.addons))[1:]
+        self.currentAddons = list(filter(filterFunc, self.addons))
         self.initPopupGrid()
 
 
@@ -231,13 +233,13 @@ class AddonSelection(QWidget):
         rightLayout.addWidget(self.addon2NameLabel)
         leftLayout.setAlignment(self.addon1Button, Qt.AlignCenter)
         rightLayout.setAlignment(self.addon2Button, Qt.AlignCenter)
-        leftLayout.addSpacerItem(QSpacerItem(5, 75))
-        rightLayout.addSpacerItem(QSpacerItem(5, 75))
+        leftLayout.addSpacerItem(QSpacerItem(5, 65))
+        rightLayout.addSpacerItem(QSpacerItem(5, 65))
 
     def __createLabel(self):
         lbl = QLabel('No addon')
         lbl.setAlignment(Qt.AlignCenter)
-        lbl.setFixedHeight(25)
+        lbl.setFixedHeight(45)
         lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         lbl.setWordWrap(True)
         return lbl
@@ -264,6 +266,15 @@ class AddonSelection(QWidget):
             btnToUpdate.setIcon(QIcon(pixmap))
             lblToUpdate.setText(addon.addonName)
 
+    def clearSelected(self):
+        self.addon1Button.setIcon(self.defaultIcon)
+        self.addon2Button.setIcon(self.defaultIcon)
+        for key in self.selectedAddons.keys():
+            self.selectedAddons[key] = None
+
+    def filterAddons(self, filterFunc: Callable):
+        self.popupSelect.filterAddons(filterFunc)
+        self.clearSelected()
 
 class PerkSelection(QWidget):
 
@@ -383,7 +394,7 @@ class OfferingSelectPopup(GridViewSelectionPopup):
             btn.setIconSize(QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1]))
             btn.clicked.connect(partial(self.selectItem, offering))
             btn.setFlat(True)
-            iconName = offering.offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '')
+            iconName = offering.offeringName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'','')
             icon = QIcon(Globals.OFFERING_ICONS[iconName])
             btn.setIcon(icon)
             self.itemsLayout.addWidget(btn, rowIndex, columnIndex)
@@ -409,7 +420,7 @@ class OfferingSelection(QWidget):
         label.setStyleSheet("font-weight: bold")
         label.setFixedHeight(20)
         offeringLabel.setAlignment(Qt.AlignCenter)
-        offeringLabel.setFixedHeight(20)
+        offeringLabel.setFixedHeight(40)
         offeringLabel.setWordWrap(True)
         selectionButton = QPushButton()
         selectionButton.setFlat(True)
@@ -423,7 +434,7 @@ class OfferingSelection(QWidget):
         self.layout().addWidget(label)
         self.layout().addWidget(selectionButton)
         self.layout().addWidget(offeringLabel)
-        self.layout().addSpacerItem(QSpacerItem(1, 77.5))
+        self.layout().addSpacerItem(QSpacerItem(1, 65))
         self.layout().setAlignment(selectionButton, Qt.AlignCenter)
 
     def __showOfferingPopup(self, btn: QPushButton, label: QLabel):

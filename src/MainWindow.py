@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
             killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
             itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
             addons = killerAddons + itemAddons
+            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
 
         self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
 
@@ -68,8 +69,9 @@ class MainWindow(QMainWindow):
         self.killerAddonSelection = AddonSelection(addons)
         self.itemAddonSelection = None
 
-        self.killerSelection.selectionChanged.connect(lambda killer: self.killerAddonSelection.popupSelect.filterAddons(lambda addon: isinstance(addon, KillerAddon) and killer.killerAlias == addon.killer.killerAlias))
-        self.killerOfferingSelection = OfferingSelection([])
+        self.killerSelection.selectionChanged.connect(lambda killer: self.killerAddonSelection.filterAddons(lambda addon: isinstance(addon, KillerAddon) and killer.killerAlias == addon.killer.killerAlias))
+        self.killerSelection.selectFromIndex(0)
+        self.killerOfferingSelection = OfferingSelection(offerings)
 
         killerInfoUpperRowWidget, killerInfoUpperRowLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         killerInfoUpperRowLayout.addWidget(self.killerSelection)
