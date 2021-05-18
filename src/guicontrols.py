@@ -152,6 +152,17 @@ class GridViewSelectionPopup(QDialog):
         self.selectedItem = item
         self.accept()
 
+class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
+
+    def __init__(self, placeholderText: str, columns: int, parent=None):
+        super().__init__(columns, parent)
+        self.searchBar = QLineEdit()
+        self.searchBar.setPlaceholderText(placeholderText)
+        self.layout().addWidget(self.searchBar)
+
+    @abstractmethod
+    def initPopupGrid(self):
+        pass
 
 class AddonSelectPopup(GridViewSelectionPopup):
 
@@ -189,16 +200,13 @@ class AddonSelectPopup(GridViewSelectionPopup):
         self.initPopupGrid()
 
 
-class PerkPopupSelect(GridViewSelectionPopup):
+class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
-        super().__init__(3, parent)
+        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3)
         self.perks = perks
         self.currentPerks = perks
-        self.perkSearchBar = QLineEdit()
-        self.perkSearchBar.setPlaceholderText("Input perk name to search for")
-        self.perkSearchBar.textChanged.connect(self._filterPerks)
-        self.layout().addWidget(self.perkSearchBar)
+        self.searchBar.textChanged.connect(self._filterPerks)
         self.initPopupGrid()
 
     def _filterPerks(self, perkName: str):
@@ -212,11 +220,10 @@ class PerkPopupSelect(GridViewSelectionPopup):
             rowIndex = index // self.columns
             perkButton = QPushButton()
             perkButton.setFixedSize(*Globals.PERK_ICON_SIZE)
-            perkButton.setIconSize(QSize(Globals.PERK_ICON_SIZE[0], Globals.PERK_ICON_SIZE[1]))
+            perkButton.setIconSize(QSize(*Globals.PERK_ICON_SIZE))
             perkButton.clicked.connect(partial(self.selectItem, perk))
             perkButton.setFlat(True)
-            iconName = perk.perkName.lower().replace(' ', '-').replace('"', '').replace(':', '').replace('\'', '')
-            iconName += f'-{"i" * perk.perkTier}'
+            iconName = toResourceName(perk.perkName) + f'-{"i" * perk.perkTier}'
             perkIcon = QIcon(Globals.PERK_ICONS[iconName])
             perkButton.setIcon(perkIcon)
             perkButton.setToolTip(perk.perkName + f' {"I" * perk.perkTier}')
@@ -418,16 +425,19 @@ class FacedSurvivorSelectionWindow(QWidget):
                 index += 1
 
 
-class OfferingSelectPopup(GridViewSelectionPopup):
+class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
     def __init__(self, offerings: list[Offering], parent=None):
-        super().__init__(5, parent)
+        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...")
         self.offerings = offerings
+        self.currentOfferings = offerings
+        self.searchBar.textChanged.connect(self._filterOfferings)
         self.selectedItem = None
         self.initPopupGrid()
 
     def initPopupGrid(self):
-        for index, offering in enumerate(self.offerings):
+        clearLayout(self.itemsLayout)
+        for index, offering in enumerate(self.currentOfferings):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
             btn = QPushButton()
@@ -447,12 +457,16 @@ class OfferingSelectPopup(GridViewSelectionPopup):
         self.selectedItem = item
         self.accept()
 
+    def _filterOfferings(self, offeringName: str):
+        self.currentOfferings = self.offerings if not offeringName.strip() else list(filter(lambda off: off.offeringName.startswith(offeringName), self.offerings))
+        self.initPopupGrid()
+
 class OfferingSelection(QWidget):
 
     def __init__(self, offerings: list[Offering], parent=None):
         super().__init__(parent)
         self.offerings = offerings
-        self.popupSelection = OfferingSelectPopup(self.offerings)
+        self.popupSelection = OfferingSelectPopup(offerings=self.offerings)
         self.defaultIcon = QIcon(Globals.DEFAULT_OFFERING_ICON)
         self.selectedItem = None
         offeringLabel = QLabel('No offering')
