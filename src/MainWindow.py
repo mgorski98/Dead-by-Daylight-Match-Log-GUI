@@ -11,9 +11,9 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 
 from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
-    OfferingSelection, MapSelect
+    OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType
+    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
 from globaldata import Globals
 
@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
             offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
             killerPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
+            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
 
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
@@ -73,7 +74,6 @@ class MainWindow(QMainWindow):
         self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, size=(2,2))
         self.killerPerkSelection = PerkSelection(killerPerks)
         self.killerAddonSelection = AddonSelection(addons)
-        self.itemAddonSelection = None
 
         self.killerSelection.selectionChanged.connect(lambda killer: self.killerAddonSelection.filterAddons(lambda addon: isinstance(addon, KillerAddon) and killer.killerAlias == addon.killer.killerAlias))
         self.killerSelection.selectFromIndex(0)
@@ -120,6 +120,19 @@ class MainWindow(QMainWindow):
         survivorListLayout.addWidget(self.addSurvivorMatchButton)
         self.addSurvivorMatchButton.clicked.connect(self.addNewSurvivorMatch)
         survivorListLayout.setAlignment(self.addSurvivorMatchButton, Qt.AlignCenter)
+        self.survivorSelect = SurvivorSelect(survivors)
+        self.itemAddonSelection = AddonSelection(itemAddons)
+        self.survivorOfferingSelect = OfferingSelection(offerings=offerings)
+        self.itemSelection = SurvivorItemSelect(items=items)
+        self.survivorPerkSelection = PerkSelection(survivorPerks)
+        upperSurvivorWidget, upperSurvivorLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        upperSurvivorLayout.addWidget(self.survivorSelect)
+        upperSurvivorLayout.addWidget(self.itemSelection)
+        upperSurvivorLayout.addWidget(self.itemAddonSelection)
+        upperSurvivorLayout.addWidget(self.survivorOfferingSelect)
+        survivorInfoLayout.addWidget(upperSurvivorWidget)
+        survivorInfoLayout.addWidget(self.survivorPerkSelection)
+
 
 
     def addNewKillerMatch(self):

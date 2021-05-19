@@ -64,7 +64,7 @@ class ItemSelect(QWidget):
         self.nameDisplayLabel.setFixedHeight(35)
         self.nameDisplayLabel.setStyleSheet("font-weight: bold;")
         self.imageLabel.setScaledContents(True)
-        self.imageLabel.setFixedSize(iconSize[0],iconSize[1])
+        self.imageLabel.setFixedSize(*iconSize)
         self.currentIndex = 0
         self.selectedItem = None
 
@@ -202,7 +202,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
         self.currentAddons = list(filter(filterFunc, self.addons))
         self.initPopupGrid()
 
-
+#todo: add filtering by perk tier
 class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
@@ -241,7 +241,7 @@ class AddonSelection(QWidget):
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
-        addonsLabel = QLabel('Killer addons')
+        addonsLabel = QLabel('Addons')
         addonsLabel.setStyleSheet("font-weight: bold")
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
@@ -322,7 +322,7 @@ class PerkSelection(QWidget):
         self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
         self.defaultPerkIcon = QIcon(Globals.DEFAULT_PERK_ICON)
         self.setLayout(QVBoxLayout())
-        l = QLabel("Killer perks")
+        l = QLabel("Character perks")
         l.setStyleSheet("font-weight: bold")
         l.setAlignment(Qt.AlignCenter)
         self.layout().addWidget(l)
@@ -572,3 +572,16 @@ class SurvivorItemSelect(ItemSelect):
 
     def selectFromIndex(self, index: int):
         itemType = ItemType(index)
+        self.currentItems = [i for i in self.items if i.itemType == itemType]
+        self.selectedItem = self.currentItems[0]
+        self.selectionChanged.emit(self.selectedItem)
+        self.updateSelected()
+
+    def updateSelected(self):
+        if self.selectedItem is None:
+            return
+
+        self.nameDisplayLabel.setText(self.selectedItem.itemName)
+        icon = Globals.ITEM_ICONS[toResourceName(self.selectedItem.itemName)]
+        self.imageLabel.setFixedSize(icon.width(), icon.height())
+        self.imageLabel.setPixmap(icon)  # load icons and import them here
