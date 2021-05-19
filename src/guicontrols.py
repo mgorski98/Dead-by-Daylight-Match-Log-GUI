@@ -120,11 +120,23 @@ class KillerSelect(ItemSelect):
 class SurvivorSelect(ItemSelect):
 
 
-    def __init__(self, survivors: list[Survivor], parent=None):
-        super().__init__(parent=parent,items=survivors)
+    def __init__(self, survivors: list[Survivor], iconSize=(100,100), parent=None):
+        super().__init__(parent=parent,items=survivors, iconSize=iconSize)
+        survivorItems = map(lambda survivor: survivor.survivorName, self.items)
+        survivorIconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[toResourceName(survivor.survivorName)]),
+                               self.items)
+        for survivorStr, icon in zip(survivorItems, survivorIconsCombo):
+            self.itemSelectionComboBox.addItem(icon, survivorStr)
+        self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
+        self.selectFromIndex(0)
 
     def updateSelected(self):
-        pass
+        if self.selectedItem is None:
+            return
+        self.nameDisplayLabel.setText(self.selectedItem.survivorName)
+        icon = Globals.SURVIVOR_ICONS[toResourceName(self.selectedItem.survivorName)]
+        self.imageLabel.setFixedSize(icon.width(), icon.height())
+        self.imageLabel.setPixmap(icon)
 
 
 
@@ -180,7 +192,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
 
 
     def initPopupGrid(self):
-        clearLayout(self.itemsLayout)
+        super().initPopupGrid()
         for index, addon in enumerate(self.currentAddons):
             columnIndex = index % self.columns
             rowIndex = index // self.columns
@@ -189,7 +201,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
             addonButton.setIconSize(QSize(Globals.ADDON_ICON_SIZE[0], Globals.ADDON_ICON_SIZE[1]))
             addonButton.clicked.connect(partial(self.selectItem, addon))
             addonButton.setFlat(True)
-            iconName = addon.addonName.lower().replace(' ', '-').replace('"','').replace(':', '').replace('\'', '')
+            iconName = toResourceName(addon.addonName)
             addonIcon = QIcon(Globals.ADDON_ICONS[iconName])
             addonButton.setIcon(addonIcon)
             addonButton.setToolTip(addon.addonName)
@@ -200,6 +212,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
 
     def filterAddons(self, filterFunc: Callable):
         self.currentAddons = list(filter(filterFunc, self.addons))
+        print(self.currentAddons)
         self.initPopupGrid()
 
 #todo: add filtering by perk tier
@@ -567,12 +580,17 @@ class SurvivorItemSelect(ItemSelect):
         delattr(self, "itemSelectionComboBox")
         for item in ItemType:
             self.itemTypeFilterComboBox.addItem(item.name)
+        buttonSize = (25,35)
+        self.rightButton.setFixedSize(*buttonSize)
+        self.leftButton.setFixedSize(*buttonSize)
         self.itemTypeFilterComboBox.activated.connect(self.selectFromIndex)
+        self.selectFromIndex(0)
 
     def selectFromIndex(self, index: int):
         itemType = ItemType(index)
         self.currentItems = [i for i in self.items if i.itemType == itemType]
         self.selectedItem = self.currentItems[0]
+        self.currentIndex = 0
         self.selectionChanged.emit(self.selectedItem)
         self.updateSelected()
 

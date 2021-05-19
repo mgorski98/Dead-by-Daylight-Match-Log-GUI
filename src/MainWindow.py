@@ -120,10 +120,12 @@ class MainWindow(QMainWindow):
         survivorListLayout.addWidget(self.addSurvivorMatchButton)
         self.addSurvivorMatchButton.clicked.connect(self.addNewSurvivorMatch)
         survivorListLayout.setAlignment(self.addSurvivorMatchButton, Qt.AlignCenter)
-        self.survivorSelect = SurvivorSelect(survivors)
+        self.survivorSelect = SurvivorSelect(survivors,iconSize=Globals.CHARACTER_ICON_SIZE)
         self.itemAddonSelection = AddonSelection(itemAddons)
         self.survivorOfferingSelect = OfferingSelection(offerings=offerings)
         self.itemSelection = SurvivorItemSelect(items=items)
+        self.itemSelection.selectionChanged.connect(lambda item: self.itemAddonSelection.filterAddons(lambda addon: isinstance(addon, ItemAddon) and addon.itemType == item.itemType))
+        self.itemSelection.selectFromIndex(0)
         self.survivorPerkSelection = PerkSelection(survivorPerks)
         upperSurvivorWidget, upperSurvivorLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         upperSurvivorLayout.addWidget(self.survivorSelect)
@@ -132,6 +134,7 @@ class MainWindow(QMainWindow):
         upperSurvivorLayout.addWidget(self.survivorOfferingSelect)
         survivorInfoLayout.addWidget(upperSurvivorWidget)
         survivorInfoLayout.addWidget(self.survivorPerkSelection)
+        #survivorMatchInfoLayout
 
 
 
