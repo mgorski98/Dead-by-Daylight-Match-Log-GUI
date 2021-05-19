@@ -212,7 +212,6 @@ class AddonSelectPopup(GridViewSelectionPopup):
 
     def filterAddons(self, filterFunc: Callable):
         self.currentAddons = list(filter(filterFunc, self.addons))
-        print(self.currentAddons)
         self.initPopupGrid()
 
 #todo: add filtering by perk tier

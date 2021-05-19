@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QRegularExpressionValidator, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
-    QProgressDialog, QListWidget, QPushButton
+    QProgressDialog, QListWidget, QPushButton, QComboBox
 
 from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -134,8 +134,15 @@ class MainWindow(QMainWindow):
         upperSurvivorLayout.addWidget(self.survivorOfferingSelect)
         survivorInfoLayout.addWidget(upperSurvivorWidget)
         survivorInfoLayout.addWidget(self.survivorPerkSelection)
-        #survivorMatchInfoLayout
-
+        self.survivorMapSelection = MapSelect(realms)
+        self.survivorPointsTextBox = QLineEdit()
+        self.survivorRankSpinner = QSpinBox()
+        self.survivorMatchDatePicker = QDateEdit(calendarPopup=True)
+        self.survivorMatchDatePicker.setDate(QDate.currentDate())
+        self.survivorMatchResultComboBox = QComboBox()
+        self.partySizeSpinner = QSpinBox()
+        otherMatchInfoWidget, otherMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        spinnersParentWidget, spinnersParentLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
 
 
     def addNewKillerMatch(self):
