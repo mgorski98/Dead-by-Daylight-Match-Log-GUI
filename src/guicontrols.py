@@ -114,7 +114,7 @@ class KillerSelect(ItemSelect):
         self.nameDisplayLabel.setText(str(self.selectedItem))
         icon = Globals.KILLER_ICONS[toResourceName(self.selectedItem.killerAlias)]
         self.imageLabel.setFixedSize(icon.width(),icon.height())
-        self.imageLabel.setPixmap(icon) #load icons and import them here
+        self.imageLabel.setPixmap(icon)
 
 
 class SurvivorSelect(ItemSelect):
@@ -370,8 +370,6 @@ class PerkSelection(QWidget):
 
 class FacedSurvivorSelect(ItemSelect):
 
-    __availableStates = list(FacedSurvivorState)
-
     def __init__(self, survivors: list[Survivor], iconSize=(112,156), parent=None):
         super().__init__(parent=parent, iconSize=iconSize, items=survivors)
         self.survivorState: Optional[FacedSurvivorState] = None
@@ -382,7 +380,7 @@ class FacedSurvivorSelect(ItemSelect):
             self.survivorStateComboBox.addItem(text)
         self.survivorStateComboBox.activated.connect(self.selectState)
         comboItems = map(str, self.items)
-        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[survivor.survivorName.lower().replace(' ', '-').replace("\"", "")]),
+        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[toResourceName(survivor.survivorName)]),
                                self.items)
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)
@@ -391,7 +389,7 @@ class FacedSurvivorSelect(ItemSelect):
         self.selectFromIndex(0)
 
     def selectState(self, index: int=0):
-        self.survivorState = FacedSurvivorSelect.__availableStates[index]
+        self.survivorState = FacedSurvivorState(index)
 
     def updateSelected(self):
         if self.selectedItem is None:
@@ -534,6 +532,8 @@ class MapSelect(QWidget):
         mapSelectionLayout.addWidget(self.rightMapSelectButton)
         mapSubLayout.addWidget(self.mapNameLabel)
         self.mapNameLabel.setAlignment(Qt.AlignHCenter)
+        self.selectedMap = self.currentMaps[self.currentIndex]
+        self.__updateUI()
 
     def switchMap(self, op):
         if len(self.currentMaps) == 0:
@@ -563,10 +563,9 @@ class SurvivorItemSelect(ItemSelect):
     def __init__(self, items: list[Item], iconSize=(100,100), parent=None):
         super().__init__(items=items, parent=parent)
         self.currentItems = []
-        comboItems = list(ItemType)
         self.itemTypeFilterComboBox = self.itemSelectionComboBox
         delattr(self, "itemSelectionComboBox")
-        for item in comboItems:
+        for item in ItemType:
             self.itemTypeFilterComboBox.addItem(item.name)
         self.itemTypeFilterComboBox.activated.connect(self.selectFromIndex)
 
@@ -584,4 +583,20 @@ class SurvivorItemSelect(ItemSelect):
         self.nameDisplayLabel.setText(self.selectedItem.itemName)
         icon = Globals.ITEM_ICONS[toResourceName(self.selectedItem.itemName)]
         self.imageLabel.setFixedSize(icon.width(), icon.height())
-        self.imageLabel.setPixmap(icon)  # load icons and import them here
+        self.imageLabel.setPixmap(icon)
+
+    def next(self):
+        self._updateIndex(self.currentIndex + 1)
+
+    def prev(self):
+        self._updateIndex(self.currentIndex - 1)
+
+    def _updateIndex(self, index: int):
+        if not self._itemsPresent():
+            return
+        self.currentIndex = clampReverse(index, 0, len(self.currentItems) - 1)
+        self.selectedItem = self.currentItems[self.currentIndex]
+        self.updateSelected()
+
+    def _itemsPresent(self):
+        return len(self.currentItems) > 0
