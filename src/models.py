@@ -13,24 +13,24 @@ mapperRegistry = registry()
 
 #<editor-fold desc="Enums">
 class SurvivorMatchResult(enum.Enum):
-    Sacrificed = 0,
-    Killed = 1,
-    Escaped = 2,
-    HatchEscape = 3,
-    Tunnelled = 4,
-    Camped = 5,
+    Sacrificed = 0
+    Killed = 1
+    Escaped = 2
+    HatchEscape = 3
+    Tunnelled = 4
+    Camped = 5
     BledOut = 6
 
 class ItemType(enum.Enum):
-    Medkit = 0,
-    Key = 1,
-    Flashlight = 2,
-    Toolbox = 3,
-    Firecracker = 4,
+    Medkit = 0
+    Key = 1
+    Flashlight = 2
+    Toolbox = 3
+    Firecracker = 4
     Map = 5
 
 class PerkType(enum.Enum):
-    Killer = 0,
+    Killer = 0
     Survivor = 1
 
 # class OfferingType(enum.Enum):
@@ -39,10 +39,10 @@ class PerkType(enum.Enum):
 #     Both = 2
 
 class FacedSurvivorState(enum.Enum):
-    Sacrificed = 0,
-    Killed = 1,
-    BledOut = 2,
-    Disconnected = 3,
+    Sacrificed = 0
+    Killed = 1
+    BledOut = 2
+    Disconnected = 3
     Escaped = 4
 #</editor-fold>
 
