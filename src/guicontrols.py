@@ -356,6 +356,7 @@ class PerkSelection(QWidget):
             sublayout.addSpacerItem(QSpacerItem(1, 50))
             sublayout.addWidget(label)
             sublayout.setAlignment(button, Qt.AlignCenter)
+            sublayout.addSpacerItem(QSpacerItem(0,35))
             button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
 
     def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
@@ -536,6 +537,7 @@ class MapSelect(QWidget):
         realmHeaderLabel.setAlignment(Qt.AlignTop)
         realmSubLayout.addSpacerItem(QSpacerItem(1, 15))
         realmSubLayout.addWidget(realmHeaderLabel)
+        realmSubLayout.setAlignment(realmHeaderLabel, Qt.AlignHCenter)
         realmSubLayout.addWidget(self.realmSelectionComboBox)
         realmSubLayout.addSpacerItem(QSpacerItem(1, 50))
         mapSubLayout.addLayout(mapSelectionLayout)

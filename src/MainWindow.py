@@ -9,12 +9,13 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
     QProgressDialog, QListWidget, QPushButton, QComboBox
 
+from classutil import DBDMatchParser
 from database import Database, DatabaseUpdateWorker
 from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item
-from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets
+    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult
+from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
 from globaldata import Globals
 
 
@@ -34,6 +35,9 @@ class MainWindow(QMainWindow):
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
 
+        # testString = "Oni, 4 kills (zanshin tactics II, blood echo III, nemesis III), 24656 points, add ons: splintered hull, renjiro's bloody glove, map: groaning storehouse, offering: black ward, survivors: [Meg, Meg, Meg, Felix], rank: 8"
+        # parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, survivorPerks + killerPerks)
+        # parser.parse(testString)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -117,7 +121,9 @@ class MainWindow(QMainWindow):
         survivorLayout.addWidget(survivorListWidget, 0, 4, 1, 2)
         survivorListLayout.addWidget(self.survivorMatchListWidget)
         self.addSurvivorMatchButton = QPushButton("Add new survivor match")
+        survivorListLayout.addSpacerItem(QSpacerItem(0, 15))
         survivorListLayout.addWidget(self.addSurvivorMatchButton)
+        survivorListLayout.addSpacerItem(QSpacerItem(0, 90))
         self.addSurvivorMatchButton.clicked.connect(self.addNewSurvivorMatch)
         survivorListLayout.setAlignment(self.addSurvivorMatchButton, Qt.AlignCenter)
         self.survivorSelect = SurvivorSelect(survivors,iconSize=Globals.CHARACTER_ICON_SIZE)
@@ -131,18 +137,52 @@ class MainWindow(QMainWindow):
         upperSurvivorLayout.addWidget(self.survivorSelect)
         upperSurvivorLayout.addWidget(self.itemSelection)
         upperSurvivorLayout.addWidget(self.itemAddonSelection)
-        upperSurvivorLayout.addWidget(self.survivorOfferingSelect)
         survivorInfoLayout.addWidget(upperSurvivorWidget)
         survivorInfoLayout.addWidget(self.survivorPerkSelection)
         self.survivorMapSelection = MapSelect(realms)
         self.survivorPointsTextBox = QLineEdit()
+        self.survivorPointsTextBox.setValidator(nonNegativeIntValidator())
         self.survivorRankSpinner = QSpinBox()
+        self.survivorRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)
         self.survivorMatchDatePicker = QDateEdit(calendarPopup=True)
         self.survivorMatchDatePicker.setDate(QDate.currentDate())
         self.survivorMatchResultComboBox = QComboBox()
         self.partySizeSpinner = QSpinBox()
+        self.partySizeSpinner.setRange(1, 4) #minimum one person (you), maximum 4 people (max party size in DBD)
         otherMatchInfoWidget, otherMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         spinnersParentWidget, spinnersParentLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        for spinner, labelStr in zip([self.survivorRankSpinner, self.partySizeSpinner], ['Survivor rank','Party size']):
+            cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+            cellLayout.addWidget(QLabel(labelStr))
+            cellLayout.addWidget(spinner)
+            spinnersParentLayout.addWidget(cellWidget)
+        widgets = [
+            self.survivorMatchDatePicker,
+            self.survivorMatchResultComboBox,
+            spinnersParentWidget,
+            self.survivorPointsTextBox
+        ]
+        for widget, labelStr in zip(widgets,['Match date','Match result','','Points']):
+            cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+            if labelStr:
+                cellLayout.addWidget(QLabel(labelStr))
+            cellLayout.addWidget(widget)
+            otherMatchInfoLayout.addWidget(cellWidget)
+        upperSurvivorMatchInfoWidget, upperSurvivorMatchInfoLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        upperSurvivorMatchInfoLayout.addWidget(otherMatchInfoWidget)
+        upperSurvivorMatchInfoLayout.addSpacerItem(QSpacerItem(75,1))
+        upperSurvivorMatchInfoLayout.addWidget(self.survivorMapSelection)
+        upperSurvivorMatchInfoLayout.addSpacerItem(QSpacerItem(35,1))
+        survivorMatchInfoLayout.addWidget(upperSurvivorMatchInfoWidget)
+        self.survivorMatchResultComboBox.addItems(' '.join(splitUpper(x.name)).lower().capitalize() for x in SurvivorMatchResult)
+        self.facedKillerSelect = KillerSelect(killers,iconSize=Globals.CHARACTER_ICON_SIZE)
+        lowerSurvivorMatchInfoWidget, lowerSurvivorMatchInfoLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
+        lowerSurvivorMatchInfoLayout.addWidget(self.facedKillerSelect)
+        lowerSurvivorMatchInfoLayout.addSpacerItem(QSpacerItem(25, 1))
+        lowerSurvivorMatchInfoLayout.addWidget(self.survivorOfferingSelect)
+        survivorMatchInfoLayout.addWidget(lowerSurvivorMatchInfoWidget)
+        self.addSurvivorMatchButton.setFixedWidth(150)
+        survivorListLayout.setContentsMargins(5, 23, 5, 0)
 
 
     def addNewKillerMatch(self):

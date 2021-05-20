@@ -1,5 +1,6 @@
 import re
 from typing import Optional
+import numpy as np
 
 import requests
 
@@ -40,7 +41,27 @@ def splitUpper(s: str) -> list[str]:
 def clearLayout(layout: QLayout):
     if layout is not None:
         for i in reversed(range(layout.count())):
-            layout.itemAt(i).widget().setParent(None)
+            layout.itemAt(i).widget().deleteLater()
 
 def toResourceName(s: str) -> str:
     return re.sub(r'[:\'\"]', '', s).lower().replace(' ', '-')
+
+def levenshteinDistance(s1: str, s2: str) -> int:
+    l1, l2 = len(s1), len(s2)
+    if l1 == 0:
+        return l2
+    if l2 == 0:
+        return l1
+
+    m, n = l1 + 1, l2 + 1
+    matrix = np.zeros((m, n), dtype=int)
+    nrange, mrange = np.arange(n), np.arange(m)
+    matrix[mrange,0] = mrange
+    matrix[0,nrange] = nrange
+
+    for i in range(1, m):
+        for j in range(1, n):
+            cost = 1 if s1[i - 1] != s2[j - 1] else 0
+            matrix[i][j] = min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost)
+
+    return matrix[m - 1][n - 1]
