@@ -375,9 +375,7 @@ class FacedSurvivorSelect(ItemSelect):
         self.survivorState: Optional[FacedSurvivorState] = None
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
-        for state in FacedSurvivorState:
-            text = ' '.join(splitUpper(state.name)).lower().capitalize()
-            self.survivorStateComboBox.addItem(text)
+        self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
         self.survivorStateComboBox.activated.connect(self.selectState)
         comboItems = map(str, self.items)
         iconsCombo = map(lambda survivor: QIcon(self.icons[toResourceName(survivor.survivorName)]),
@@ -385,7 +383,7 @@ class FacedSurvivorSelect(ItemSelect):
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//2,iconSize[1]//2))
+        self.itemSelectionComboBox.view().setIconSize(QSize(*iconSize))
         self.selectFromIndex(0)
 
     def selectState(self, index: int=0):
@@ -398,7 +396,6 @@ class FacedSurvivorSelectionWindow(QWidget):
 
     def __init__(self, survivors: list[Survivor], icons:dict[str, QPixmap], iconSize=(100,100), size=(1,4), parent=None):
         super().__init__(parent)
-        print(iconSize)
         acceptableSizes = ((1,4), (4, 1), (2,2))
         if size not in acceptableSizes:
             raise ValueError(f"Value of rows can only be one of these values: [{','.join(map(str, acceptableSizes))}]")
