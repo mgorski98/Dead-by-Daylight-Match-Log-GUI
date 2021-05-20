@@ -470,9 +470,9 @@ class OfferingSelection(QWidget):
         self.layout().setAlignment(selectionButton, Qt.AlignCenter)
 
     def __showOfferingPopup(self, btn: QPushButton, label: QLabel):
-        point = btn.rect().bottomLeft()
+        point = btn.rect().topRight()
         globalPoint = btn.mapToGlobal(point)
-        self.popupSelection.move(globalPoint)
+        self.popupSelection.move(globalPoint - QPoint(0, self.height() / 2))
         offering = self.popupSelection.selectOffering()
         if offering is not None:
             pixmap: QPixmap = Globals.OFFERING_ICONS[toResourceName(offering.offeringName)]
