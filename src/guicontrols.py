@@ -35,9 +35,11 @@ class ItemSelect(QWidget):
 
     selectionChanged = pyqtSignal(object)
 
-    def __init__(self, items: list, iconSize=(100,100), parent=None):
+    def __init__(self, items: list, icons: dict[str, QPixmap], nameExtractorFunc: Callable[[object], str] = str, iconSize=(100,100), parent=None):
         super().__init__(parent=parent)
         self.items = items
+        self.icons = icons
+        self.nameExtractorFunction = nameExtractorFunc
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.leftButton, self.rightButton = QPushButton('<'), QPushButton('>')
@@ -76,9 +78,12 @@ class ItemSelect(QWidget):
         self.selectFromIndex(self.currentIndex)
         self.updateSelected()
 
-    @abstractmethod
     def updateSelected(self):
-        pass
+        if self.selectedItem is None:
+            return
+        self.nameDisplayLabel.setText(str(self.selectedItem))
+        icon = self.icons[toResourceName(self.nameExtractorFunction(self.selectedItem))]
+        self.imageLabel.setPixmap(icon)
 
     def next(self):
         self._updateIndex(self.currentIndex + 1)
@@ -97,8 +102,8 @@ class ItemSelect(QWidget):
 
 class KillerSelect(ItemSelect):
 
-    def __init__(self, killers: list[Killer], iconSize=(100,100), parent=None):
-        super().__init__(items=killers, parent=parent, iconSize=iconSize)
+    def __init__(self, killers: list[Killer], icons: dict[str, QPixmap], iconSize=(100,100), parent=None):
+        super().__init__(items=killers, parent=parent, iconSize=iconSize, icons=icons, nameExtractorFunc=lambda killer: killer.killerAlias)
         killerItems = map(str, self.items)
         killerIconsCombo = map(lambda killer: QIcon(Globals.KILLER_ICONS[toResourceName(killer.killerAlias)]), self.items)
         for killerStr, icon in zip(killerItems, killerIconsCombo):
@@ -106,20 +111,12 @@ class KillerSelect(ItemSelect):
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
         self.selectFromIndex(0)
 
-    def updateSelected(self):
-        if self.selectedItem is None:
-            return
-        self.nameDisplayLabel.setText(str(self.selectedItem))
-        icon = Globals.KILLER_ICONS[toResourceName(self.selectedItem.killerAlias)]
-        self.imageLabel.setFixedSize(icon.width(),icon.height())
-        self.imageLabel.setPixmap(icon)
-
 
 class SurvivorSelect(ItemSelect):
 
 
-    def __init__(self, survivors: list[Survivor], iconSize=(100,100), parent=None):
-        super().__init__(parent=parent,items=survivors, iconSize=iconSize)
+    def __init__(self, survivors: list[Survivor], icons: dict[str, QPixmap], iconSize=(100,100), parent=None):
+        super().__init__(parent=parent,items=survivors, iconSize=iconSize, icons=icons, nameExtractorFunc=lambda surv: surv.survivorName)
         survivorItems = map(lambda survivor: survivor.survivorName, self.items)
         survivorIconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[toResourceName(survivor.survivorName)]),
                                self.items)
@@ -127,15 +124,6 @@ class SurvivorSelect(ItemSelect):
             self.itemSelectionComboBox.addItem(icon, survivorStr)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
         self.selectFromIndex(0)
-
-    def updateSelected(self):
-        if self.selectedItem is None:
-            return
-        self.nameDisplayLabel.setText(self.selectedItem.survivorName)
-        icon = Globals.SURVIVOR_ICONS[toResourceName(self.selectedItem.survivorName)]
-        self.imageLabel.setFixedSize(icon.width(), icon.height())
-        self.imageLabel.setPixmap(icon)
-
 
 
 class GridViewSelectionPopup(QDialog):
@@ -382,46 +370,37 @@ class PerkSelection(QWidget):
 
 class FacedSurvivorSelect(ItemSelect):
 
-    def __init__(self, survivors: list[Survivor], iconSize=(112,156), parent=None):
-        super().__init__(parent=parent, iconSize=iconSize, items=survivors)
+    def __init__(self, survivors: list[Survivor], icons: dict[str, QPixmap], iconSize=(112,156), parent=None):
+        super().__init__(parent=parent, iconSize=iconSize, items=survivors, icons=icons, nameExtractorFunc=lambda surv: surv.survivorName)
         self.survivorState: Optional[FacedSurvivorState] = None
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
-        for state in FacedSurvivorState:
-            text = ' '.join(splitUpper(state.name)).lower().capitalize()
-            self.survivorStateComboBox.addItem(text)
+        self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
         self.survivorStateComboBox.activated.connect(self.selectState)
         comboItems = map(str, self.items)
-        iconsCombo = map(lambda survivor: QIcon(Globals.SURVIVOR_ICONS[toResourceName(survivor.survivorName)]),
+        iconsCombo = map(lambda survivor: QIcon(self.icons[toResourceName(survivor.survivorName)]),
                                self.items)
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//2,iconSize[1]//2))
+        self.itemSelectionComboBox.view().setIconSize(QSize(*iconSize))
         self.selectFromIndex(0)
 
     def selectState(self, index: int=0):
         self.survivorState = FacedSurvivorState(index)
-
-    def updateSelected(self):
-        if self.selectedItem is None:
-            return
-        self.nameDisplayLabel.setText(self.selectedItem.survivorName)
-        icon = Globals.SURVIVOR_ICONS[toResourceName(self.selectedItem.survivorName)]
-        self.imageLabel.setPixmap(icon)
 
     def getFacedSurvivor(self):
         return FacedSurvivor(state=self.survivorState,facedSurvivor=self.selectedItem)
 
 class FacedSurvivorSelectionWindow(QWidget):
 
-    def __init__(self, survivors: list[Survivor], size=(1,4), parent=None):
+    def __init__(self, survivors: list[Survivor], icons:dict[str, QPixmap], iconSize=(100,100), size=(1,4), parent=None):
         super().__init__(parent)
         acceptableSizes = ((1,4), (4, 1), (2,2))
         if size not in acceptableSizes:
             raise ValueError(f"Value of rows can only be one of these values: [{','.join(map(str, acceptableSizes))}]")
         self.survivors = survivors
-        self.selections = {n: FacedSurvivorSelect(survivors=self.survivors, iconSize=(Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)) for n in range(4)}
+        self.selections = {n: FacedSurvivorSelect(survivors=self.survivors, icons=icons, iconSize=iconSize) for n in range(4)}
         mainLayout = QGridLayout()
         self.setLayout(mainLayout)
         rows, cols = size
@@ -491,9 +470,9 @@ class OfferingSelection(QWidget):
         self.layout().setAlignment(selectionButton, Qt.AlignCenter)
 
     def __showOfferingPopup(self, btn: QPushButton, label: QLabel):
-        point = btn.rect().bottomLeft()
+        point = btn.rect().topRight()
         globalPoint = btn.mapToGlobal(point)
-        self.popupSelection.move(globalPoint)
+        self.popupSelection.move(globalPoint - QPoint(0, self.height() / 2))
         offering = self.popupSelection.selectOffering()
         if offering is not None:
             pixmap: QPixmap = Globals.OFFERING_ICONS[toResourceName(offering.offeringName)]
@@ -573,8 +552,8 @@ class MapSelect(QWidget):
 class SurvivorItemSelect(ItemSelect):
 
 
-    def __init__(self, items: list[Item], iconSize=(100,100), parent=None):
-        super().__init__(items=items, parent=parent, iconSize=iconSize)
+    def __init__(self, items: list[Item], icons: dict[str, QPixmap], iconSize=(100,100), parent=None):
+        super().__init__(items=items, parent=parent, iconSize=iconSize, icons=icons, nameExtractorFunc=lambda item: item.itemName)
         self.currentItems = []
         self.itemTypeFilterComboBox = self.itemSelectionComboBox
         delattr(self, "itemSelectionComboBox")
@@ -592,15 +571,6 @@ class SurvivorItemSelect(ItemSelect):
         self.currentIndex = 0
         self.selectionChanged.emit(self.selectedItem)
         self.updateSelected()
-
-    def updateSelected(self):
-        if self.selectedItem is None:
-            return
-
-        self.nameDisplayLabel.setText(self.selectedItem.itemName)
-        icon = Globals.ITEM_ICONS[toResourceName(self.selectedItem.itemName)]
-        self.imageLabel.setFixedSize(icon.width(), icon.height())
-        self.imageLabel.setPixmap(icon)
 
     def next(self):
         self._updateIndex(self.currentIndex + 1)

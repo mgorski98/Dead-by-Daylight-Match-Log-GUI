@@ -24,6 +24,7 @@ class Globals:
     ADDON_ICON_SIZE = (96, 96)  # width, height
     OFFERING_ICON_SIZE = (96, 96)
     MAP_ICON_SIZE = (180, 90)
+    ITEM_ICON_SIZE = (96, 96)
 
     @staticmethod
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
