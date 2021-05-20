@@ -6,19 +6,18 @@ from typing import Optional
 from PyQt5.QtGui import QPixmap
 
 
-
 class Globals:
-    KILLER_ICONS = {}
-    SURVIVOR_ICONS = {}
-    ITEM_ICONS = {}
-    ADDON_ICONS = {}
-    OFFERING_ICONS = {}
-    PERK_ICONS = {}
-    MAP_ICONS = {}
+    KILLER_ICONS: dict[str, QPixmap] = {}
+    SURVIVOR_ICONS: dict[str, QPixmap] = {}
+    ITEM_ICONS: dict[str, QPixmap] = {}
+    ADDON_ICONS: dict[str, QPixmap] = {}
+    OFFERING_ICONS: dict[str, QPixmap] = {}
+    PERK_ICONS: dict[str, QPixmap] = {}
+    MAP_ICONS: dict[str, QPixmap] = {}
     DEFAULT_ADDON_ICON: Optional[QPixmap] = None
     DEFAULT_PERK_ICON: Optional[QPixmap] = None
     DEFAULT_OFFERING_ICON: Optional[QPixmap] = None
-    LOWEST_RANK = 20  # dbd ranks are going in reverse, 20 is the wors
+    LOWEST_RANK = 20  # dbd ranks are going in reverse, 20 is the worst
     HIGHEST_RANK = 1  # and 1 is the best
     CHARACTER_ICON_SIZE = (150, 208)  # width, height
     PERK_ICON_SIZE = (128, 128)

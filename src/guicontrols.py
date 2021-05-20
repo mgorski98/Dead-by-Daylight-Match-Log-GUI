@@ -17,7 +17,7 @@ from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLa
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
 #todo: change access to Globals to passing certain parameters in a set function or a constructor
-
+#todo: pass icon dictionary to item selection to generalize view update method
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -44,9 +44,7 @@ class ItemSelect(QWidget):
         for button, func in zip([self.leftButton, self.rightButton], [self.prev, self.next]):
             button.clicked.connect(func)
         self.imageLabel = QLabel(self)
-        imageSelectLayout = QHBoxLayout()
-        imageSelectWidget = QWidget()
-        imageSelectWidget.setLayout(imageSelectLayout)
+        imageSelectWidget, imageSelectLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         for i in [self.leftButton, self.imageLabel, self.rightButton]:
             imageSelectLayout.addWidget(i)
         layout.addWidget(imageSelectWidget)
@@ -179,6 +177,7 @@ class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
         self.currentItems = self.items if not searchText.strip() else [i for i in self.items if self.filterFunction(i,searchText)]
         self.initPopupGrid()
 
+#todo: add popup direction (e.g. it should pop up on the right)
 class AddonSelectPopup(GridViewSelectionPopup):
 
 
@@ -511,8 +510,7 @@ class MapSelect(QWidget):
         self.currentMaps = realms[0].maps
         self.realmSelectionComboBox = QComboBox()
         self.currentIndex = 0
-        for realm in realms:
-            self.realmSelectionComboBox.addItem(realm.realmName)
+        self.realmSelectionComboBox.addItems(map(lambda r: r.realmName, realms))
         self.realmSelectionComboBox.activated.connect(self.__switchRealmMaps)
         self.mapImageLabel = QLabel()
         self.mapImageLabel.setFixedSize(QSize(Globals.MAP_ICON_SIZE[0], Globals.MAP_ICON_SIZE[1]))
@@ -534,6 +532,7 @@ class MapSelect(QWidget):
         mapSelectionLayout = QHBoxLayout()
         realmSubLayout.addLayout(realmSelectionLayout)
         realmHeaderLabel = QLabel("Realm name")
+        realmHeaderLabel.setStyleSheet("font-weight: bold;")
         realmHeaderLabel.setAlignment(Qt.AlignTop)
         realmSubLayout.addSpacerItem(QSpacerItem(1, 15))
         realmSubLayout.addWidget(realmHeaderLabel)
@@ -575,12 +574,11 @@ class SurvivorItemSelect(ItemSelect):
 
 
     def __init__(self, items: list[Item], iconSize=(100,100), parent=None):
-        super().__init__(items=items, parent=parent)
+        super().__init__(items=items, parent=parent, iconSize=iconSize)
         self.currentItems = []
         self.itemTypeFilterComboBox = self.itemSelectionComboBox
         delattr(self, "itemSelectionComboBox")
-        for item in ItemType:
-            self.itemTypeFilterComboBox.addItem(item.name)
+        self.itemTypeFilterComboBox.addItems(map(lambda it: it.name, ItemType))
         buttonSize = (25,35)
         self.rightButton.setFixedSize(*buttonSize)
         self.leftButton.setFixedSize(*buttonSize)
