@@ -93,6 +93,8 @@ class Item:
     itemName: str
     itemType: ItemType
 
+    def __str__(self):
+        return self.itemName
 
 @mapperRegistry.mapped
 @dataclass

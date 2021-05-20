@@ -60,8 +60,7 @@ class MainWindow(QMainWindow):
         killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
 
-        self.killerSelection = KillerSelect(killers, iconSize=Globals.CHARACTER_ICON_SIZE)
-
+        self.killerSelection = KillerSelect(killers=killers, icons=Globals.KILLER_ICONS, iconSize=Globals.CHARACTER_ICON_SIZE)
 
         self.killerMatchPointsTextBox = QLineEdit()
         self.killerMatchPointsTextBox.setValidator(nonNegativeIntValidator())
@@ -75,7 +74,7 @@ class MainWindow(QMainWindow):
             addWidgets(cellLayout, QLabel(label), obj)
             otherInfoLayout.addWidget(cellWidget)
 
-        self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, size=(2,2))
+        self.facedSurvivorSelection = FacedSurvivorSelectionWindow(survivors, icons=Globals.SURVIVOR_ICONS, iconSize=(Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2), size=(2,2))
         self.killerPerkSelection = PerkSelection(killerPerks)
         self.killerAddonSelection = AddonSelection(addons)
 
@@ -126,10 +125,10 @@ class MainWindow(QMainWindow):
         survivorListLayout.addSpacerItem(QSpacerItem(0, 90))
         self.addSurvivorMatchButton.clicked.connect(self.addNewSurvivorMatch)
         survivorListLayout.setAlignment(self.addSurvivorMatchButton, Qt.AlignCenter)
-        self.survivorSelect = SurvivorSelect(survivors,iconSize=Globals.CHARACTER_ICON_SIZE)
+        self.survivorSelect = SurvivorSelect(survivors,icons=Globals.SURVIVOR_ICONS, iconSize=Globals.CHARACTER_ICON_SIZE)
         self.itemAddonSelection = AddonSelection(itemAddons)
         self.survivorOfferingSelect = OfferingSelection(offerings=offerings)
-        self.itemSelection = SurvivorItemSelect(items=items)
+        self.itemSelection = SurvivorItemSelect(items=items, icons=Globals.ITEM_ICONS, iconSize=Globals.ITEM_ICON_SIZE)
         self.itemSelection.selectionChanged.connect(lambda item: self.itemAddonSelection.filterAddons(lambda addon: isinstance(addon, ItemAddon) and addon.itemType == item.itemType))
         self.itemSelection.selectFromIndex(0)
         self.survivorPerkSelection = PerkSelection(survivorPerks)
@@ -175,7 +174,7 @@ class MainWindow(QMainWindow):
         upperSurvivorMatchInfoLayout.addSpacerItem(QSpacerItem(35,1))
         survivorMatchInfoLayout.addWidget(upperSurvivorMatchInfoWidget)
         self.survivorMatchResultComboBox.addItems(' '.join(splitUpper(x.name)).lower().capitalize() for x in SurvivorMatchResult)
-        self.facedKillerSelect = KillerSelect(killers,iconSize=Globals.CHARACTER_ICON_SIZE)
+        self.facedKillerSelect = KillerSelect(killers, icons=Globals.KILLER_ICONS, iconSize=Globals.CHARACTER_ICON_SIZE)
         lowerSurvivorMatchInfoWidget, lowerSurvivorMatchInfoLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         lowerSurvivorMatchInfoLayout.addWidget(self.facedKillerSelect)
         lowerSurvivorMatchInfoLayout.addSpacerItem(QSpacerItem(25, 1))
