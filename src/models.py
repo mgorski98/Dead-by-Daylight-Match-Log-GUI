@@ -23,6 +23,7 @@ class SurvivorMatchResult(enum.Enum):
     Tunnelled = 4
     Camped = 5
     BledOut = 6
+    KillerDisconnected = 7
 
 class ItemType(enum.Enum):
     Medkit = 0

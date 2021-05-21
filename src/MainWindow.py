@@ -6,6 +6,7 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox
 
+from classutil import DBDMatchParser
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -32,9 +33,9 @@ class MainWindow(QMainWindow):
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
 
-        # testString = "Oni, 4 kills (zanshin tactics II, blood echo III, nemesis III), 24656 points, add ons: splintered hull, renjiro's bloody glove, map: groaning storehouse, offering: black ward, survivors: [Meg, Meg, Meg, Felix], rank: 8"
-        # parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, survivorPerks + killerPerks)
-        # parser.parse(testString)
+        testString = "Oni, 4 kills, (zanshin tactics II, blood echo III, nemesis III), 24656 points, add ons: splintered hull, renjiro's bloody glove, map: groaning storehouse, offering: black ward, survivors: [Meg, Meg, Meg, Felix], rank: 8"
+        parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, survivorPerks + killerPerks)
+        parser.parse(testString)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
