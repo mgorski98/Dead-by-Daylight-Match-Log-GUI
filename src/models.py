@@ -5,6 +5,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional, Callable
+from io import StringIO
 
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, Date, Enum
 from sqlalchemy.orm import registry, relationship
@@ -390,6 +391,12 @@ class KillerMatch(DBDMatch):
 
     def __countOf(self, filterFunc: Callable[[FacedSurvivor], int]):
         return sum(1 if filterFunc(survivor) else 0 for survivor in self.facedSurvivors)
+
+    def __str__(self):
+        with StringIO('') as builder:
+            builder.write()
+
+            return builder.getvalue()
 
     __mapper_args__ = {
         "properties": {

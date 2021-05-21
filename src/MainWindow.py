@@ -12,7 +12,8 @@ from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect
 from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult
+    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
+    SurvivorMatch
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
 
 
@@ -184,8 +185,8 @@ class MainWindow(QMainWindow):
     def addNewKillerMatch(self):
         killer = self.killerSelection.getSelectedItem()
         offering = self.killerOfferingSelection.selectedItem
-        addons = list(self.killerAddonSelection.selectedAddons.values())
-        perks = list(self.killerPerkSelection.selectedPerks.values())
+        addons = list(i for i in self.killerAddonSelection.selectedAddons.values() if i is not None)
+        perks = list(i for i in self.killerPerkSelection.selectedPerks.values() if i is not None)
         pointsStr = self.killerMatchPointsTextBox.text().strip()
         points = 0 if not pointsStr else int(pointsStr)
         matchDate = self.killerMatchDatePicker.date().toPyDate()
@@ -198,9 +199,28 @@ class MainWindow(QMainWindow):
                                   points=points, offering=offering, rank=rank,
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
+        print(f"Added killer match. Match: {killerMatch}")
 
     def addNewSurvivorMatch(self):
-        pass
+        survivor = self.survivorSelect.getSelectedItem()
+        offering = self.survivorOfferingSelect.selectedItem
+        addons = list(i for i in self.itemAddonSelection.selectedAddons.values() if i is not None)
+        perks = list(i for i in self.survivorPerkSelection.selectedPerks.values() if i is not None)
+        pointsStr = self.killerMatchPointsTextBox.text().strip()
+        points = 0 if not pointsStr else int(pointsStr)
+        matchDate = self.survivorMatchDatePicker.date().toPyDate()
+        rank = self.survivorRankSpinner.value()
+        gameMap = self.survivorMapSelection.selectedMap
+        facedKiller = self.facedKillerSelect.getSelectedItem()
+        item = self.itemSelection.getSelectedItem()
+        survivorMatchPerks = [SurvivorMatchPerk(perk=perk) for perk in perks]
+        itemAddons = [MatchItemAddon(itemAddon=addon) for addon in addons]
+        survivorMatchResult = SurvivorMatchResult(self.survivorMatchResultComboBox.currentIndex())
+        partySize = self.partySizeSpinner.value()
+        survivorMatch = SurvivorMatch(survivor=survivor,facedKiller=facedKiller,item=item,itemAddons=itemAddons,
+                                      rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
+                                      matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
+        self.currentlyAddedMatches.append(survivorMatch)
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
