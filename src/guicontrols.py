@@ -373,7 +373,7 @@ class FacedSurvivorSelect(ItemSelect):
 
     def __init__(self, survivors: list[Survivor], icons: dict[str, QPixmap], iconSize=(112,156), parent=None):
         super().__init__(parent=parent, iconSize=iconSize, items=survivors, icons=icons, nameExtractorFunc=lambda surv: surv.survivorName)
-        self.survivorState: Optional[FacedSurvivorState] = None
+        self.survivorState = FacedSurvivorState.Sacrificed
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
         self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
@@ -479,6 +479,7 @@ class OfferingSelection(QWidget):
             pixmap: QPixmap = Globals.OFFERING_ICONS[toResourceName(offering.offeringName)]
             btn.setIcon(QIcon(pixmap))
             label.setText(offering.offeringName)
+            self.selectedItem = offering
 
 
 class MapSelect(QWidget):

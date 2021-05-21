@@ -222,7 +222,7 @@ class KillerMatchPerk:
     killerMatchPerkID: int = field(init=False)
     killerPerkID: int = field(init=False)
     perk: Perk
-    killerMatchID: int
+    killerMatchID: int = field(init=False)
 
     __mapper_args__ = {
         "properties": {
@@ -424,13 +424,23 @@ class KillerMatch(DBDMatch):
     def __str__(self):
         with StringIO('') as builder:
             builder.write(self.matchDate.strftime('%d/%m/%Y'))
-            builder.writelines((f"Killer: {self.killer.killerAlias}", f"Game points: {self.points:,}"))
+            builder.writelines((f"Killer: {self.killer.killerAlias}\n", f"Game points: {self.points:,}\n"))
             builder.write(f'Game map: {self.gameMap if self.gameMap is not None else "???"}\n')
             builder.write(f'Match offering: {self.offering if self.offering is not None else "???"}\n')
             builder.write(f"Played at rank: {self.rank}\n")
-            builder.write("Used perks:\n")
-            # builder.writelines([f'- {}'])
-            return builder.getvalue()
+            if len(self.perks) > 0:
+                builder.write("Used perks:\n")
+                builder.writelines(f'- {perk}\n' for perk in self.perks)
+
+            builder.write(f"User add-ons: {', '.join(map(str, self.killerAddons))}\n" if len(self.killerAddons) > 0 else "No add-ons used in this match\n")
+            if len(self.facedSurvivors) > 0:
+                builder.write("Faced survivors: \n")
+                builder.writelines(f'\t{fs}\n' for fs in self.facedSurvivors)
+            else:
+                builder.write("No data about faced survivors\n")
+
+            final = builder.getvalue()
+        return final
 
     __mapper_args__ = {
         "properties": {
