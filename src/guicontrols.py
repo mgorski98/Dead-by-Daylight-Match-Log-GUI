@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit
+    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit, QMessageBox
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
@@ -16,7 +16,6 @@ from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLa
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
-#todo: change access to Globals to passing certain parameters in a set function or a constructor
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -294,7 +293,9 @@ class AddonSelection(QWidget):
                 lblToUpdate.setText(addon.addonName)
                 self.selectedAddons[index] = addon
             else:
-                pass #todo: show information that its selected already
+                msgBox = QMessageBox()
+                msgBox.setText(f'Addon "{addon.addonName}" is selected already!')
+                msgBox.exec_()
 
     def __validateIfAddonSelected(self, addon: Union[KillerAddon, ItemAddon]) -> bool:
         return any(a.addonName == addon.addonName for a in self.selectedAddons.values() if a is not None)
@@ -359,7 +360,9 @@ class PerkSelection(QWidget):
                 pixmap = Globals.PERK_ICONS[iconName]
                 btn.setIcon(QIcon(pixmap))
             else:
-                pass #todo: show message window with information
+                msgBox = QMessageBox()
+                msgBox.setText(f'Perk "{perk.perkName}" is selected already!')
+                msgBox.exec_()
 
     def __validateIfPerkSelected(self, perk: Perk) -> bool:
         return any(p.perkName == perk.perkName for p in self.selectedPerks.values() if p is not None)
