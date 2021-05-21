@@ -15,6 +15,8 @@ from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toReso
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
+#todo: add match display controls for listwidget
+
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -379,7 +381,7 @@ class FacedSurvivorSelect(ItemSelect):
         self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
         self.survivorStateComboBox.activated.connect(self.selectState)
         comboItems = map(str, self.items)
-        iconsCombo = map(lambda survivor: QIcon(self.icons[toResourceName(survivor.survivorName)]),
+        iconsCombo = map(lambda surv: QIcon(self.icons[toResourceName(surv.survivorName)]),
                                self.items)
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)

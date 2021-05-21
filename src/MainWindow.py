@@ -1,6 +1,5 @@
 from __future__ import annotations
 import operator
-
 import sqlalchemy
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
@@ -181,7 +180,6 @@ class MainWindow(QMainWindow):
         self.addSurvivorMatchButton.setFixedWidth(150)
         survivorListLayout.setContentsMargins(5, 23, 5, 0)
 
-
     def addNewKillerMatch(self):
         killer = self.killerSelection.getSelectedItem()
         offering = self.killerOfferingSelection.selectedItem
@@ -264,8 +262,6 @@ class MainWindow(QMainWindow):
             self.worker.signals.finished.connect(progressDialog.close)
             self.threadPool.start(self.worker)
             progressDialog.show()
-
-
 
     def __loadMatchLogs(self):
         pass

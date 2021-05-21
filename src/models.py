@@ -439,8 +439,7 @@ class KillerMatch(DBDMatch):
             else:
                 builder.write("No data about faced survivors\n")
 
-            final = builder.getvalue()
-        return final
+            return builder.getvalue()
 
     __mapper_args__ = {
         "properties": {
