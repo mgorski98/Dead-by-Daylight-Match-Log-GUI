@@ -1,18 +1,17 @@
 import operator
-from abc import abstractmethod
 from functools import partial
 from typing import Union, Callable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
-    QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit, QMessageBox
+    QGridLayout, QSizePolicy, QSpacerItem, QStylePainter, QStyleOptionComboBox, QStyle, \
+    QLineEdit, QMessageBox
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor
-from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLayout, toResourceName
+from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 

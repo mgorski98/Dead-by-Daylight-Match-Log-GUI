@@ -33,11 +33,6 @@ class PerkType(enum.Enum):
     Killer = 0
     Survivor = 1
 
-# class OfferingType(enum.Enum):
-#     Killer = 0,
-#     Survivor = 1,
-#     Both = 2
-
 class FacedSurvivorState(enum.Enum):
     Sacrificed = 0
     Killed = 1

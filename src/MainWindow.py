@@ -1,22 +1,19 @@
-from collections import namedtuple
-from functools import partial
+from __future__ import annotations
 import operator
 
 import sqlalchemy
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QRegularExpressionValidator, QKeySequence
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QDialogButtonBox, QSpacerItem, QSizePolicy, QApplication, \
-    QProgressDialog, QListWidget, QPushButton, QComboBox
+    QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox
 
-from classutil import DBDMatchParser
 from database import Database, DatabaseUpdateWorker
-from guicontrols import KillerSelect, AddonSelectPopup, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
+from globaldata import Globals
+from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect
-from models import KillerAddon, Killer, Offering, Survivor, Realm, GameMap, KillerMatch, KillerMatchPerk, \
+from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
-from globaldata import Globals
 
 
 class MainWindow(QMainWindow):
