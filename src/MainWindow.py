@@ -221,6 +221,7 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
+        print(f"Added new survivor match: {survivorMatch}")
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)

@@ -10,6 +10,8 @@ from io import StringIO
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, Date, Enum
 from sqlalchemy.orm import registry, relationship
 
+from util import splitUpper
+
 mapperRegistry = registry()
 
 #<editor-fold desc="Enums">
@@ -106,6 +108,8 @@ class GameMap:
     mapName: str
     realmID: int = field(init=False)
 
+    def __str__(self):
+        return self.mapName
 
 @mapperRegistry.mapped
 @dataclass
@@ -142,6 +146,8 @@ class ItemAddon:
     addonName: str
     itemType: ItemType
 
+    def __str__(self):
+        return self.addonName
 
 @mapperRegistry.mapped
 @dataclass
@@ -164,6 +170,8 @@ class KillerAddon:
         }
     }
 
+    def __str__(self):
+        return self.addonName
 
 @mapperRegistry.mapped
 @dataclass
@@ -181,6 +189,9 @@ class Perk:
     perkType: PerkType
     perkTier: int
 
+    def __str__(self):
+        return f'{self.perkName} {"I" * self.perkTier}'
+
 
 @mapperRegistry.mapped
 @dataclass
@@ -193,6 +204,9 @@ class Offering:
     )
     offeringID: int = field(init=False)
     offeringName: str
+
+    def __str__(self):
+        return self.offeringName
 
 
 @mapperRegistry.mapped
@@ -216,6 +230,9 @@ class KillerMatchPerk:
         }
     }
 
+    def __str__(self):
+        return str(self.perk)
+
 @mapperRegistry.mapped
 @dataclass
 class SurvivorMatchPerk:
@@ -236,6 +253,9 @@ class SurvivorMatchPerk:
             "perk": relationship("Perk",uselist=False, lazy='subquery')
         }
     }
+
+    def __str__(self):
+        return str(self.perk)
 
 @mapperRegistry.mapped
 @dataclass
@@ -258,6 +278,9 @@ class MatchKillerAddon:
         }
     }
 
+    def __str__(self):
+        return str(self.killerAddon)
+
 @mapperRegistry.mapped
 @dataclass
 class MatchItemAddon:
@@ -278,6 +301,9 @@ class MatchItemAddon:
             "itemAddon": relationship("ItemAddon",uselist=False,backref="item_addons", lazy='subquery')
         }
     }
+
+    def __str__(self):
+        return str(self.itemAddon)
 
 @mapperRegistry.mapped
 @dataclass
@@ -301,6 +327,9 @@ class FacedSurvivor:
             "facedSurvivor": relationship("Survivor",uselist=False, lazy='subquery')
         }
     }
+
+    def __str__(self):
+        return f'{self.facedSurvivor} - {" ".join(x.lower() for x in splitUpper(self.state.name)).capitalize()}'
 
 
 @dataclass
@@ -394,8 +423,13 @@ class KillerMatch(DBDMatch):
 
     def __str__(self):
         with StringIO('') as builder:
-            builder.write()
-
+            builder.write(self.matchDate.strftime('%d/%m/%Y'))
+            builder.writelines((f"Killer: {self.killer.killerAlias}", f"Game points: {self.points:,}"))
+            builder.write(f'Game map: {self.gameMap if self.gameMap is not None else "???"}\n')
+            builder.write(f'Match offering: {self.offering if self.offering is not None else "???"}\n')
+            builder.write(f"Played at rank: {self.rank}\n")
+            builder.write("Used perks:\n")
+            # builder.writelines([f'- {}'])
             return builder.getvalue()
 
     __mapper_args__ = {
