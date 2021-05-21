@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QButtonGroup, QRadioButton, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit
+    QStyledItemDelegate, QStyleOptionViewItem, QLineEdit, QMessageBox
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
@@ -16,8 +16,6 @@ from util import clampReverse, splitUpper, setQWidgetLayout, addWidgets, clearLa
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
-#todo: change access to Globals to passing certain parameters in a set function or a constructor
-#todo: pass icon dictionary to item selection to generalize view update method
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -165,7 +163,6 @@ class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
         self.currentItems = self.items if not searchText.strip() else [i for i in self.items if self.filterFunction(i,searchText)]
         self.initPopupGrid()
 
-#todo: add popup direction (e.g. it should pop up on the right)
 class AddonSelectPopup(GridViewSelectionPopup):
 
 
@@ -201,11 +198,11 @@ class AddonSelectPopup(GridViewSelectionPopup):
         self.currentAddons = list(filter(filterFunc, self.addons))
         self.initPopupGrid()
 
-#todo: add filtering by perk tier
+
 class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
-        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3, filterFunction=lambda p,s: p.perkName.startswith(s))
+        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3, filterFunction=lambda p,s: s in f'{p.perkName} {"I" * p.perkTier}')
         self.items = perks
         self.currentItems = perks
         self.initPopupGrid()
@@ -228,6 +225,7 @@ class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def selectPerk(self) -> Optional[Perk]:
         return self.selectedItem if self.exec_() == QDialog.Accepted else None
+
 
 class AddonSelection(QWidget):
 
@@ -295,7 +293,9 @@ class AddonSelection(QWidget):
                 lblToUpdate.setText(addon.addonName)
                 self.selectedAddons[index] = addon
             else:
-                pass #todo: show information that its selected already
+                msgBox = QMessageBox()
+                msgBox.setText(f'Addon "{addon.addonName}" is selected already!')
+                msgBox.exec_()
 
     def __validateIfAddonSelected(self, addon: Union[KillerAddon, ItemAddon]) -> bool:
         return any(a.addonName == addon.addonName for a in self.selectedAddons.values() if a is not None)
@@ -360,7 +360,9 @@ class PerkSelection(QWidget):
                 pixmap = Globals.PERK_ICONS[iconName]
                 btn.setIcon(QIcon(pixmap))
             else:
-                pass #todo: show message window with information
+                msgBox = QMessageBox()
+                msgBox.setText(f'Perk "{perk.perkName}" is selected already!')
+                msgBox.exec_()
 
     def __validateIfPerkSelected(self, perk: Perk) -> bool:
         return any(p.perkName == perk.perkName for p in self.selectedPerks.values() if p is not None)
