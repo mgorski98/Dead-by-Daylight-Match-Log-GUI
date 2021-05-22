@@ -47,24 +47,51 @@ class TestDBDMatchParser(unittest.TestCase):
         self.assertEqual(resultMatch,expectedMatch)
 
     def test_parseKillerGame_4Sacrifices_checkFacedSurvivors(self):
-        testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
+        testString = "Hillbilly, 4 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
                      "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
-                     "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
+                     "survivors: [Jeff, Yui, David, Meg], rank: 6"
+        matchDate = date(2020, 3,20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        self.assertTrue(all(s.state == FacedSurvivorState.Sacrificed for s in resultMatch.facedSurvivors))
 
     def test_parseKillerGame_4Moris_checkFacedSurvivors(self):
-        testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
+        testString = "Hillbilly, 0 kills, 4 moris, (tinkerer I, enduring III, lightborn III), 23196 points, " \
                      "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
-                     "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
+                     "survivors: [Jeff, Yui, David, Meg], rank: 6"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        self.assertTrue(all(s.state == FacedSurvivorState.Killed for s in resultMatch.facedSurvivors))
 
     def test_parseKillerGame_4Dcs_checkFacedSurvivors(self):
-        testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
+        testString = "Hillbilly, 0 kills, 4 disconnects, (tinkerer I, enduring III, lightborn III), 23196 points, " \
                      "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
-                     "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
+                     "survivors: [Jeff, Yui, David, Meg], rank: 6"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        self.assertTrue(all(s.state == FacedSurvivorState.Disconnected for s in resultMatch.facedSurvivors))
 
     def test_parseKillerGame_4Escapes_checkFacedSurvivors(self):
-        testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
+        testString = "Hillbilly, 0 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
                      "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
-                     "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
+                     "survivors: [Jeff, Yui, David, Meg], rank: 6"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        self.assertTrue(all(s.state == FacedSurvivorState.Escaped for s in resultMatch.facedSurvivors))
+
+    def test_parseKillerGame_checkIfSurvivorStatesCorrect(self):
+        testString = "Hillbilly, 1 kill, 2 moris, 1 disconnect (tinkerer I, enduring III, lightborn III), 23196 points, " \
+                     "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
+                     "survivors: [Jeff: sacrificed, Yui: killed, David: killed, Meg: disconnected], rank: 6"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        expectedStates = [FacedSurvivorState.Sacrificed, FacedSurvivorState.Killed, FacedSurvivorState.Killed, FacedSurvivorState.Disconnected]
+        resultStates = [s.state for s in resultMatch.facedSurvivors]
+        self.assertEqual(expectedStates, resultStates)
 
     def test_parseSurvivorGame_everythingCorrect(self):
         testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
@@ -88,3 +115,49 @@ class TestDBDMatchParser(unittest.TestCase):
                                       survivor=survivor,rank=10)
         resultMatch = self.parser.parse(testString)
         self.assertEqual(resultMatch,expectedMatch)
+
+    def test_parseSurvivorGame_ifNoItemAndAddons(self):
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "borrowed time III), 20100 points, item: none, add ons: none (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        resultMatch = self.parser.parse(testString)
+        survivor = next(s for s in self.survivors if s.survivorName == 'William "Bill" Overbeck')
+        facedKiller = next(k for k in self.killers if k.killerAlias == 'The Legion')
+        perks = [
+            Perk(perkName="We're Gonna Live Forever", perkType=PerkType.Survivor, perkTier=3),
+            Perk(perkName='Dead Hard', perkType=PerkType.Survivor, perkTier=1),
+            Perk(perkName='Unbreakable', perkType=PerkType.Survivor, perkTier=3),
+            Perk(perkName='Borrowed Time', perkType=PerkType.Survivor, perkTier=3)
+        ]
+        expectedMatch = SurvivorMatch(rank=10,partySize=1,offering=Offering(offeringName='White Ward'),gameMap=GameMap(mapName="Wreckers' Yard"),
+                                      points=20100, matchDate=matchDate,itemAddons=[],item=None,
+                                      survivor=survivor,perks=[SurvivorMatchPerk(perk=perk) for perk in perks],
+                                      facedKiller=facedKiller,matchResult=SurvivorMatchResult.Sacrificed)
+        self.assertEqual(resultMatch, expectedMatch)
+
+    def test_parseGame_failWhen_moreThan4Perks(self):
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "borrowed time III, sprint burst III), 20100 points, item: none, add ons: none (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
+        matchDate = date(2020,3,20)
+        self.parser.setMatchDate(matchDate)
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
+
+    def test_parseGame_failWhen_samePerkMoreThanOnce(self):
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "unbreakable I), 20100 points, item: none, add ons: none (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
+
+    def test_parseGame_failWhen_sameAddonInBothSlots(self):
+        pass
+
+    def test_parseGame_failWhen_addonsForWrongItemType(self):
+        pass
+
+    def test_parseKillerGame_failWhen_moreThan4Eliminations(self):
+        pass

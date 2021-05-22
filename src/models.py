@@ -374,6 +374,26 @@ class SurvivorMatch(DBDMatch):
     perks: list[SurvivorMatchPerk] = field(default_factory=list)
     itemAddons: list[MatchItemAddon] = field(default_factory=list)
 
+    def __str__(self):
+        with StringIO('') as builder:
+            builder.write(self.matchDate.strftime('%d/%m/%Y'))
+            builder.write('\n')
+            builder.writelines((f'Survivor: {self.survivor}\n', f'Game points: {self.points:,}\n'))
+            builder.write(f"Game map: {self.gameMap if self.gameMap is not None else '???'}\n")
+            builder.write(f'Match offering: {self.offering}\n')
+            builder.write(f'Played at rank: {self.rank}\n')
+            builder.write(f"Party size: {self.partySize} {'player' if self.partySize ==1 else 'players'}\n")
+            if len(self.perks) > 0:
+                builder.write('Used perks:\n')
+                builder.writelines(f'- {perk}\n' for perk in self.perks)
+
+            builder.write(f'Item: {self.item}\n')
+            if self.item is not None:
+                builder.write(f'Item add-ons: {", ".join(map(str,self.itemAddons)) if len(self.itemAddons) > 0 else "None"}\n')
+            builder.write(f"Faced killer: {self.facedKiller.killerAlias}")
+
+            return builder.getvalue()
+
     __mapper_args__ = {
         "properties": {
             "facedKiller": relationship("Killer",uselist=False, lazy='subquery'),
@@ -425,9 +445,10 @@ class KillerMatch(DBDMatch):
     def __str__(self):
         with StringIO('') as builder:
             builder.write(self.matchDate.strftime('%d/%m/%Y'))
+            builder.write('\n')
             builder.writelines((f"Killer: {self.killer.killerAlias}\n", f"Game points: {self.points:,}\n"))
             builder.write(f'Game map: {self.gameMap if self.gameMap is not None else "???"}\n')
-            builder.write(f'Match offering: {self.offering if self.offering is not None else "???"}\n')
+            builder.write(f'Match offering: {self.offering}\n')
             builder.write(f"Played at rank: {self.rank}\n")
             if len(self.perks) > 0:
                 builder.write("Used perks:\n")

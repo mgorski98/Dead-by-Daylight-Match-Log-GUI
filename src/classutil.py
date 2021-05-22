@@ -143,7 +143,8 @@ class DBDMatchParser(object):
                 tier = len(nameParts[-1])
                 perks.append(
                     next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
-
+        assert len(perks) in range(0,5), "There cannot be more than 4 perks"
+        assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
         # parsing points
         points = self.__parsePoints(s)
 
@@ -152,7 +153,7 @@ class DBDMatchParser(object):
         item = next((i for i in self._items if i.itemName.lower() == itemName), None)
         # parsing add ons info
         addons = [] if item is None else self.__parseAddonsInfo(s)
-
+        assert len(addons) in range(0,3), "There cannot be more than 2 add-ons"
         # parsing map info
         gameMapIndex = s.find('map:')
         gameMap = None
@@ -166,7 +167,7 @@ class DBDMatchParser(object):
 
         # parsing offering info
         offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
-        offering = next(o for o in self._offerings if o.offeringName.lower() == offeringName)
+        offering = None if offeringName == 'none' else next(o for o in self._offerings if o.offeringName.lower() == offeringName)
 
         #parsing match result
         matchResultStr = s[firstCommaIndex+1:perkParseStartIndex].replace(',','').strip()
