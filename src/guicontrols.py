@@ -124,11 +124,15 @@ class SurvivorSelect(ItemSelect):
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
         self.selectFromIndex(0)
 
-
+#todo: add a button to clear selection
+#if the dialog result is Accepted and item is None then clear selection
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
         self.items = []
+        self.clearSelectionButton = QPushButton()
+        self.clearSelectionButton.setToolTip("Clear selected item")
+        self.clearSelectionButton.clicked.connect(self.clearSelectedItem)
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.columns = columns
@@ -149,16 +153,27 @@ class GridViewSelectionPopup(QDialog):
         self.selectedItem = item
         self.accept()
 
+    def clearSelectedItem(self):
+        self.selectedItem = None
+        self.accept()
+
+    def showPopupAndGetResult(self):
+        result = self.exec_()
+        return self.selectedItem, result
+
 class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
 
     def __init__(self, placeholderText: str, columns: int, filterFunction: Callable = lambda x: True, parent=None):
         super().__init__(columns, parent)
+        searchBarWidget, searchBarLayout = setQWidgetLayout(QWidget(), QGridLayout())
         self.searchBar = QLineEdit()
         self.filterFunction = filterFunction
         self.currentItems = self.items
         self.searchBar.setPlaceholderText(placeholderText)
         self.searchBar.textChanged.connect(self.filterItems)
-        self.layout().addWidget(self.searchBar)
+        searchBarLayout.addWidget(self.clearSelectionButton, 0, 0, 1, 1)
+        searchBarLayout.addWidget(self.searchBar, 0, 1, 1, 4)
+        self.layout().addWidget(searchBarWidget)
 
     def filterItems(self, searchText: str):
         self.currentItems = self.items if not searchText.strip() else [i for i in self.items if self.filterFunction(i,searchText)]
@@ -192,9 +207,6 @@ class AddonSelectPopup(GridViewSelectionPopup):
             addonButton.setToolTip(addon.addonName)
             self.itemsLayout.addWidget(addonButton, rowIndex, columnIndex)
 
-    def selectAddon(self) -> AddonSelectionResult:
-        return self.selectedItem if self.exec_() == QDialog.Accepted else None
-
     def filterAddons(self, filterFunc: Callable):
         self.currentAddons = list(filter(filterFunc, self.addons))
         self.initPopupGrid()
@@ -223,9 +235,6 @@ class PerkPopupSelect(SearchableGridViewSelectionPopup):
             perkButton.setIcon(perkIcon)
             perkButton.setToolTip(perk.perkName + f' {"I" * perk.perkTier}')
             self.itemsLayout.addWidget(perkButton, rowIndex, columnIndex)
-
-    def selectPerk(self) -> Optional[Perk]:
-        return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
 
 class AddonSelection(QWidget):
@@ -285,8 +294,8 @@ class AddonSelection(QWidget):
         point = btnToUpdate.rect().bottomLeft()
         globalPoint = btnToUpdate.mapToGlobal(point)
         self.popupSelect.move(globalPoint)
-        addon = self.popupSelect.selectAddon()
-        if addon is not None:
+        addon, result = self.popupSelect.showPopupAndGetResult()
+        if addon is not None and result == QDialog.Accepted:
             addonAlreadySelected = self.__validateIfAddonSelected(addon)
             if not addonAlreadySelected:
                 pixmap = Globals.ADDON_ICONS[toResourceName(addon.addonName)]
@@ -297,6 +306,10 @@ class AddonSelection(QWidget):
                 msgBox = QMessageBox()
                 msgBox.setText(f'Addon "{addon.addonName}" is selected already!')
                 msgBox.exec_()
+        elif addon is None and result == QDialog.Accepted:
+            btnToUpdate.setIcon(self.defaultIcon)
+            lblToUpdate.setText('No addon')
+            self.selectedAddons[index] = None
 
     def __validateIfAddonSelected(self, addon: Union[KillerAddon, ItemAddon]) -> bool:
         return any(a.addonName == addon.addonName for a in self.selectedAddons.values() if a is not None)
@@ -351,8 +364,8 @@ class PerkSelection(QWidget):
         point = btn.rect().topRight()
         globalPoint = btn.mapToGlobal(point)
         self.popupSelection.move(globalPoint - QPoint(0, self.height() / 2))
-        perk = self.popupSelection.selectPerk()
-        if perk is not None:
+        perk,result = self.popupSelection.showPopupAndGetResult()
+        if perk is not None and result == QDialog.Accepted:
             perkAlreadySelected = self.__validateIfPerkSelected(perk)
             if not perkAlreadySelected or (self.selectedPerks[index] is not None and perk.perkName == self.selectedPerks[index].perkName):
                 label.setText(f'{perk.perkName} {"I" * perk.perkTier}')
@@ -364,6 +377,10 @@ class PerkSelection(QWidget):
                 msgBox = QMessageBox()
                 msgBox.setText(f'Perk "{perk.perkName}" is selected already!')
                 msgBox.exec_()
+        elif perk is None and result == QDialog.Accepted:
+            self.selectedPerks[index] = None
+            btn.setIcon(self.defaultPerkIcon)
+            label.setText('No perk')
 
     def __validateIfPerkSelected(self, perk: Perk) -> bool:
         return any(p.perkName == perk.perkName for p in self.selectedPerks.values() if p is not None)
@@ -438,8 +455,6 @@ class OfferingSelectPopup(SearchableGridViewSelectionPopup):
             btn.setIcon(icon)
             self.itemsLayout.addWidget(btn, rowIndex, columnIndex)
 
-    def selectOffering(self):
-        return self.selectedItem if self.exec_() == QDialog.Accepted else None
 
 class OfferingSelection(QWidget):
 
@@ -476,12 +491,16 @@ class OfferingSelection(QWidget):
         point = btn.rect().topRight()
         globalPoint = btn.mapToGlobal(point)
         self.popupSelection.move(globalPoint - QPoint(0, self.height() / 2))
-        offering = self.popupSelection.selectOffering()
-        if offering is not None:
+        offering, result = self.popupSelection.showPopupAndGetResult()
+        if offering is not None and result == QDialog.Accepted:
             pixmap: QPixmap = Globals.OFFERING_ICONS[toResourceName(offering.offeringName)]
             btn.setIcon(QIcon(pixmap))
             label.setText(offering.offeringName)
             self.selectedItem = offering
+        elif offering is None and QDialog.Accepted == result:
+            btn.setIcon(self.defaultIcon)
+            label.setText('No offering')
+            self.selectedItem = None
 
 
 class MapSelect(QWidget):

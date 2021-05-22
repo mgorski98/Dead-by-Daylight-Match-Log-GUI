@@ -4,7 +4,8 @@ import sqlalchemy
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
-    QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox
+    QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
+    QFileDialog
 
 from classutil import DBDMatchParser
 from database import Database, DatabaseUpdateWorker
@@ -33,9 +34,6 @@ class MainWindow(QMainWindow):
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
 
-        testString = "Oni, 4 kills, (zanshin tactics II, blood echo III, nemesis III), 24656 points, add ons: splintered hull, renjiro's bloody glove, map: groaning storehouse, offering: black ward, survivors: [Meg, Meg, Meg, Felix], rank: 8"
-        parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, survivorPerks + killerPerks)
-        parser.parse(testString)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -198,7 +196,6 @@ class MainWindow(QMainWindow):
                                   points=points, offering=offering, rank=rank,
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
-        print(f"Added killer match. Match: {killerMatch}")
 
     def addNewSurvivorMatch(self):
         survivor = self.survivorSelect.getSelectedItem()
@@ -220,7 +217,6 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
-        print(f"Added new survivor match: {survivorMatch}")
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
@@ -265,7 +261,11 @@ class MainWindow(QMainWindow):
             progressDialog.show()
 
     def __loadMatchLogs(self):
-        pass
+        files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
+        #todo: create a loader and load each file here
+        loader = None #temporary
+        for logFile in files:
+            pass
 
     def __showLogHelpWindow(self):
         pass
