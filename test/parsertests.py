@@ -15,33 +15,43 @@ class TestDBDMatchParser(unittest.TestCase):
         Database.init('sqlite:///../dbd-match-log-DEV.db')
         with Database.instance().getNewSession() as s:
             extractor = operator.itemgetter(0)
-            killers = list(map(extractor, s.execute(
+            cls.killers = list(map(extractor, s.execute(
                 sqlalchemy.select(Killer)).all()))  # for some ungodly reason this returns list of 1-element tuples
-            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
-            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
+            cls.realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
+            cls.survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
             killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
             itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
-            addons = killerAddons + itemAddons
-            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
-            killerPerks = list(
-                map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
-            survivorPerks = list(
-                map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
-            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-        cls.parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, survivorPerks + killerPerks)
+            cls.addons = killerAddons + itemAddons
+            cls.offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
+            cls.perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
+            cls.items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
+        cls.parser = DBDMatchParser(cls.killers, cls.survivors, cls.addons, cls.items, cls.offerings, cls.realms, cls.perks)
 
     def test_parseKillerGame_everythingCorrect(self):
         testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
-                     "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
+                     "add ons: apex muffler, map: rancid abattoir, offering: black ward, " \
                      "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
         self.parser.setMatchDate(date(2021, 5, 21))
         resultMatch = self.parser.parse(testString)
+        killer = next(k for k in self.killers if k.killerAlias == 'The Hillbilly')
+        perks = [Perk(perkType=PerkType.Killer,perkName='Tinkerer',perkTier=1), Perk(perkType=PerkType.Killer,perkName='Enduring',perkTier=3), Perk(perkType=PerkType.Killer, perkName='Lightborn', perkTier=3)]
+        addons = [KillerAddon(killer=killer,addonName='Apex Muffler')]
+        addon = next(a for a in self.addons if a.addonName=='Apex Muffler')
+        print(addon == addons[0])
+        survivorNames = ['Jeffrey "Jeff" Johansen','Yui Kimura','David King','Meg Thomas']
+        states = [FacedSurvivorState.Escaped, FacedSurvivorState.Sacrificed, FacedSurvivorState.Sacrificed, FacedSurvivorState.Escaped]
+        facedSurvivors = [FacedSurvivor(state=state,facedSurvivor=Survivor(survivorName=name)) for name,state in zip(survivorNames,states)]
+        expectedMatch = KillerMatch(killer=killer, rank=6, points=23196, matchDate=date(2021,5,21),
+                           gameMap=GameMap(mapName='Rancid Abattoir'), offering=Offering(offeringName='Black Ward'),
+                           killerAddons=[MatchKillerAddon(killerAddon=addon) for addon in addons],
+                           perks=[KillerMatchPerk(perk=perk) for perk in perks],
+                           facedSurvivors=facedSurvivors)
+        self.assertEqual(resultMatch,expectedMatch)
 
     def test_parseKillerGame_4Sacrifices_checkFacedSurvivors(self):
         testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
                      "add ons: apex muffler, iridescent brick, map: rancid abattoir, offering: black ward, " \
                      "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
-        pass
 
     def test_parseKillerGame_4Moris_checkFacedSurvivors(self):
         testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
@@ -63,4 +73,4 @@ class TestDBDMatchParser(unittest.TestCase):
                      "borrowed time III), 20100 points, item: commodious toolbox, add ons: wire spool, " \
                      "scraps (against legion), map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
         self.parser.setMatchDate(date(2021,5,21))
-        resultMatch = self.parser.parse(testString)
+        # resultMatch = self.parser.parse(testString)

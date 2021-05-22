@@ -3,7 +3,7 @@ from datetime import date
 from typing import Union, Callable
 
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
-    DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor
+    DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon
 
 
 class DBDMatchParser(object):
@@ -41,7 +41,6 @@ class DBDMatchParser(object):
         killer = next(k for k in self._killers if killerName in k.killerAlias)
 
         #parsing eliminations
-
         elimsDict = {'kill':0,'mori':0,'disconnect':0}
         perkParseStartIndex = s.index('(', firstCommaIndex)
         eliminationsInfo = s[firstCommaIndex+1:perkParseStartIndex]
@@ -79,20 +78,7 @@ class DBDMatchParser(object):
 
 
         #parsing add ons info
-        addons = []
-        match = re.search(r'add ons: (.*)(?=\()', s)
-        if not match:  # means its a killer string
-            match = re.search(r'add ons: (.*)(?=map\:)?', s)
-            if match:
-                addonsStr = match.group(1).rstrip(',').strip().lower()
-                if addonsStr != 'none':
-                    addonNames = [e.strip() for e in match.group(1).strip().split(',') if e and 'map:' not in e][:2]
-                    addons = [next(addon for addon in self._addons if addon.addonName.lower() == a) for a in addonNames]
-        else:
-            addonsStr = match.group(1).rstrip(',').strip()
-            if addonsStr != 'none':
-                addonNames = addonsStr.split(',')
-                addons = [next(addon for addon in self._addons if addon.addonName.lower() == a) for a in addonNames]
+        addons = self.__parseAddonsInfo(s)
         #parsing map info
         gameMapIndex = s.find('map:')
         gameMap = None
@@ -103,7 +89,6 @@ class DBDMatchParser(object):
                 gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
                 if gameMap is not None:
                     break
-
         #parsing offering info
         offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
         offering = next(o for o in self._offerings if o.offeringName.lower() == offeringName)
@@ -143,4 +128,69 @@ class DBDMatchParser(object):
 
 
     def __parseSurvivorGame(self, s: str) -> SurvivorMatch:
-        pass
+        firstCommaIndex = s.index(',')
+        survivorName = s[:firstCommaIndex]
+        survivor = next(_s for _s in self._survivors if survivorName in _s.survivorName)
+
+        perkParseStartIndex = s.index('(')
+        # parsing perks
+        perkParseEndIndex = s.index(')', perkParseStartIndex)
+        perksStr = s[perkParseStartIndex + 1:perkParseEndIndex].strip()
+        perks = []
+        if perksStr:
+            perkStrings = perksStr.split(',')
+            for perkStr in perkStrings:
+                perkStr = perkStr.strip()
+                nameParts = perkStr.split(" ")
+                perkName = ' '.join(nameParts[:-1])
+                tier = len(nameParts[-1])
+                perks.append(
+                    next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
+
+        # parsing points
+        points = 0
+        try:
+            points = int(re.search('(\d+) points', s).group(1))
+        except ValueError:
+            pass
+
+        #parsing item info
+        itemName = re.search(r'item: (.*?),', s).group(1).strip()
+        item = next(i for i in self._items if i.itemName.lower() == itemName)
+        # parsing add ons info
+        addons = self.__parseAddonsInfo(s)
+
+        # parsing map info
+        gameMapIndex = s.find('map:')
+        gameMap = None
+        if gameMapIndex != -1:
+            commaIndex = s.find(',', gameMapIndex)
+            mapName = s[gameMapIndex + len("map:"):commaIndex].strip().lower()
+            for r in self._realms:
+                gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
+                if gameMap is not None:
+                    break
+
+        # parsing offering info
+        offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
+        offering = next(o for o in self._offerings if o.offeringName.lower() == offeringName)
+
+        rank = int(re.search(r'rank: (\d{1,2})', s).group(1))
+        return SurvivorMatch()
+
+    def __parseAddonsInfo(self, s: str) -> list[Union[KillerAddon, ItemAddon]]:
+        addons = []
+        match = re.search(r'add ons: (.*)(?=\()', s)
+        if not match:  # means its a killer string
+            addonsIndex = s.index('add ons:')
+            mapIndex = s.index('map:')
+            addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
+            if addonsStr != 'none':
+                addonNames = [e.strip() for e in addonsStr.split(',') if e]
+                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if addon.addonName.lower() == a)) for a in addonNames]
+        else:
+            addonsStr = match.group(1).rstrip(',').strip()
+            if addonsStr != 'none':
+                addonNames = addonsStr.split(',')
+                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a)) for a in addonNames]
+        return addons
