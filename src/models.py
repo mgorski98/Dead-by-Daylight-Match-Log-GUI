@@ -23,6 +23,7 @@ class SurvivorMatchResult(enum.Enum):
     Tunnelled = 4
     Camped = 5
     BledOut = 6
+    KillerDisconnected = 7
 
 class ItemType(enum.Enum):
     Medkit = 0
@@ -54,7 +55,7 @@ class Killer:
         Column("killerName", Text, unique=True, nullable=False),
         Column("killerAlias", Text, unique=True, nullable=False)
     )
-    killerID: int = field(init=False)
+    killerID: int = field(init=False,compare=False,hash=False)
     killerName: str
     killerAlias: str
 
@@ -70,7 +71,7 @@ class Survivor:
         Column("survivorID", Integer, primary_key=True),
         Column("survivorName", Text, unique=True, nullable=False)
     )
-    survivorID: int = field(init=False)
+    survivorID: int = field(init=False,compare=False,hash=False)
     survivorName: str
 
     def __str__(self):
@@ -87,7 +88,7 @@ class Item:
         Column("itemName", Text, nullable=False, unique=True),
         Column("itemType", Enum(ItemType), nullable=False)
     )
-    itemID: int = field(init=False)
+    itemID: int = field(init=False,compare=False,hash=False)
     itemName: str
     itemType: ItemType
 
@@ -104,9 +105,9 @@ class GameMap:
         Column("mapName", Text, nullable=False, unique=True),
         Column("realmID", Integer, ForeignKey("realms.realmID"), nullable=False)
     )
-    mapID: int = field(init=False)
+    mapID: int = field(init=False,compare=False,hash=False)
     mapName: str
-    realmID: int = field(init=False)
+    realmID: int = field(init=False,compare=False,hash=False)
 
     def __str__(self):
         return self.mapName
@@ -127,7 +128,7 @@ class Realm:
         }
     }
 
-    realmID: int = field(init=False)
+    realmID: int = field(init=False,compare=False,hash=False)
     realmName: str
     maps: list[GameMap] = field(default_factory=list)
 
@@ -142,7 +143,7 @@ class ItemAddon:
         Column("addonName", Text, nullable=False, unique=True),
         Column("itemType", Enum(ItemType), nullable=False)
     )
-    addonID: int = field(init=False)
+    addonID: int = field(init=False,compare=False,hash=False)
     addonName: str
     itemType: ItemType
 
@@ -159,9 +160,9 @@ class KillerAddon:
         Column("addonName", Text, nullable=False),
         Column("killerID", Integer, ForeignKey("killers.killerID"), nullable=False)
     )
-    addonID: int = field(init=False)
+    addonID: int = field(init=False,compare=False,hash=False)
     addonName: str
-    killerID: int = field(init=False)
+    killerID: int = field(init=False,compare=False,hash=False)
     killer: Killer
 
     __mapper_args__ = {
@@ -184,7 +185,7 @@ class Perk:
         Column("perkType", Enum(PerkType), nullable=False),
         Column("perkTier", Integer, nullable=False, default=1)
     )
-    perkID: int = field(init=False)
+    perkID: int = field(init=False,compare=False,hash=False)
     perkName: str
     perkType: PerkType
     perkTier: int
@@ -202,7 +203,7 @@ class Offering:
         Column("offeringID", Integer, primary_key=True),
         Column("offeringName", Text, nullable=False, unique=True)
     )
-    offeringID: int = field(init=False)
+    offeringID: int = field(init=False,compare=False,hash=False)
     offeringName: str
 
     def __str__(self):
@@ -219,10 +220,10 @@ class KillerMatchPerk:
         Column("killerPerkID", Integer, ForeignKey("perks.perkID"), nullable=False),
         Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False)
     )
-    killerMatchPerkID: int = field(init=False)
-    killerPerkID: int = field(init=False)
+    killerMatchPerkID: int = field(init=False,compare=False,hash=False)
+    killerPerkID: int = field(init=False,compare=False,hash=False)
     perk: Perk
-    killerMatchID: int = field(init=False)
+    killerMatchID: int = field(init=False,compare=False,hash=False)
 
     __mapper_args__ = {
         "properties": {
@@ -243,10 +244,10 @@ class SurvivorMatchPerk:
         Column("survivorPerkID", Integer, ForeignKey("perks.perkID"), nullable=False),
         Column("survivorMatchID", Integer, ForeignKey("survivor_matches.matchID"), nullable=False)
     )
-    survivorMatchPerkID: int = field(init=False)
-    survivorPerkID: int = field(init=False)
+    survivorMatchPerkID: int = field(init=False,compare=False,hash=False)
+    survivorPerkID: int = field(init=False,compare=False,hash=False)
     perk: Perk
-    survivorMatchID: int = field(init=False)
+    survivorMatchID: int = field(init=False,compare=False,hash=False)
 
     __mapper_args__ = {
         "properties": {
@@ -267,10 +268,10 @@ class MatchKillerAddon:
         Column("killerAddonID", Integer, ForeignKey("killer_addons.addonID"), nullable=False),
         Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False)
     )
-    matchKillerAddonID: int = field(init=False)
+    matchKillerAddonID: int = field(init=False,compare=False,hash=False)
     killerAddon: KillerAddon
-    killerAddonID: int = field(init=False)
-    killerMatchID: int = field(init=False)
+    killerAddonID: int = field(init=False,compare=False,hash=False)
+    killerMatchID: int = field(init=False,compare=False,hash=False)
 
     __mapper_args__ = {
         "properties": {
@@ -291,10 +292,10 @@ class MatchItemAddon:
         Column("itemAddonID", Integer, ForeignKey("item_addons.addonID"), nullable=False),
         Column("survivorMatchID", Integer, ForeignKey("survivor_matches.matchID"),nullable=False)
     )
-    matchItemAddonID: int = field(init=False)
+    matchItemAddonID: int = field(init=False,compare=False,hash=False)
     itemAddon: ItemAddon
-    itemAddonID: int = field(init=False)
-    survivorMatchID: int = field(init=False)
+    itemAddonID: int = field(init=False,compare=False,hash=False)
+    survivorMatchID: int = field(init=False,compare=False,hash=False)
 
     __mapper_args__ = {
         "properties": {
@@ -316,10 +317,10 @@ class FacedSurvivor:
         Column("killerMatchID", Integer, ForeignKey("killer_matches.matchID"), nullable=False),
         Column("survivorID", Integer, ForeignKey("survivors.survivorID"), nullable=False)
     )
-    facedSurvivorID: int = field(init=False)
-    survivorID: int = field(init=False)
+    facedSurvivorID: int = field(init=False,compare=False,hash=False)
+    survivorID: int = field(init=False,compare=False,hash=False)
     facedSurvivor: Survivor
-    killerMatchID: int = field(init=False)
+    killerMatchID: int = field(init=False,compare=False,hash=False)
     state: FacedSurvivorState
 
     __mapper_args__ = {
@@ -334,12 +335,12 @@ class FacedSurvivor:
 
 @dataclass
 class DBDMatch(ABC):
-    matchID: int = field(init=False)
+    matchID: int = field(init=False,compare=False,hash=False)
     points: int
     gameMap: Optional[GameMap]
-    gameMapID: int = field(init=False)
+    gameMapID: int = field(init=False,compare=False,hash=False)
     offering: Optional[Offering]
-    offeringID: int = field(init=False)
+    offeringID: int = field(init=False,compare=False,hash=False)
     matchDate: date
     rank: int
 
@@ -363,15 +364,35 @@ class SurvivorMatch(DBDMatch):
         Column("partySize", Integer, nullable=True, default=1)
     )
     survivor: Survivor
-    survivorID: int = field(init=False)
+    survivorID: int = field(init=False,compare=False,hash=False)
     facedKiller: Killer
-    facedKillerID: int = field(init=False)
+    facedKillerID: int = field(init=False,compare=False,hash=False)
     item: Optional[Item]
-    itemID: int = field(init=False)
+    itemID: int = field(init=False,compare=False,hash=False)
     matchResult: SurvivorMatchResult
     partySize: int
     perks: list[SurvivorMatchPerk] = field(default_factory=list)
     itemAddons: list[MatchItemAddon] = field(default_factory=list)
+
+    def __str__(self):
+        with StringIO('') as builder:
+            builder.write(self.matchDate.strftime('%d/%m/%Y'))
+            builder.write('\n')
+            builder.writelines((f'Survivor: {self.survivor}\n', f'Game points: {self.points:,}\n'))
+            builder.write(f"Game map: {self.gameMap if self.gameMap is not None else '???'}\n")
+            builder.write(f'Match offering: {self.offering}\n')
+            builder.write(f'Played at rank: {self.rank}\n')
+            builder.write(f"Party size: {self.partySize} {'player' if self.partySize ==1 else 'players'}\n")
+            if len(self.perks) > 0:
+                builder.write('Used perks:\n')
+                builder.writelines(f'- {perk}\n' for perk in self.perks)
+
+            builder.write(f'Item: {self.item}\n')
+            if self.item is not None:
+                builder.write(f'Item add-ons: {", ".join(map(str,self.itemAddons)) if len(self.itemAddons) > 0 else "None"}\n')
+            builder.write(f"Faced killer: {self.facedKiller.killerAlias}")
+
+            return builder.getvalue()
 
     __mapper_args__ = {
         "properties": {
@@ -401,7 +422,7 @@ class KillerMatch(DBDMatch):
         Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True)
     )
     killer: Killer
-    killerID: int = field(init=False)
+    killerID: int = field(init=False,compare=False,hash=False)
     facedSurvivors: list[FacedSurvivor] = field(default_factory=list)
     perks: list[KillerMatchPerk] = field(default_factory=list)
     killerAddons: list[MatchKillerAddon] = field(default_factory=list)
@@ -424,9 +445,10 @@ class KillerMatch(DBDMatch):
     def __str__(self):
         with StringIO('') as builder:
             builder.write(self.matchDate.strftime('%d/%m/%Y'))
+            builder.write('\n')
             builder.writelines((f"Killer: {self.killer.killerAlias}\n", f"Game points: {self.points:,}\n"))
             builder.write(f'Game map: {self.gameMap if self.gameMap is not None else "???"}\n')
-            builder.write(f'Match offering: {self.offering if self.offering is not None else "???"}\n')
+            builder.write(f'Match offering: {self.offering}\n')
             builder.write(f"Played at rank: {self.rank}\n")
             if len(self.perks) > 0:
                 builder.write("Used perks:\n")
