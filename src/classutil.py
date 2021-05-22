@@ -213,3 +213,8 @@ class DBDMatchParser(object):
             return int(re.search('(\d+) points', s).group(1))
         except ValueError:
             return 0
+
+class DBDMatchLogFileLoader(object):
+
+    def __init__(self, parser: DBDMatchParser):
+        self.parser = parser

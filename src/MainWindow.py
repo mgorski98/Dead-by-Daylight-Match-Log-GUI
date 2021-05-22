@@ -222,6 +222,7 @@ class MainWindow(QMainWindow):
         updateAction = QAction('Update game data and image database', self)
         updateAction.triggered.connect(self.__confirmUpdate)
         loadLogAction = QAction('Load match log data', self)
+        loadLogAction.setShortcut(QKeySequence("Ctrl+O"))
         loadLogAction.triggered.connect(self.__loadMatchLogs)
         logHelpAction = QAction('Show match log file help', self)
         logHelpAction.triggered.connect(self.__showLogHelpWindow)
@@ -238,7 +239,12 @@ class MainWindow(QMainWindow):
         helpMenu.addAction(logHelpAction)
 
     def __saveMatches(self):
-        pass
+        if len(self.currentlyAddedMatches) > 0:
+            return
+        # with Database.instance().getNewSession() as s:
+        #     s.add_all(self.currentlyAddedMatches)
+        #     s.commit()
+        # self.currentlyAddedMatches.clear()
 
     def __confirmUpdate(self):
         msgBox = QMessageBox()
