@@ -3,7 +3,8 @@ from datetime import date
 from typing import Union, Callable
 
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
-    DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon
+    DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
+    SurvivorMatchPerk
 
 
 class DBDMatchParser(object):
@@ -70,11 +71,7 @@ class DBDMatchParser(object):
                 perks.append(next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
 
         #parsing points
-        points = 0
-        try:
-            points = int(re.search('(\d+) points', s).group(1))
-        except ValueError:
-            pass
+        points = self.__parsePoints(s)
 
 
         #parsing add ons info
@@ -148,17 +145,13 @@ class DBDMatchParser(object):
                     next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
 
         # parsing points
-        points = 0
-        try:
-            points = int(re.search('(\d+) points', s).group(1))
-        except ValueError:
-            pass
+        points = self.__parsePoints(s)
 
         #parsing item info
         itemName = re.search(r'item: (.*?),', s).group(1).strip()
-        item = next(i for i in self._items if i.itemName.lower() == itemName)
+        item = next((i for i in self._items if i.itemName.lower() == itemName), None)
         # parsing add ons info
-        addons = self.__parseAddonsInfo(s)
+        addons = [] if item is None else self.__parseAddonsInfo(s)
 
         # parsing map info
         gameMapIndex = s.find('map:')
@@ -175,8 +168,22 @@ class DBDMatchParser(object):
         offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
         offering = next(o for o in self._offerings if o.offeringName.lower() == offeringName)
 
+        #parsing match result
+        matchResultStr = s[firstCommaIndex+1:perkParseStartIndex].replace(',','').strip()
+        matchResult = SurvivorMatchResult[''.join(e.capitalize() for e in matchResultStr.split(' '))]
+
+        #parsing faced killer
+        facedKillerName = re.search(r'\(against (.*)\)',s).group(1)
+        facedKiller = next(k for k in self._killers if facedKillerName in k.killerAlias.lower())
+        #parsing rank
         rank = int(re.search(r'rank: (\d{1,2})', s).group(1))
-        return SurvivorMatch()
+
+        #parsing party size
+        partySize = int(re.search(r"party size: ([1-4])",s).group(1))
+
+        return SurvivorMatch(survivor=survivor,perks=[SurvivorMatchPerk(perk=perk) for perk in perks], item=item,
+                             itemAddons=addons, facedKiller=facedKiller, rank=rank, partySize=partySize,
+                             matchResult=matchResult,offering=offering,gameMap=gameMap,points=points,matchDate=self._matchDate)
 
     def __parseAddonsInfo(self, s: str) -> list[Union[KillerAddon, ItemAddon]]:
         addons = []
@@ -192,5 +199,11 @@ class DBDMatchParser(object):
             addonsStr = match.group(1).rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = addonsStr.split(',')
-                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a)) for a in addonNames]
+                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip())) for a in addonNames]
         return addons
+
+    def __parsePoints(self, s: str) -> int:
+        try:
+            return int(re.search('(\d+) points', s).group(1))
+        except ValueError:
+            return 0

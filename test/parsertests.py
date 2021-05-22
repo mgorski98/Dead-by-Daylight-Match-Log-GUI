@@ -36,8 +36,6 @@ class TestDBDMatchParser(unittest.TestCase):
         killer = next(k for k in self.killers if k.killerAlias == 'The Hillbilly')
         perks = [Perk(perkType=PerkType.Killer,perkName='Tinkerer',perkTier=1), Perk(perkType=PerkType.Killer,perkName='Enduring',perkTier=3), Perk(perkType=PerkType.Killer, perkName='Lightborn', perkTier=3)]
         addons = [KillerAddon(killer=killer,addonName='Apex Muffler')]
-        addon = next(a for a in self.addons if a.addonName=='Apex Muffler')
-        print(addon == addons[0])
         survivorNames = ['Jeffrey "Jeff" Johansen','Yui Kimura','David King','Meg Thomas']
         states = [FacedSurvivorState.Escaped, FacedSurvivorState.Sacrificed, FacedSurvivorState.Sacrificed, FacedSurvivorState.Escaped]
         facedSurvivors = [FacedSurvivor(state=state,facedSurvivor=Survivor(survivorName=name)) for name,state in zip(survivorNames,states)]
@@ -72,5 +70,21 @@ class TestDBDMatchParser(unittest.TestCase):
         testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
                      "borrowed time III), 20100 points, item: commodious toolbox, add ons: wire spool, " \
                      "scraps (against legion), map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
-        self.parser.setMatchDate(date(2021,5,21))
-        # resultMatch = self.parser.parse(testString)
+        matchDate = date(2021,5,21)
+        self.parser.setMatchDate(matchDate)
+        survivor = next(s for s in self.survivors if s.survivorName == 'William "Bill" Overbeck')
+        perks = [
+            Perk(perkName="We're Gonna Live Forever",perkType=PerkType.Survivor,perkTier=3),
+            Perk(perkName='Dead Hard',perkType=PerkType.Survivor,perkTier=1),
+            Perk(perkName='Unbreakable',perkType=PerkType.Survivor,perkTier=3),
+            Perk(perkName='Borrowed Time',perkType=PerkType.Survivor,perkTier=3)
+        ]
+        item = Item(itemType=ItemType.Toolbox,itemName='Commodious Toolbox')
+        addons = [ItemAddon(addonName='Wire Spool',itemType=ItemType.Toolbox), ItemAddon(addonName='Scraps',itemType=ItemType.Toolbox)]
+        facedKiller = next(k for k in self.killers if k.killerAlias == 'The Legion')
+        expectedMatch = SurvivorMatch(matchResult=SurvivorMatchResult.Sacrificed, points=20100, partySize=1, offering=Offering(offeringName='White Ward'),
+                                      gameMap=GameMap(mapName="Wreckers' Yard"), perks=[SurvivorMatchPerk(perk=perk) for perk in perks],
+                                      matchDate=matchDate,facedKiller=facedKiller,itemAddons=[MatchItemAddon(itemAddon=addon) for addon in addons],item=item,
+                                      survivor=survivor,rank=10)
+        resultMatch = self.parser.parse(testString)
+        self.assertEqual(resultMatch,expectedMatch)
