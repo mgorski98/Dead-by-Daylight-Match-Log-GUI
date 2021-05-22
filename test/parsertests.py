@@ -154,10 +154,38 @@ class TestDBDMatchParser(unittest.TestCase):
         self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
 
     def test_parseGame_failWhen_sameAddonInBothSlots(self):
-        pass
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "unbreakable I), 20100 points, item: camping aid kit, add ons: bandages, bandages (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
 
     def test_parseGame_failWhen_addonsForWrongItemType(self):
-        pass
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "unbreakable I), 20100 points, item: camping aid kit, add ons: scraps, bandages (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
+        matchDate = date(2020, 3, 20)
+        self.parser.setMatchDate(matchDate)
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
 
     def test_parseKillerGame_failWhen_moreThan4Eliminations(self):
-        pass
+        testString = "Hillbilly, 10 kills, 20 moris, (tinkerer I, enduring III, lightborn III), 23196 points, " \
+                     "add ons: apex muffler, map: rancid abattoir, offering: black ward, " \
+                     "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
+        self.parser.setMatchDate(date(2021, 5, 21))
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
+
+    def test_parseGame_failWhen_rankNotBetween1And20(self):
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "borrowed time III), 20100 points, item: none, add ons: none (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 50, party size: 1"
+        self.parser.setMatchDate(date(2021, 5, 21))
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
+
+    def test_parseSurvivorGame_failWhen_noPartySizeSupplied(self):
+        testString = "Bill, sacrificed, (we're gonna live forever III, dead hard I, unbreakable III, " \
+                     "borrowed time III), 20100 points, item: none, add ons: none (against legion), " \
+                     "map: wreckers' yard, offering: white ward, rank: 10"
+        self.parser.setMatchDate(date(2021,5,21))
+        self.assertRaises(AssertionError, lambda: self.parser.parse(testString))

@@ -2,6 +2,7 @@ import re
 from datetime import date
 from typing import Union, Callable
 
+from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
     SurvivorMatchPerk
@@ -154,6 +155,7 @@ class DBDMatchParser(object):
         # parsing add ons info
         addons = [] if item is None else self.__parseAddonsInfo(s)
         assert len(addons) in range(0,3), "There cannot be more than 2 add-ons"
+        assert len(addons) == len(set(map(str, addons))), "There cannot be 2 of the same add-on"
         # parsing map info
         gameMapIndex = s.find('map:')
         gameMap = None
@@ -178,9 +180,12 @@ class DBDMatchParser(object):
         facedKiller = next(k for k in self._killers if facedKillerName in k.killerAlias.lower())
         #parsing rank
         rank = int(re.search(r'rank: (\d{1,2})', s).group(1))
+        assert rank in range(Globals.HIGHEST_RANK, Globals.LOWEST_RANK + 1), "Rank can only be equal to numbers from range 1 to 20"
 
         #parsing party size
-        partySize = int(re.search(r"party size: ([1-4])",s).group(1))
+        match = re.search(r"party size: ([1-4])",s)
+        assert match is not None, "No party size detected"
+        partySize = int(match.group(1))
 
         return SurvivorMatch(survivor=survivor,perks=[SurvivorMatchPerk(perk=perk) for perk in perks], item=item,
                              itemAddons=addons, facedKiller=facedKiller, rank=rank, partySize=partySize,
