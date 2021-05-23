@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog
 
-from classutil import DBDMatchParser
+from classutil import DBDMatchParser, DBDMatchLogFileLoader
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
             killerPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-
+        self.parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, killerPerks + survivorPerks)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -268,10 +268,10 @@ class MainWindow(QMainWindow):
 
     def __loadMatchLogs(self):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
-        #todo: create a loader and load each file here
-        loader = None #temporary
+        loader = DBDMatchLogFileLoader(self.parser) #temporary
         for logFile in files:
-            pass
+            games = loader.load(logFile)
+            print()
 
     def __showLogHelpWindow(self):
         pass

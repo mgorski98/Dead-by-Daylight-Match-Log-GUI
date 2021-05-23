@@ -1,11 +1,12 @@
 import re
-from datetime import date
-from typing import Union, Callable
+from datetime import date, datetime
+from typing import Union, Callable, Optional
 
 from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
-    SurvivorMatchPerk
+    SurvivorMatchPerk, GameMap
+from util import isDateString, levenshteinDistance
 
 
 class DBDMatchParser(object):
@@ -75,50 +76,43 @@ class DBDMatchParser(object):
         points = self.__parsePoints(s)
 
 
-        #parsing add ons info
         addons = self.__parseAddonsInfo(s)
-        #parsing map info
-        gameMapIndex = s.find('map:')
-        gameMap = None
-        if gameMapIndex != -1:
-            commaIndex = s.find(',', gameMapIndex)
-            mapName = s[gameMapIndex+len("map:"):commaIndex].strip().lower()
-            for r in self._realms:
-                gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
-                if gameMap is not None:
-                    break
-        #parsing offering info
-        offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
-        offering = next(o for o in self._offerings if o.offeringName.lower() == offeringName)
+        gameMap = self.__parseMap(s)
+        offering = self.__parseOffering(s)
+
         #parsing faced survivors info
-        facedSurvivorsString = re.search(r'survivors: \[(.*)\]', s).group(1)
-        facedSurvivorsStrings = facedSurvivorsString.split(',')
-        #if there's 4 of any elimination method and no states specified then we assume all of them were eliminated that way
-        #same with escapes, if there's 0 of each method then all of them escaped
-        survivors = [next(_s for _s in self._survivors if (fss[:fss.index(':')].strip() if ':' in fss else fss.strip()) in _s.survivorName) for fss in facedSurvivorsStrings]
-        survivorStates = []
-        MAX_ELIMS = 4
-        MAX_ELIMS_RANGE = range(MAX_ELIMS)
-        if elimsDict['kill'] == MAX_ELIMS: #all of them sacrificed
-            survivorStates = [FacedSurvivorState.Sacrificed for _ in MAX_ELIMS_RANGE]
-        elif elimsDict['mori'] == MAX_ELIMS: #all of them were mori'd
-            survivorStates = [FacedSurvivorState.Killed for _ in MAX_ELIMS_RANGE]
-        elif elimsDict['disconnect'] == MAX_ELIMS: #all of them disconnected
-            survivorStates = [FacedSurvivorState.Disconnected for _ in MAX_ELIMS_RANGE]
-        elif all(v == 0 for v in elimsDict.values()): #everyone escaped
-            survivorStates = [FacedSurvivorState.Escaped for _ in MAX_ELIMS_RANGE]
-        else: #parse it normally
-            for fss in facedSurvivorsStrings:
-                fss = fss.strip()
-                state = FacedSurvivorState.Escaped
-                parts = fss.split(':')
-                if len(parts) > 1:
-                    statePart = parts[1].strip()
-                    state = FacedSurvivorState[''.join(e.capitalize() for e in statePart.split(' '))]
-                survivorStates.append(state)
-        facedSurvivors = [FacedSurvivor(state=state, facedSurvivor=survivor) for state,survivor in zip(survivorStates, survivors)]
-        #parsing rank info
-        rank = int(re.search(r'rank: (\d{1,2})', s).group(1))
+        facedSurvivorsMatch = re.search(r'survivors: \[(.*)\]', s)
+        facedSurvivors = []
+        if facedSurvivorsMatch:
+            facedSurvivorsString = facedSurvivorsMatch.group(1)
+            facedSurvivorsStrings = facedSurvivorsString.split(',')
+            #if there's 4 of any elimination method and no states specified then we assume all of them were eliminated that way
+            #same with escapes, if there's 0 of each method then all of them escaped
+            survivors = [next(_s for _s in self._survivors if (fss[:fss.index(':')].strip() if ':' in fss else fss.strip()) in _s.survivorName) for fss in facedSurvivorsStrings]
+            survivorStates = []
+            MAX_ELIMS = 4
+            MAX_ELIMS_RANGE = range(MAX_ELIMS)
+            if elimsDict['kill'] == MAX_ELIMS: #all of them sacrificed
+                survivorStates = [FacedSurvivorState.Sacrificed for _ in MAX_ELIMS_RANGE]
+            elif elimsDict['mori'] == MAX_ELIMS: #all of them were mori'd
+                survivorStates = [FacedSurvivorState.Killed for _ in MAX_ELIMS_RANGE]
+            elif elimsDict['disconnect'] == MAX_ELIMS: #all of them disconnected
+                survivorStates = [FacedSurvivorState.Disconnected for _ in MAX_ELIMS_RANGE]
+            elif all(v == 0 for v in elimsDict.values()): #everyone escaped
+                survivorStates = [FacedSurvivorState.Escaped for _ in MAX_ELIMS_RANGE]
+            else: #parse it normally
+                for fss in facedSurvivorsStrings:
+                    fss = fss.strip()
+                    state = FacedSurvivorState.Escaped
+                    parts = fss.split(':')
+                    if len(parts) > 1:
+                        statePart = parts[1].strip()
+                        state = FacedSurvivorState[''.join(e.capitalize() for e in statePart.split(' '))]
+                    survivorStates.append(state)
+            facedSurvivors = [FacedSurvivor(state=state, facedSurvivor=survivor) for state,survivor in zip(survivorStates, survivors)]
+
+        rank = self.__parseRank(s)
+
         return KillerMatch(killer=killer, rank=rank, points=points, matchDate=self._matchDate,
                            gameMap=gameMap, offering=offering, killerAddons=addons, perks=[KillerMatchPerk(perk=perk) for perk in perks],
                            facedSurvivors=facedSurvivors)
@@ -168,8 +162,7 @@ class DBDMatchParser(object):
                     break
 
         # parsing offering info
-        offeringName = re.search(r'offering: (.*?),', s).group(1).strip().lower()
-        offering = None if offeringName == 'none' else next(o for o in self._offerings if o.offeringName.lower() == offeringName)
+        offering = self.__parseOffering(s)
 
         #parsing match result
         matchResultStr = s[firstCommaIndex+1:perkParseStartIndex].replace(',','').strip()
@@ -179,13 +172,13 @@ class DBDMatchParser(object):
         facedKillerName = re.search(r'\(against (.*)\)',s).group(1)
         facedKiller = next(k for k in self._killers if facedKillerName in k.killerAlias.lower())
         #parsing rank
-        rank = int(re.search(r'rank: (\d{1,2})', s).group(1))
-        assert rank in range(Globals.HIGHEST_RANK, Globals.LOWEST_RANK + 1), "Rank can only be equal to numbers from range 1 to 20"
+        rank = self.__parseRank(s)
 
         #parsing party size
-        match = re.search(r"party size: ([1-4])",s)
-        assert match is not None, "No party size detected"
-        partySize = int(match.group(1))
+        partySize=1
+        partySizeMatch = re.search(r"party size: ([1-4])",s)
+        if partySizeMatch:
+            partySize = int(partySizeMatch.group(1))
 
         return SurvivorMatch(survivor=survivor,perks=[SurvivorMatchPerk(perk=perk) for perk in perks], item=item,
                              itemAddons=addons, facedKiller=facedKiller, rank=rank, partySize=partySize,
@@ -196,25 +189,81 @@ class DBDMatchParser(object):
         match = re.search(r'add ons: (.*)(?=\()', s)
         if not match:  # means its a killer string
             addonsIndex = s.index('add ons:')
-            mapIndex = s.index('map:')
-            addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
+            mapIndex = s.find('map:')
+            if mapIndex == -1: #means its at the end of the string
+                addonsStr = s[addonsIndex+len('add ons:'):].strip()
+            else:
+                addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
             if addonsStr != 'none':
-                addonNames = [e.strip() for e in addonsStr.split(',') if e]
-                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if addon.addonName.lower() == a)) for a in addonNames]
+                addonNames = [e.strip() for e in addonsStr.split(',') if e] #todo: include levenshtein checking
+                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if levenshteinDistance(addon.addonName.lower(), a.strip().lower()) <= 2)) for a in addonNames]
         else:
             addonsStr = match.group(1).rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = addonsStr.split(',')
-                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip())) for a in addonNames]
+                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if levenshteinDistance(addon.addonName.lower(), a.strip().lower()) <= 2)) for a in addonNames]
         return addons
 
     def __parsePoints(self, s: str) -> int:
-        try:
-            return int(re.search('(\d+) points', s).group(1))
-        except ValueError:
-            return 0
+        match = re.search('(\d+) points', s)
+        return int(match.group(1)) if match else 0
+
+    def __parseOffering(self, s: str) -> Optional[Offering]:
+        offeringMatch = re.search(r'offering: (.*?),', s)
+        offering = None
+        if offeringMatch:
+            offeringName = offeringMatch.group(1).strip().lower()
+            offering = None if offeringName == 'none' else next(
+                o for o in self._offerings if o.offeringName.lower() == offeringName)
+        return offering
+
+    def __parseRank(self, s:str) -> Optional[int]:
+        rank = None
+        rankMatch = re.search(r'rank: (\d{1,2})', s)
+        if rankMatch:
+            rank = int(rankMatch.group(1))
+            assert rank in range(Globals.HIGHEST_RANK,
+                                 Globals.LOWEST_RANK + 1), "Rank can only be equal to numbers from range 1 to 20"
+        return rank
+
+    def __parseMap(self,s:str) -> Optional[GameMap]:
+        gameMapIndex = s.find('map:')
+        gameMap = None
+        if gameMapIndex != -1:
+            commaIndex = s.find(',', gameMapIndex)
+            mapName = s[gameMapIndex + len("map:"):commaIndex].strip().lower()
+            for r in self._realms:
+                gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
+                if gameMap is not None:
+                    break
+        return gameMap
+
 
 class DBDMatchLogFileLoader(object):
 
     def __init__(self, parser: DBDMatchParser):
         self.parser = parser
+
+    def load(self, path: str) -> list[DBDMatch]:
+        with open(path, mode='r') as f:
+            games = []
+            currentDate = None
+            parseGames = False
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                if isDateString(line, '%d %m %Y'):
+                    currentDate = datetime.strptime(line, '%d %m %Y')
+                    self.parser.setMatchDate(currentDate)
+                    parseGames=True
+                    continue
+                elif parseGames:
+                    try:
+                        game = self.parser.parse(line)
+                        games.append(game)
+                    except ValueError:#empty
+                        parseGames=False
+                        currentDate=None
+
+        return games

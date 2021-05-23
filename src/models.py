@@ -22,7 +22,7 @@ class SurvivorMatchResult(enum.Enum):
     HatchEscape = 3
     Tunnelled = 4
     Camped = 5
-    BledOut = 6
+    Dead = 6
     KillerDisconnected = 7
 
 class ItemType(enum.Enum):

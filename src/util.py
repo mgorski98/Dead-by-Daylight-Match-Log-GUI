@@ -1,3 +1,4 @@
+import datetime
 import re
 from typing import Optional
 import numpy as np
@@ -65,3 +66,10 @@ def levenshteinDistance(s1: str, s2: str) -> int:
             matrix[i][j] = min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost)
 
     return matrix[m - 1][n - 1]
+
+def isDateString(s:str, fmt: str) -> bool:
+    try:
+        datetime.datetime.strptime(s,fmt)
+        return True
+    except Exception:
+        return False
