@@ -94,6 +94,8 @@ class ItemSelect(QWidget):
         return self.selectedItem
 
     def selectFromIndex(self, index: int):
+        if not self._itemsPresent():
+            return
         self.selectedItem = self.items[index]
         self.selectionChanged.emit(self.selectedItem)
         self.currentIndex = index

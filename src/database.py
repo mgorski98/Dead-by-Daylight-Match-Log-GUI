@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from operator import itemgetter
 from typing import Optional, Union
 
 import requests
@@ -9,6 +10,7 @@ import sqlalchemy
 from PIL import Image
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal, QObject, QRunnable
 from bs4 import BeautifulSoup
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap, KillerAddon, ItemAddon
@@ -298,20 +300,50 @@ class DatabaseUpdateWorker(QRunnable):
             "Saving offerings: progress {0}/{1}",
             "Saving realms: progress {0}/{1}",
         ]
+        with Database.instance().getNewSession() as session:
+            for item in killers:
+                try:
+                    with session.begin():
+                        session.add(item)
+                        session.commit()
+                        session.flush(item)
+                except Exception as e:
+                    print(e)
+            killers = list(map(itemgetter(0), session.execute(select(Killer)).all()))
 
-        with Database.instance().getNewSession() as dbSession:
-            for itemList, message in zip([killers, survivors, items, perks, addons, offerings, realms],guiMessageTemplates):
-                currentItems, totalItems = 0, len(itemList)
+        for addon in addons:
+            if isinstance(addon, KillerAddon):
+                killer = next((k for k in killers if k == addon.killer), None)
+                if killer is not None:
+                    addon.killer = killer
+
+        with Database.instance().getNewSession() as session:
+            for itemList in [survivors, realms, items, perks, offerings, addons]:
                 for item in itemList:
                     try:
-                        with dbSession.begin():
-                            dbSession.add(item)
-                            dbSession.commit()
+                        with session.begin():
+                            session.add(item)
+                            session.commit()
+                            session.flush(item)
                     except Exception as e:
-                        pass
-                    finally:
-                        currentItems += 1
-                        self.signals.progressUpdated.emit(message.format(currentItems, totalItems))
+                        print(e)
+
+        # for itemList, message in zip([killers, survivors, items, perks, addons, offerings, realms],guiMessageTemplates):
+        #     currentItems, totalItems = 0, len(itemList)
+        #     with Database.instance().getNewSession() as session:
+        #         for item in itemList:
+        #             with session.begin_nested():
+        #                 try:
+        #                     session.add(item)
+        #                     session.commit()
+        #                 except Exception as e:
+        #                     print(e)
+        #                     session.rollback()
+        #                     session.flush(item)
+        #                 finally:
+        #                     currentItems += 1
+        #                     self.signals.progressUpdated.emit(message.format(currentItems, totalItems))
+
 
         self.signals.finished.emit()
 

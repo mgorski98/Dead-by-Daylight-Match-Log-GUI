@@ -169,7 +169,7 @@ class DBDMatchParser(object):
         matchResult = SurvivorMatchResult[''.join(e.capitalize() for e in matchResultStr.split(' '))]
 
         #parsing faced killer
-        facedKillerName = re.search(r'\(against (.*)\)',s).group(1)
+        facedKillerName = re.search(r'\(\s*against (.*)\)',s).group(1)
         facedKiller = next(k for k in self._killers if facedKillerName in k.killerAlias.lower())
         #parsing rank
         rank = self.__parseRank(s)
@@ -195,13 +195,13 @@ class DBDMatchParser(object):
             else:
                 addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
             if addonsStr != 'none':
-                addonNames = [e.strip() for e in addonsStr.split(',') if e] #todo: include levenshtein checking
-                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if levenshteinDistance(addon.addonName.lower(), a.strip().lower()) <= 2)) for a in addonNames]
+                addonNames = [e.strip() for e in addonsStr.split(',') if e]
+                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip().lower())) if a != 'zori' else next(addon for addon in self._addons if addon.addonName == 'Zōri') for a in addonNames]
         else:
             addonsStr = match.group(1).rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = addonsStr.split(',')
-                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if levenshteinDistance(addon.addonName.lower(), a.strip().lower()) <= 2)) for a in addonNames]
+                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip().lower())) for a in addonNames]
         return addons
 
     def __parsePoints(self, s: str) -> int:
@@ -241,11 +241,12 @@ class DBDMatchParser(object):
 
 class DBDMatchLogFileLoader(object):
 
-    def __init__(self, parser: DBDMatchParser):
+    def __init__(self, parser: DBDMatchParser, encoding: str ='utf-8'):
         self.parser = parser
+        self.encoding = encoding
 
     def load(self, path: str) -> list[DBDMatch]:
-        with open(path, mode='r') as f:
+        with open(path, mode='r', encoding=self.encoding) as f:
             games = []
             currentDate = None
             parseGames = False

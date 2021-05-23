@@ -229,6 +229,8 @@ class MainWindow(QMainWindow):
         saveMatchesAction = QAction("Save current match data", self)
         saveMatchesAction.triggered.connect(self.__saveMatches)
         saveMatchesAction.setShortcut(QKeySequence("Ctrl+S"))
+        exportDBAction = QAction("Export database as a log file", self)
+        exportDBAction.triggered.connect(self.__exportDBAsLog)
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         optionsMenu = menubar.addMenu('&Options')
@@ -236,6 +238,7 @@ class MainWindow(QMainWindow):
         optionsMenu.addAction(saveMatchesAction)
         optionsMenu.addAction(updateAction)
         fileMenu.addAction(loadLogAction)
+        fileMenu.addAction(exportDBAction)
         helpMenu.addAction(logHelpAction)
 
     def __saveMatches(self):
@@ -274,4 +277,7 @@ class MainWindow(QMainWindow):
             print()
 
     def __showLogHelpWindow(self):
+        pass
+
+    def __exportDBAsLog(self):
         pass
