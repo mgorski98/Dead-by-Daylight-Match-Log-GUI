@@ -2,6 +2,8 @@ import re
 from datetime import date, datetime
 from typing import Union, Callable, Optional
 
+from PyQt5.QtCore import QRunnable, QObject, pyqtSignal
+
 from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
@@ -268,3 +270,18 @@ class DBDMatchLogFileLoader(object):
                         currentDate=None
 
         return games
+
+
+class LogFileLoadWorkerSignals(QObject):
+    fileLoaded = pyqtSignal(object)
+
+class LogFileLoadWorker(QRunnable):
+
+
+    def __init__(self):
+        super(LogFileLoadWorker, self).__init__()
+        self.signals = LogFileLoadWorkerSignals()
+
+    def run(self) -> None:
+        print("HERE")
+        self.signals.fileLoaded.emit([])

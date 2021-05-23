@@ -182,3 +182,5 @@ class TestDBDMatchParser(unittest.TestCase):
                      "map: wreckers' yard, offering: white ward, rank: 50, party size: 1"
         self.parser.setMatchDate(date(2021, 5, 21))
         self.assertRaises(AssertionError, lambda: self.parser.parse(testString))
+
+    #todo: make tests for when there is no map, rank, party size etc. information

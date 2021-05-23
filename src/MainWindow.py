@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog
 
-from classutil import DBDMatchParser, DBDMatchLogFileLoader
+from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -272,12 +272,18 @@ class MainWindow(QMainWindow):
     def __loadMatchLogs(self):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
         loader = DBDMatchLogFileLoader(self.parser) #temporary
-        for logFile in files:
+        for logFile in files:#todo: load games in separate thread
             games = loader.load(logFile)
             print()
 
     def __showLogHelpWindow(self):
         pass
+        # try:
+        #     worker = LogFileLoadWorker()
+        #     worker.signals.fileLoaded.connect(lambda l: print(l))
+        #     self.threadPool.start(worker)
+        # except Exception as e:
+        #     print(e)
 
     def __exportDBAsLog(self):
         pass
