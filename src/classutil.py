@@ -274,14 +274,17 @@ class DBDMatchLogFileLoader(object):
 
 class LogFileLoadWorkerSignals(QObject):
     fileLoaded = pyqtSignal(object)
+    finished = pyqtSignal()
 
 class LogFileLoadWorker(QRunnable):
 
 
-    def __init__(self):
+    def __init__(self,paths: list[str]):
         super(LogFileLoadWorker, self).__init__()
         self.signals = LogFileLoadWorkerSignals()
+        self.filePaths = paths
 
     def run(self) -> None:
         print("HERE")
         self.signals.fileLoaded.emit([])
+        self.signals.finished.emit()

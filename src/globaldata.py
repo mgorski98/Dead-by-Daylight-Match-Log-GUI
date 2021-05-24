@@ -26,6 +26,7 @@ class Globals:
     MAP_ICON_SIZE = (180, 90)
     ITEM_ICON_SIZE = (96, 96)
 
+    #todo: load icons in threads, or using multiprocessing module
     @staticmethod
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
         Globals.DEFAULT_ADDON_ICON = QPixmap('../images/default-addon-icon.png')
