@@ -271,9 +271,21 @@ class MainWindow(QMainWindow):
 
     def __loadMatchLogs(self):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
-        loader = DBDMatchLogFileLoader(self.parser) #temporary
-        for logFile in files:#todo: load games in separate thread
-            games = loader.load(logFile)
+        loader = DBDMatchLogFileLoader(self.parser)
+        progressDialog = QProgressDialog()
+        progressDialog.setRange(0,0)
+        progressDialog.setWindowTitle("Loading match log files")
+        progressDialog.setCancelButton(None)
+        progressDialog.setFixedSize(450, 100)
+        progressDialog.setModal(True)
+        self.loadWorker = LogFileLoadWorker(loader, files)
+        self.loadWorker.signals.fileLoadStarted.connect(lambda fileName: progressDialog.setLabelText(f"Loading file: {fileName}"))
+        self.loadWorker.signals.finished.connect(lambda l,e: progressDialog.close())
+        self.loadWorker.signals.finished.connect(lambda l,e: print(f'{l}\n{e}'))
+        # loadWorker.signals.finished.connect() #todo: connect a function showing a new dialog window with information about errors and loaded games (that lets you confirm if you want to save data)
+        #maybe paginate loaded elements?
+        self.threadPool.start(self.loadWorker)
+        progressDialog.show()
 
     def __showLogHelpWindow(self):
         pass

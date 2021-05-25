@@ -72,7 +72,10 @@ class DBDMatchParser(object):
                 nameParts = perkStr.split(" ")
                 perkName = ' '.join(nameParts[:-1])
                 tier = len(nameParts[-1])
-                perks.append(next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
+                perk = next((p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier),
+                            None)
+                assert perk is not None, f"Unknown perk: {perkName} {tier}"
+                perks.append(perk)
 
         #parsing points
         points = self.__parsePoints(s)
@@ -138,8 +141,9 @@ class DBDMatchParser(object):
                 nameParts = perkStr.split(" ")
                 perkName = ' '.join(nameParts[:-1])
                 tier = len(nameParts[-1])
-                perks.append(
-                    next(p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier))
+                perk = next((p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier), None)
+                assert perk is not None, f"Unknown perk: {perkName} {tier}"
+                perks.append(perk)
         assert len(perks) in range(0,5), "There cannot be more than 4 perks"
         assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
         # parsing points
@@ -279,8 +283,8 @@ class DBDMatchLogFileLoader(object):
 
 
 class LogFileLoadWorkerSignals(QObject):
-    fileLoaded = pyqtSignal(str, object, object) #pass file name, list of games and list of error messages
-    finished = pyqtSignal()
+    finished = pyqtSignal(object, object) #lets you pass loaded games and errors occurred during loading
+    fileLoadStarted = pyqtSignal(str) #emits the file path
 
 
 class LogFileLoadWorker(QRunnable):
@@ -293,8 +297,11 @@ class LogFileLoadWorker(QRunnable):
         self.loader = loader
 
     def run(self) -> None:
+        allGames, allErrors = [], []
         for file in self.filePaths:
+            self.signals.fileLoadStarted.emit(file)
             games = self.loader.load(file)
             errors = self.loader.errors
-            self.signals.fileLoaded.emit(file, games, errors)
-        self.signals.finished.emit()
+            allGames += games
+            allErrors += errors
+        self.signals.finished.emit(allGames, allErrors)
