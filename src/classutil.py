@@ -246,13 +246,17 @@ class DBDMatchLogFileLoader(object):
     def __init__(self, parser: DBDMatchParser, encoding: str ='utf-8'):
         self.parser = parser
         self.encoding = encoding
+        self.errors = []
 
     def load(self, path: str) -> list[DBDMatch]:
+        self.errors = []
         with open(path, mode='r', encoding=self.encoding) as f:
             games = []
             currentDate = None
             parseGames = False
+            currentLine = 0
             for line in f:
+                currentLine+=1
                 line = line.strip()
                 if not line:
                     continue
@@ -268,26 +272,29 @@ class DBDMatchLogFileLoader(object):
                     except ValueError:#empty
                         parseGames=False
                         currentDate=None
+                    except AssertionError as e:
+                        self.errors.append(f'Error at line {currentLine} in file {path}: {e}')
 
         return games
 
 
 class LogFileLoadWorkerSignals(QObject):
-    fileLoaded = pyqtSignal(object)
+    fileLoaded = pyqtSignal(str, object, object) #pass file name, list of games and list of error messages
     finished = pyqtSignal()
 
-#todo: make this class store the errors from loading a file (line and what happened)
-#or make a signal returning error messages or sth i dont know yet
+
 class LogFileLoadWorker(QRunnable):
 
 
-    def __init__(self,paths: list[str]):
+    def __init__(self, loader: DBDMatchLogFileLoader, paths: list[str]):
         super(LogFileLoadWorker, self).__init__()
         self.signals = LogFileLoadWorkerSignals()
         self.filePaths = paths
-        self.errors: list[str] = [] #list of error messages
+        self.loader = loader
 
     def run(self) -> None:
-        print("HERE")
-        self.signals.fileLoaded.emit([])
+        for file in self.filePaths:
+            games = self.loader.load(file)
+            errors = self.loader.errors
+            self.signals.fileLoaded.emit(file, games, errors)
         self.signals.finished.emit()

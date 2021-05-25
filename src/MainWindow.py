@@ -274,16 +274,9 @@ class MainWindow(QMainWindow):
         loader = DBDMatchLogFileLoader(self.parser) #temporary
         for logFile in files:#todo: load games in separate thread
             games = loader.load(logFile)
-            print()
 
     def __showLogHelpWindow(self):
         pass
-        # try:
-        #     worker = LogFileLoadWorker()
-        #     worker.signals.fileLoaded.connect(lambda l: print(l))
-        #     self.threadPool.start(worker)
-        # except Exception as e:
-        #     print(e)
 
     def __exportDBAsLog(self):
         pass
