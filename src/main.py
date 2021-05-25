@@ -11,7 +11,7 @@ from database import Database
 from globaldata import Globals
 
 def updateSplash(splash: QSplashScreen, message:str) -> None:
-    splash.showMessage(message, Qt.AlignCenter)
+    splash.showMessage(message, Qt.AlignBottom)
     QApplication.processEvents()
 
 def main() -> None:

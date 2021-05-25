@@ -276,6 +276,8 @@ class LogFileLoadWorkerSignals(QObject):
     fileLoaded = pyqtSignal(object)
     finished = pyqtSignal()
 
+#todo: make this class store the errors from loading a file (line and what happened)
+#or make a signal returning error messages or sth i dont know yet
 class LogFileLoadWorker(QRunnable):
 
 
@@ -283,6 +285,7 @@ class LogFileLoadWorker(QRunnable):
         super(LogFileLoadWorker, self).__init__()
         self.signals = LogFileLoadWorkerSignals()
         self.filePaths = paths
+        self.errors: list[str] = [] #list of error messages
 
     def run(self) -> None:
         print("HERE")

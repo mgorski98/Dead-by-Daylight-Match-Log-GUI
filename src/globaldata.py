@@ -31,7 +31,7 @@ class Globals:
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
         Globals.DEFAULT_ADDON_ICON = QPixmap('../images/default-addon-icon.png')
         Globals.DEFAULT_PERK_ICON = QPixmap('../images/default-perk-icon.png')
-        Globals.DEFAULT_OFFERING_ICON = QPixmap('../images/default-offering-icon.png').scaled(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1])
+        Globals.DEFAULT_OFFERING_ICON = QPixmap('../images/default-offering-icon.png').scaled(*Globals.OFFERING_ICON_SIZE)
         killerIconsPath = '../images/killers/'
         survivorIconsPath = '../images/survivors/'
         addonsIconsPath = '../images/addons/'
@@ -43,6 +43,7 @@ class Globals:
         dicts = [Globals.KILLER_ICONS, Globals.SURVIVOR_ICONS, Globals.ADDON_ICONS, Globals.OFFERING_ICONS, Globals.PERK_ICONS, Globals.ITEM_ICONS, Globals.MAP_ICONS]
         for path, iconDict in zip(paths, dicts):
             for file in os.listdir(path):
-                pixmap = QPixmap(path + file)
-                filename, _ = os.path.splitext(file)
-                iconDict[filename] = pixmap
+                pixmap = QPixmap(path+file)
+                fname, _ = os.path.splitext(file)
+                iconDict[fname] = pixmap
+
