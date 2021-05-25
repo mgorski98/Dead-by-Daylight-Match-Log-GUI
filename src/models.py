@@ -394,6 +394,9 @@ class SurvivorMatch(DBDMatch):
 
             return builder.getvalue()
 
+    def __repr__(self):
+        return self.__str__()
+
     __mapper_args__ = {
         "properties": {
             "facedKiller": relationship("Killer",uselist=False, lazy='subquery'),
@@ -462,6 +465,9 @@ class KillerMatch(DBDMatch):
                 builder.write("No data about faced survivors\n")
 
             return builder.getvalue()
+
+    def __repr__(self):
+        return self.__str__()
 
     __mapper_args__ = {
         "properties": {

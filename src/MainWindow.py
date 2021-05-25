@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog
 
+from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
@@ -281,11 +282,13 @@ class MainWindow(QMainWindow):
         self.loadWorker = LogFileLoadWorker(loader, files)
         self.loadWorker.signals.fileLoadStarted.connect(lambda fileName: progressDialog.setLabelText(f"Loading file: {fileName}"))
         self.loadWorker.signals.finished.connect(lambda l,e: progressDialog.close())
-        self.loadWorker.signals.finished.connect(lambda l,e: print(f'{l}\n{e}'))
-        # loadWorker.signals.finished.connect() #todo: connect a function showing a new dialog window with information about errors and loaded games (that lets you confirm if you want to save data)
-        #maybe paginate loaded elements?
+        self.loadWorker.signals.finished.connect(self.__showLoadedMatchData)
         self.threadPool.start(self.loadWorker)
         progressDialog.show()
+
+    def __showLoadedMatchData(self, loadedGames: list[DBDMatch], errors: list[str]):
+        dialog = LoadedGamesDisplayDialog(loadedGames, errors)
+        dialog.exec_()
 
     def __showLogHelpWindow(self):
         pass
