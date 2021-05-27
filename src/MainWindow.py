@@ -36,7 +36,6 @@ class MainWindow(QMainWindow):
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
             resources = DBDResources(killers, survivors, addons, items, offerings, realms, killerPerks + survivorPerks)
         self.resources = resources
-        self.parser = DBDMatchParser(resources)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -109,6 +108,7 @@ class MainWindow(QMainWindow):
         killerListLayout.setAlignment(self.addKillerMatchButton, Qt.AlignHCenter)
         killerListLayout.addSpacerItem(QSpacerItem(1, 90))
         #</editor-fold>
+        #<editor-fold desc="setting up survivor form">
         survivorMainTabWidget = QTabWidget()
         self.survivorMatchListWidget = QListWidget()
         survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
@@ -183,6 +183,7 @@ class MainWindow(QMainWindow):
         survivorMatchInfoLayout.addWidget(lowerSurvivorMatchInfoWidget)
         self.addSurvivorMatchButton.setFixedWidth(150)
         survivorListLayout.setContentsMargins(5, 23, 5, 0)
+        #</editor-fold>
 
     def __addMatchToList(self, _list: QListWidget, match: DBDMatch):
         matchWidget = DBDMatchListItem(match)
@@ -288,7 +289,8 @@ class MainWindow(QMainWindow):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
         if len(files) <= 0:
             return
-        loader = DBDMatchLogFileLoader(self.parser)
+        parser = DBDMatchParser(self.resources)
+        loader = DBDMatchLogFileLoader(parser)
         progressDialog = QProgressDialog()
         progressDialog.setRange(0,0)
         progressDialog.setWindowTitle("Loading match log files")

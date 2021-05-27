@@ -135,15 +135,7 @@ class DBDMatchParser(object):
         assert len(addons) in range(0,3), "There cannot be more than 2 add-ons"
         assert len(addons) == len(set(map(str, addons))), "There cannot be 2 of the same add-on"
         # parsing map info
-        gameMapIndex = s.find('map:')
-        gameMap = None
-        if gameMapIndex != -1:
-            commaIndex = s.find(',', gameMapIndex)
-            mapName = s[gameMapIndex + len("map:"):commaIndex].strip().lower()
-            for r in self._resources.realms:
-                gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
-                if gameMap is not None:
-                    break
+        gameMap = self.__parseMap(s)
 
         # parsing offering info
         offering = self.__parseOffering(s)
