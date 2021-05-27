@@ -68,20 +68,7 @@ class DBDMatchParser(object):
         assert sum(elimsDict.values()) in range(0,5), "Cannot be more than 4 eliminations"
 
         #parsing perks
-        perkParseEndIndex = s.index(')', perkParseStartIndex)
-        perksStr = s[perkParseStartIndex+1:perkParseEndIndex].strip()
-        perks = []
-        if perksStr:
-            perkStrings = perksStr.split(',')
-            for perkStr in perkStrings:
-                perkStr = perkStr.strip()
-                nameParts = perkStr.split(" ")
-                perkName = ' '.join(nameParts[:-1])
-                tier = len(nameParts[-1])
-                perk = next((p for p in self._resources.perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier),
-                            None)
-                assert perk is not None, f"Unknown perk: {perkName} {tier}"
-                perks.append(perk)
+        perks = self.__parsePerks(s)
 
         #parsing points
         points = self.__parsePoints(s)
@@ -135,23 +122,8 @@ class DBDMatchParser(object):
         survivorName = s[:firstCommaIndex]
         survivor = next(_s for _s in self._resources.survivors if survivorName in _s.survivorName)
 
-        perkParseStartIndex = s.index('(')
-        # parsing perks
-        perkParseEndIndex = s.index(')', perkParseStartIndex)
-        perksStr = s[perkParseStartIndex + 1:perkParseEndIndex].strip()
-        perks = []
-        if perksStr:
-            perkStrings = perksStr.split(',')
-            for perkStr in perkStrings:
-                perkStr = perkStr.strip()
-                nameParts = perkStr.split(" ")
-                perkName = ' '.join(nameParts[:-1])
-                tier = len(nameParts[-1])
-                perk = next((p for p in self._resources.perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier), None)
-                assert perk is not None, f"Unknown perk: {perkName} {tier}"
-                perks.append(perk)
-        assert len(perks) in range(0,5), "There cannot be more than 4 perks"
-        assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
+        perks = self.__parsePerks(s)
+
         # parsing points
         points = self.__parsePoints(s)
 
@@ -175,7 +147,7 @@ class DBDMatchParser(object):
 
         # parsing offering info
         offering = self.__parseOffering(s)
-
+        perkParseStartIndex = s.index('(')
         #parsing match result
         matchResultStr = s[firstCommaIndex+1:perkParseStartIndex].replace(',','').strip()
         matchResult = SurvivorMatchResult[''.join(e.capitalize() for e in matchResultStr.split(' '))]
@@ -195,6 +167,27 @@ class DBDMatchParser(object):
         return SurvivorMatch(survivor=survivor,perks=[SurvivorMatchPerk(perk=perk) for perk in perks], item=item,
                              itemAddons=addons, facedKiller=facedKiller, rank=rank, partySize=partySize,
                              matchResult=matchResult,offering=offering,gameMap=gameMap,points=points,matchDate=self._matchDate)
+
+    def __parsePerks(self, s: str) -> list[Perk]:
+        perkParseStartIndex = s.index('(')
+        perkParseEndIndex = s.index(')', perkParseStartIndex)
+        perksStr = s[perkParseStartIndex + 1:perkParseEndIndex].strip()
+        perks = []
+        if perksStr:
+            perkStrings = perksStr.split(',')
+            for perkStr in perkStrings:
+                perkStr = perkStr.strip()
+                nameParts = perkStr.split(" ")
+                perkName = ' '.join(nameParts[:-1])
+                tier = len(nameParts[-1])
+                perk = next(
+                    (p for p in self._resources.perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier),
+                    None)
+                assert perk is not None, f"Unknown perk: {perkName} {tier}"
+                perks.append(perk)
+        assert len(perks) in range(0, 5), "There cannot be more than 4 perks"
+        assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
+        return perks
 
     def __parseAddonsInfo(self, s: str) -> Union[list[MatchItemAddon], list[MatchKillerAddon]]:
         addons = []

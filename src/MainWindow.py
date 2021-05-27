@@ -5,7 +5,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
-    QFileDialog, QListWidgetItem
+    QFileDialog, QListWidgetItem, QDialog
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
@@ -305,6 +305,8 @@ class MainWindow(QMainWindow):
     def __showLoadedMatchData(self, loadedGames: list[DBDMatch], errors: list[str]):
         dialog = LoadedGamesDisplayDialog(loadedGames, errors)
         result = dialog.exec_()
+        if result == QDialog.Accepted:
+            pass
 
     def __showLogHelpWindow(self):
         pass
