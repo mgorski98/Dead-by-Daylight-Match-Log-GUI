@@ -3,7 +3,7 @@ import operator
 
 import sqlalchemy
 
-from classutil import DBDMatchParser
+from classutil import DBDMatchParser, DBDResources
 from database import Database
 from models import *
 
@@ -15,17 +15,18 @@ class TestDBDMatchParser(unittest.TestCase):
         Database.init('sqlite:///../dbd-match-log-DEV.db')
         with Database.instance().getNewSession() as s:
             extractor = operator.itemgetter(0)
-            cls.killers = list(map(extractor, s.execute(
+            killers = list(map(extractor, s.execute(
                 sqlalchemy.select(Killer)).all()))  # for some ungodly reason this returns list of 1-element tuples
-            cls.realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
-            cls.survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
+            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
+            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
             killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
             itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
-            cls.addons = killerAddons + itemAddons
-            cls.offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
-            cls.perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
-            cls.items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-        cls.parser = DBDMatchParser(cls.killers, cls.survivors, cls.addons, cls.items, cls.offerings, cls.realms, cls.perks)
+            addons = killerAddons + itemAddons
+            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
+            perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
+            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
+            cls.resources = DBDResources(killers,survivors,addons, items, offerings, realms, perks)
+        cls.parser = DBDMatchParser(cls.resources)
 
     def test_parseKillerGame_everythingCorrect(self):
         testString = "Hillbilly, 2 kills, (tinkerer I, enduring III, lightborn III), 23196 points, " \
@@ -33,7 +34,7 @@ class TestDBDMatchParser(unittest.TestCase):
                      "survivors: [Jeff, Yui: sacrificed, David: sacrificed, Meg], rank: 6"
         self.parser.setMatchDate(date(2021, 5, 21))
         resultMatch = self.parser.parse(testString)
-        killer = next(k for k in self.killers if k.killerAlias == 'The Hillbilly')
+        killer = next(k for k in self.resources.killers if k.killerAlias == 'The Hillbilly')
         perks = [Perk(perkType=PerkType.Killer,perkName='Tinkerer',perkTier=1), Perk(perkType=PerkType.Killer,perkName='Enduring',perkTier=3), Perk(perkType=PerkType.Killer, perkName='Lightborn', perkTier=3)]
         addons = [KillerAddon(killer=killer,addonName='Apex Muffler')]
         survivorNames = ['Jeffrey "Jeff" Johansen','Yui Kimura','David King','Meg Thomas']
@@ -99,7 +100,7 @@ class TestDBDMatchParser(unittest.TestCase):
                      "scraps (against legion), map: wreckers' yard, offering: white ward, rank: 10, party size: 1"
         matchDate = date(2021,5,21)
         self.parser.setMatchDate(matchDate)
-        survivor = next(s for s in self.survivors if s.survivorName == 'William "Bill" Overbeck')
+        survivor = next(s for s in self.resources.survivors if s.survivorName == 'William "Bill" Overbeck')
         perks = [
             Perk(perkName="We're Gonna Live Forever",perkType=PerkType.Survivor,perkTier=3),
             Perk(perkName='Dead Hard',perkType=PerkType.Survivor,perkTier=1),
@@ -108,7 +109,7 @@ class TestDBDMatchParser(unittest.TestCase):
         ]
         item = Item(itemType=ItemType.Toolbox,itemName='Commodious Toolbox')
         addons = [ItemAddon(addonName='Wire Spool',itemType=ItemType.Toolbox), ItemAddon(addonName='Scraps',itemType=ItemType.Toolbox)]
-        facedKiller = next(k for k in self.killers if k.killerAlias == 'The Legion')
+        facedKiller = next(k for k in self.resources.killers if k.killerAlias == 'The Legion')
         expectedMatch = SurvivorMatch(matchResult=SurvivorMatchResult.Sacrificed, points=20100, partySize=1, offering=Offering(offeringName='White Ward'),
                                       gameMap=GameMap(mapName="Wreckers' Yard"), perks=[SurvivorMatchPerk(perk=perk) for perk in perks],
                                       matchDate=matchDate,facedKiller=facedKiller,itemAddons=[MatchItemAddon(itemAddon=addon) for addon in addons],item=item,
@@ -123,8 +124,8 @@ class TestDBDMatchParser(unittest.TestCase):
         matchDate = date(2020, 3, 20)
         self.parser.setMatchDate(matchDate)
         resultMatch = self.parser.parse(testString)
-        survivor = next(s for s in self.survivors if s.survivorName == 'William "Bill" Overbeck')
-        facedKiller = next(k for k in self.killers if k.killerAlias == 'The Legion')
+        survivor = next(s for s in self.resources.survivors if s.survivorName == 'William "Bill" Overbeck')
+        facedKiller = next(k for k in self.resources.killers if k.killerAlias == 'The Legion')
         perks = [
             Perk(perkName="We're Gonna Live Forever", perkType=PerkType.Survivor, perkTier=3),
             Perk(perkName='Dead Hard', perkType=PerkType.Survivor, perkTier=1),

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QFileDialog, QListWidgetItem
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
-from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
+from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -34,7 +34,9 @@ class MainWindow(QMainWindow):
             killerPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Killer)).all()))
             survivorPerks = list(map(extractor, s.execute(sqlalchemy.select(Perk).where(Perk.perkType == PerkType.Survivor)).all()))
             items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-        self.parser = DBDMatchParser(killers, survivors, addons, items, offerings, realms, killerPerks + survivorPerks)
+            resources = DBDResources(killers, survivors, addons, items, offerings, realms, killerPerks + survivorPerks)
+        self.resources = resources
+        self.parser = DBDMatchParser(resources)
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -284,6 +286,8 @@ class MainWindow(QMainWindow):
 
     def __loadMatchLogs(self):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
+        if len(files) <= 0:
+            return
         loader = DBDMatchLogFileLoader(self.parser)
         progressDialog = QProgressDialog()
         progressDialog.setRange(0,0)
