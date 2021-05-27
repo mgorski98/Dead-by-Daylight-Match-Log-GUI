@@ -5,20 +5,20 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
-    QFileDialog
+    QFileDialog, QListWidgetItem
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
-    OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect
+    OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect, DBDMatchListItem
 from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
     SurvivorMatch
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
 
-
+#todo: add statistics calculation and allow exporting those statistics to other file formats, e.g. json
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
         self.killerMatchPointsTextBox.setValidator(nonNegativeIntValidator())
         self.killerMatchDatePicker = QDateEdit(calendarPopup=True)
         self.killerMatchDatePicker.setDate(QDate.currentDate())
+        self.killerMatchDatePicker.setDisplayFormat('dd-MM-yyyy')
         self.killerRankSpinner = QSpinBox()
         self.killerRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)#lowest rank is 20, DBD ranks are going down the better they are, so rank 1 is the best
         otherInfoWidget, otherInfoLayout = setQWidgetLayout(QWidget(),QGridLayout())
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow):
         self.survivorRankSpinner.setRange(Globals.HIGHEST_RANK, Globals.LOWEST_RANK)
         self.survivorMatchDatePicker = QDateEdit(calendarPopup=True)
         self.survivorMatchDatePicker.setDate(QDate.currentDate())
+        self.survivorMatchDatePicker.setDisplayFormat('dd-MM-yyyy')
         self.survivorMatchResultComboBox = QComboBox()
         self.partySizeSpinner = QSpinBox()
         self.partySizeSpinner.setRange(1, 4) #minimum one person (you), maximum 4 people (max party size in DBD)
@@ -180,6 +182,13 @@ class MainWindow(QMainWindow):
         self.addSurvivorMatchButton.setFixedWidth(150)
         survivorListLayout.setContentsMargins(5, 23, 5, 0)
 
+    def __addMatchToList(self, _list: QListWidget, match: DBDMatch):
+        matchWidget = DBDMatchListItem(match)
+        listItem = QListWidgetItem()
+        listItem.setSizeHint(matchWidget.sizeHint())
+        _list.addItem(listItem)
+        _list.setItemWidget(listItem, matchWidget)
+
     def addNewKillerMatch(self):
         killer = self.killerSelection.getSelectedItem()
         offering = self.killerOfferingSelection.selectedItem
@@ -197,6 +206,7 @@ class MainWindow(QMainWindow):
                                   points=points, offering=offering, rank=rank,
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
+        self.__addMatchToList(self.killerMatchListWidget, killerMatch)
 
     def addNewSurvivorMatch(self):
         survivor = self.survivorSelect.getSelectedItem()
@@ -218,6 +228,8 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
+        self.__addMatchToList(self.survivorMatchListWidget, survivorMatch)
+
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
@@ -288,7 +300,7 @@ class MainWindow(QMainWindow):
 
     def __showLoadedMatchData(self, loadedGames: list[DBDMatch], errors: list[str]):
         dialog = LoadedGamesDisplayDialog(loadedGames, errors)
-        dialog.exec_()
+        result = dialog.exec_()
 
     def __showLogHelpWindow(self):
         pass

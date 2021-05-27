@@ -6,11 +6,11 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QLineEdit, QMessageBox
+    QLineEdit, QMessageBox, QListWidgetItem
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
-    GameMap, Realm, FacedSurvivor
+    GameMap, Realm, FacedSurvivor, DBDMatch, KillerMatch, SurvivorMatch
 from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
@@ -612,3 +612,22 @@ class SurvivorItemSelect(ItemSelect):
 
     def _itemsPresent(self):
         return len(self.currentItems) > 0
+
+
+class DBDMatchListItem(QWidget):
+    def __init__(self, match: DBDMatch, parent=None):
+        super().__init__(parent=parent)
+        self.match = match
+        self.setLayout(QHBoxLayout())
+        if isinstance(match, SurvivorMatch):
+            self.__setupSurvivorMatchUI()
+        elif isinstance(match, KillerMatch):
+            self.__setupKillerMatchUI()
+        else:
+            raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
+
+    def __setupSurvivorMatchUI(self):
+        pass
+
+    def __setupKillerMatchUI(self):
+        pass
