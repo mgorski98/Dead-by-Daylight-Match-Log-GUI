@@ -1,3 +1,4 @@
+import dataclasses
 import re
 from datetime import date, datetime
 from typing import Union, Callable, Optional
@@ -9,18 +10,23 @@ from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Rea
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
     SurvivorMatchPerk, GameMap
 from util import isDateString, levenshteinDistance
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class DBDResources(object):
+    killers: list[Killer]
+    survivors: list[Survivor]
+    addons: list[Union[KillerAddon, ItemAddon]]
+    items: list[Item]
+    offerings: list[Offering]
+    realms: list[Realm]
+    perks: list[Perk]
 
 
 class DBDMatchParser(object):
 
-    def __init__(self, killers: list[Killer], survivors: list[Survivor], addons: list[Union[KillerAddon,ItemAddon]], items: list[Item], offerings: list[Offering], realms: list[Realm], perks: list[Perk]):
-        self._killers = killers
-        self._survivors = survivors
-        self._addons = addons
-        self._items = items
-        self._offerings = offerings
-        self._realms = realms
-        self._perks = perks
+    def __init__(self, resources: DBDResources):
+        self._resources = resources
         self._matchDate = None
 
     def setMatchDate(self, d: date):
@@ -37,13 +43,13 @@ class DBDMatchParser(object):
         return handler(s)
 
     def __determineMatchType(self, charName: str) -> Callable[[str], DBDMatch]:
-        return self.__parseKillerGame if any(charName in k.killerAlias for k in self._killers) else self.__parseSurvivorGame if any(charName in _s.survivorName for _s in self._survivors) else None
+        return self.__parseKillerGame if any(charName in k.killerAlias for k in self._resources.killers) else self.__parseSurvivorGame if any(charName in _s.survivorName for _s in self._resources.survivors) else None
 
     def __parseKillerGame(self, s: str) -> KillerMatch:
         #parsing killer
         firstCommaIndex = s.index(',')
         killerName = s[:firstCommaIndex]
-        killer = next(k for k in self._killers if killerName in k.killerAlias)
+        killer = next(k for k in self._resources.killers if killerName in k.killerAlias)
 
         #parsing eliminations
         elimsDict = {'kill':0,'mori':0,'disconnect':0}
@@ -62,20 +68,7 @@ class DBDMatchParser(object):
         assert sum(elimsDict.values()) in range(0,5), "Cannot be more than 4 eliminations"
 
         #parsing perks
-        perkParseEndIndex = s.index(')', perkParseStartIndex)
-        perksStr = s[perkParseStartIndex+1:perkParseEndIndex].strip()
-        perks = []
-        if perksStr:
-            perkStrings = perksStr.split(',')
-            for perkStr in perkStrings:
-                perkStr = perkStr.strip()
-                nameParts = perkStr.split(" ")
-                perkName = ' '.join(nameParts[:-1])
-                tier = len(nameParts[-1])
-                perk = next((p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier),
-                            None)
-                assert perk is not None, f"Unknown perk: {perkName} {tier}"
-                perks.append(perk)
+        perks = self.__parsePerks(s)
 
         #parsing points
         points = self.__parsePoints(s)
@@ -93,7 +86,7 @@ class DBDMatchParser(object):
             facedSurvivorsStrings = facedSurvivorsString.split(',')
             #if there's 4 of any elimination method and no states specified then we assume all of them were eliminated that way
             #same with escapes, if there's 0 of each method then all of them escaped
-            survivors = [next(_s for _s in self._survivors if (fss[:fss.index(':')].strip() if ':' in fss else fss.strip()) in _s.survivorName) for fss in facedSurvivorsStrings]
+            survivors = [next(_s for _s in self._resources.survivors if (fss[:fss.index(':')].strip() if ':' in fss else fss.strip()) in _s.survivorName) for fss in facedSurvivorsStrings]
             survivorStates = []
             MAX_ELIMS = 4
             MAX_ELIMS_RANGE = range(MAX_ELIMS)
@@ -127,56 +120,33 @@ class DBDMatchParser(object):
     def __parseSurvivorGame(self, s: str) -> SurvivorMatch:
         firstCommaIndex = s.index(',')
         survivorName = s[:firstCommaIndex]
-        survivor = next(_s for _s in self._survivors if survivorName in _s.survivorName)
+        survivor = next(_s for _s in self._resources.survivors if survivorName in _s.survivorName)
 
-        perkParseStartIndex = s.index('(')
-        # parsing perks
-        perkParseEndIndex = s.index(')', perkParseStartIndex)
-        perksStr = s[perkParseStartIndex + 1:perkParseEndIndex].strip()
-        perks = []
-        if perksStr:
-            perkStrings = perksStr.split(',')
-            for perkStr in perkStrings:
-                perkStr = perkStr.strip()
-                nameParts = perkStr.split(" ")
-                perkName = ' '.join(nameParts[:-1])
-                tier = len(nameParts[-1])
-                perk = next((p for p in self._perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier), None)
-                assert perk is not None, f"Unknown perk: {perkName} {tier}"
-                perks.append(perk)
-        assert len(perks) in range(0,5), "There cannot be more than 4 perks"
-        assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
+        perks = self.__parsePerks(s)
+
         # parsing points
         points = self.__parsePoints(s)
 
         #parsing item info
         itemName = re.search(r'item: (.*?),', s).group(1).strip()
-        item = next((i for i in self._items if i.itemName.lower() == itemName), None)
+        item = next((i for i in self._resources.items if i.itemName.lower() == itemName), None)
         # parsing add ons info
         addons = [] if item is None else self.__parseAddonsInfo(s)
         assert len(addons) in range(0,3), "There cannot be more than 2 add-ons"
         assert len(addons) == len(set(map(str, addons))), "There cannot be 2 of the same add-on"
         # parsing map info
-        gameMapIndex = s.find('map:')
-        gameMap = None
-        if gameMapIndex != -1:
-            commaIndex = s.find(',', gameMapIndex)
-            mapName = s[gameMapIndex + len("map:"):commaIndex].strip().lower()
-            for r in self._realms:
-                gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
-                if gameMap is not None:
-                    break
+        gameMap = self.__parseMap(s)
 
         # parsing offering info
         offering = self.__parseOffering(s)
-
+        perkParseStartIndex = s.index('(')
         #parsing match result
         matchResultStr = s[firstCommaIndex+1:perkParseStartIndex].replace(',','').strip()
         matchResult = SurvivorMatchResult[''.join(e.capitalize() for e in matchResultStr.split(' '))]
 
         #parsing faced killer
         facedKillerName = re.search(r'\(\s*against (.*)\)',s).group(1)
-        facedKiller = next(k for k in self._killers if facedKillerName in k.killerAlias.lower())
+        facedKiller = next(k for k in self._resources.killers if facedKillerName in k.killerAlias.lower())
         #parsing rank
         rank = self.__parseRank(s)
 
@@ -190,7 +160,28 @@ class DBDMatchParser(object):
                              itemAddons=addons, facedKiller=facedKiller, rank=rank, partySize=partySize,
                              matchResult=matchResult,offering=offering,gameMap=gameMap,points=points,matchDate=self._matchDate)
 
-    def __parseAddonsInfo(self, s: str) -> list[Union[KillerAddon, ItemAddon]]:
+    def __parsePerks(self, s: str) -> list[Perk]:
+        perkParseStartIndex = s.index('(')
+        perkParseEndIndex = s.index(')', perkParseStartIndex)
+        perksStr = s[perkParseStartIndex + 1:perkParseEndIndex].strip()
+        perks = []
+        if perksStr:
+            perkStrings = perksStr.split(',')
+            for perkStr in perkStrings:
+                perkStr = perkStr.strip()
+                nameParts = perkStr.split(" ")
+                perkName = ' '.join(nameParts[:-1])
+                tier = len(nameParts[-1])
+                perk = next(
+                    (p for p in self._resources.perks if p.perkName.lower() == perkName.lower() and tier == p.perkTier),
+                    None)
+                assert perk is not None, f"Unknown perk: {perkName} {tier}"
+                perks.append(perk)
+        assert len(perks) in range(0, 5), "There cannot be more than 4 perks"
+        assert len(perks) == len(set(map(lambda p: p.perkName, perks))), "There cannot be duplicate perks!"
+        return perks
+
+    def __parseAddonsInfo(self, s: str) -> Union[list[MatchItemAddon], list[MatchKillerAddon]]:
         addons = []
         match = re.search(r'add ons: (.*)(?=\()', s)
         if not match:  # means its a killer string
@@ -202,12 +193,12 @@ class DBDMatchParser(object):
                 addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = [e.strip() for e in addonsStr.split(',') if e]
-                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip().lower())) if a != 'zori' else next(addon for addon in self._addons if addon.addonName == 'Zōri') for a in addonNames]
+                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._resources.addons if addon.addonName.lower() == a.strip().lower())) if a != 'zori' else MatchKillerAddon(killerAddon=next(addon for addon in self._resources.addons if addon.addonName == 'Zōri')) for a in addonNames]
         else:
             addonsStr = match.group(1).rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = addonsStr.split(',')
-                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._addons if addon.addonName.lower() == a.strip().lower())) for a in addonNames]
+                addons = [MatchItemAddon(itemAddon=next(addon for addon in self._resources.addons if addon.addonName.lower() == a.strip().lower())) for a in addonNames]
         return addons
 
     def __parsePoints(self, s: str) -> int:
@@ -220,7 +211,7 @@ class DBDMatchParser(object):
         if offeringMatch:
             offeringName = offeringMatch.group(1).strip().lower()
             offering = None if offeringName == 'none' else next(
-                o for o in self._offerings if o.offeringName.lower() == offeringName)
+                o for o in self._resources.offerings if o.offeringName.lower() == offeringName)
         return offering
 
     def __parseRank(self, s:str) -> Optional[int]:
@@ -238,7 +229,7 @@ class DBDMatchParser(object):
         if gameMapIndex != -1:
             commaIndex = s.find(',', gameMapIndex)
             mapName = s[gameMapIndex + len("map:"):commaIndex].strip().lower()
-            for r in self._realms:
+            for r in self._resources.realms:
                 gameMap = next((m for m in r.maps if m.mapName.lower() == mapName), None)
                 if gameMap is not None:
                     break

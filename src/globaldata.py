@@ -17,6 +17,7 @@ class Globals:
     DEFAULT_ADDON_ICON: Optional[QPixmap] = None
     DEFAULT_PERK_ICON: Optional[QPixmap] = None
     DEFAULT_OFFERING_ICON: Optional[QPixmap] = None
+    DEFAULT_ITEM_ICON: Optional[QPixmap] = None
     LOWEST_RANK = 20  # dbd ranks are going in reverse, 20 is the worst
     HIGHEST_RANK = 1  # and 1 is the best
     CHARACTER_ICON_SIZE = (150, 208)  # width, height
@@ -26,12 +27,12 @@ class Globals:
     MAP_ICON_SIZE = (180, 90)
     ITEM_ICON_SIZE = (96, 96)
 
-    #todo: load icons in threads, or using multiprocessing module
     @staticmethod
     def init():  # NOTE: this can only be called after creating QApplication object, otherwise it crashes the program
         Globals.DEFAULT_ADDON_ICON = QPixmap('../images/default-addon-icon.png')
         Globals.DEFAULT_PERK_ICON = QPixmap('../images/default-perk-icon.png')
         Globals.DEFAULT_OFFERING_ICON = QPixmap('../images/default-offering-icon.png').scaled(*Globals.OFFERING_ICON_SIZE)
+        Globals.DEFAULT_ITEM_ICON = QPixmap('../images/default-item-icon.png').scaled(*Globals.ITEM_ICON_SIZE)
         killerIconsPath = '../images/killers/'
         survivorIconsPath = '../images/survivors/'
         addonsIconsPath = '../images/addons/'
