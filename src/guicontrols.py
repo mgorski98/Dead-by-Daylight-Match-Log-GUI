@@ -627,7 +627,42 @@ class DBDMatchListItem(QWidget):
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
 
     def __setupSurvivorMatchUI(self):
-        pass
+        survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
+        iconLabel = QLabel()
+        iconLabel.setPixmap(survivorIcon)
+        self.layout().addWidget(iconLabel)
+        self.layout().setAlignment(iconLabel, Qt.AlignLeft)
+        generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        self.layout().addWidget(generalInfoWidget)
+        self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
+        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
+        dateLabel.setStyleSheet("font-weight: bold;")
+        generalInfoLayout.addWidget(dateLabel)
+        pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
+        pointsLabel = QLabel(f"Points: {pointsStr}")
+        generalInfoLayout.addWidget(pointsLabel)
+        rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
+        rankLabel = QLabel(rankStr)
+        generalInfoLayout.addWidget(rankLabel)
+        partySizeStr = f"Party size: {self.match.partySize}" if self.match.partySize else "No party size data"
+        partySizeLabel = QLabel(partySizeStr)
+        generalInfoLayout.addWidget(partySizeLabel)
 
     def __setupKillerMatchUI(self):
-        pass
+        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.killer.killerAlias)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
+        iconLabel = QLabel()
+        iconLabel.setPixmap(killerIcon)
+        self.layout().addWidget(iconLabel)
+        self.layout().setAlignment(iconLabel, Qt.AlignLeft)
+        generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
+        self.layout().addWidget(generalInfoWidget)
+        self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
+        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
+        dateLabel.setStyleSheet("font-weight: bold;")
+        generalInfoLayout.addWidget(dateLabel)
+        pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
+        pointsLabel = QLabel(f"Points: {pointsStr}")
+        generalInfoLayout.addWidget(pointsLabel)
+        rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
+        rankLabel = QLabel(rankStr)
+        generalInfoLayout.addWidget(rankLabel)
