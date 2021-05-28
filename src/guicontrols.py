@@ -618,21 +618,30 @@ class DBDMatchListItem(QWidget):
     def __init__(self, match: DBDMatch, parent=None):
         super().__init__(parent=parent)
         self.match = match
-        self.setLayout(QHBoxLayout())
+        layout = QHBoxLayout()
+        self.setLayout(layout)
         if isinstance(match, SurvivorMatch):
             self.__setupSurvivorMatchUI()
         elif isinstance(match, KillerMatch):
             self.__setupKillerMatchUI()
         else:
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
+        layout.addStretch(1)
         # self.layout().addSpacerItem(QSpacerItem(200,0))
 
     def __setupSurvivorMatchUI(self):
         survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         iconLabel = QLabel()
         iconLabel.setPixmap(survivorIcon)
-        self.layout().addWidget(iconLabel)
-        self.layout().setAlignment(iconLabel, Qt.AlignLeft)
+        matchResultLabel = QLabel(' '.join(splitUpper(self.match.matchResult.name)))
+        matchResultLabel.setStyleSheet("font-weight: bold;")
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
+        survivorLayout.addWidget(iconLabel)
+        survivorLayout.addWidget(matchResultLabel)
+        survivorLayout.setAlignment(iconLabel, Qt.AlignCenter)
+        survivorLayout.setAlignment(matchResultLabel, Qt.AlignCenter)
+        self.layout().addWidget(survivorWidget)
+        self.layout().setAlignment(survivorWidget, Qt.AlignLeft)
         generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
@@ -688,6 +697,17 @@ class DBDMatchListItem(QWidget):
                 index += 1
         self.layout().addLayout(perksLayout)
 
+        killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
+        facedKillerLayout = QVBoxLayout()
+        killerNameLabel = QLabel(self.match.facedKiller.killerAlias)
+        killerIconLabel = QLabel()
+        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.facedKiller.killerAlias)].scaled(*killerIconSize)
+        killerIconLabel.setPixmap(killerIcon)
+        facedKillerLayout.addWidget(killerIconLabel)
+        facedKillerLayout.addWidget(killerNameLabel)
+        facedKillerLayout.setAlignment(killerIconLabel, Qt.AlignCenter)
+        facedKillerLayout.setAlignment(killerNameLabel, Qt.AlignCenter)
+        self.layout().addLayout(facedKillerLayout)
 
     def __setupKillerMatchUI(self):
         killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.killer.killerAlias)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
@@ -741,3 +761,25 @@ class DBDMatchListItem(QWidget):
                 perksLayout.addWidget(label, i, j)
                 index+=1
         self.layout().addLayout(perksLayout)
+
+        facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0]//4, Globals.CHARACTER_ICON_SIZE[1]//4)
+        facedSurvivorIcons = [Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs in self.match.facedSurvivors]
+        if len(facedSurvivorIcons) <= 0:
+            pass
+        else:
+            facedSurvivorsLayout = QGridLayout()
+            index = 0
+            for i in range(2):
+                for j in range(2):
+                    cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+                    label = QLabel()
+                    label.setPixmap(facedSurvivorIcons[index])
+                    survivorStateLabel = QLabel(' '.join(splitUpper(self.match.facedSurvivors[index].state.name)))
+                    survivorStateLabel.setStyleSheet("font-weight: bold;")
+                    cellLayout.addWidget(label)
+                    cellLayout.addWidget(survivorStateLabel)
+                    cellLayout.setAlignment(survivorStateLabel, Qt.AlignCenter)
+                    cellLayout.setAlignment(label, Qt.AlignCenter)
+                    facedSurvivorsLayout.addWidget(cellWidget, i, j)
+                    index+=1
+            self.layout().addLayout(facedSurvivorsLayout)
