@@ -193,7 +193,7 @@ class DBDMatchParser(object):
                 addonsStr = s[addonsIndex + len('add ons:'):mapIndex].rstrip(',').strip()
             if addonsStr != 'none':
                 addonNames = [e.strip() for e in addonsStr.split(',') if e]
-                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._resources.addons if addon.addonName.lower() == a.strip().lower())) if a != 'zori' else next(addon for addon in self._addons if addon.addonName == 'Zōri') for a in addonNames]
+                addons = [MatchKillerAddon(killerAddon=next(addon for addon in self._resources.addons if addon.addonName.lower() == a.strip().lower())) if a != 'zori' else MatchKillerAddon(killerAddon=next(addon for addon in self._resources.addons if addon.addonName == 'Zōri')) for a in addonNames]
         else:
             addonsStr = match.group(1).rstrip(',').strip()
             if addonsStr != 'none':

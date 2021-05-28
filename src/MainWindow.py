@@ -310,7 +310,7 @@ class MainWindow(QMainWindow):
         progressDialog.show()
 
     def __showLoadedMatchData(self, loadedGames: list[DBDMatch], errors: list[str]):
-        dialog = LoadedGamesDisplayDialog(loadedGames, errors)
+        dialog = LoadedGamesDisplayDialog(loadedGames, errors, title="Show loaded matches")
         result = dialog.exec_()
         if result == QDialog.Accepted:
             pass

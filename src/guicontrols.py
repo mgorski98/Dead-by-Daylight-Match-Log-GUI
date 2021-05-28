@@ -739,6 +739,8 @@ class DBDMatchListItem(QWidget):
         addonIcons = ()
         if len(self.match.killerAddons) > 0:
             addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.killerAddon.addonName)].scaled(*addonIconSize) for addon in self.match.killerAddons]
+            if len(addonIcons) < 2:
+                addonIcons += [Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)] * (2 - len(addonIcons))
         else:
             icon = Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)
             addonIcons = (icon, icon)
