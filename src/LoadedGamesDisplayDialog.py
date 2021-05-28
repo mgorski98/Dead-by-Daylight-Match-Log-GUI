@@ -56,5 +56,3 @@ class LoadedGamesDisplayDialog(QDialog):
                 listItem.setSizeHint(matchWidget.sizeHint())
                 listWidget.addItem(listItem)
                 listWidget.setItemWidget(listItem, matchWidget)
-        # for match in self.games:
-        #     matchWidget = DBDMatchListItem(match)
