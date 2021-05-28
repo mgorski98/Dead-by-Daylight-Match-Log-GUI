@@ -1,8 +1,10 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QListWidgetItem
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QListWidgetItem, \
+    QTabWidget, QWidget
 
 from guicontrols import DBDMatchListItem
-from models import DBDMatch
+from models import DBDMatch, SurvivorMatch, KillerMatch
+from util import setQWidgetLayout
 
 
 class LoadedGamesDisplayDialog(QDialog):
@@ -33,18 +35,25 @@ class LoadedGamesDisplayDialog(QDialog):
         errorsDisplayLayout = QVBoxLayout()
         displayLayout.addLayout(gamesDisplayLayout)
         displayLayout.addLayout(errorsDisplayLayout)
-        self.gamesListWidget = QListWidget()
+        self.survivorGamesListWidget = QListWidget()
+        self.killerGamesListWidget = QListWidget()
         self.errorsListWidget = QListWidget()
-        gamesLabel = QLabel('Loaded games')
         errorsLabel = QLabel('Encountered errors')
-        gamesDisplayLayout.addWidget(gamesLabel)
-        gamesDisplayLayout.addWidget(self.gamesListWidget)
+        gamesDisplayTabWidget = QTabWidget()
+        gamesDisplayTabWidget.addTab(self.killerGamesListWidget, "Killer games")
+        gamesDisplayTabWidget.addTab(self.survivorGamesListWidget, "Survivor games")
+        gamesDisplayLayout.addWidget(gamesDisplayTabWidget)
         errorsDisplayLayout.addWidget(errorsLabel)
         errorsDisplayLayout.addWidget(self.errorsListWidget)
         self.errorsListWidget.addItems(self.errors if len(self.errors) > 0 else ('No errors',))
-        for match in self.games:
-            matchWidget = DBDMatchListItem(match)
-            listItem = QListWidgetItem()
-            listItem.setSizeHint(matchWidget.sizeHint())
-            self.gamesListWidget.addItem(listItem)
-            self.gamesListWidget.setItemWidget(listItem, matchWidget)
+        survivorGames = filter(lambda g: isinstance(g, SurvivorMatch), self.games)
+        killerGames = filter(lambda g: isinstance(g, KillerMatch), self.games)
+        for listWidget, gamesList in zip([self.killerGamesListWidget, self.survivorGamesListWidget],[killerGames, survivorGames]):
+            for match in gamesList:
+                matchWidget = DBDMatchListItem(match)
+                listItem = QListWidgetItem()
+                listItem.setSizeHint(matchWidget.sizeHint())
+                listWidget.addItem(listItem)
+                listWidget.setItemWidget(listItem, matchWidget)
+        # for match in self.games:
+        #     matchWidget = DBDMatchListItem(match)
