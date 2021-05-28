@@ -625,6 +625,7 @@ class DBDMatchListItem(QWidget):
             self.__setupKillerMatchUI()
         else:
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
+        # self.layout().addSpacerItem(QSpacerItem(200,0))
 
     def __setupSurvivorMatchUI(self):
         survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
@@ -669,6 +670,23 @@ class DBDMatchListItem(QWidget):
             lowerLayout.addWidget(label)
             label.setFixedSize(icon.size())
 
+        perkIconSize = (Globals.PERK_ICON_SIZE[0] // 2, Globals.PERK_ICON_SIZE[1] // 2)
+        perkIcons = [
+            Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for
+            p in self.match.perks]
+        if len(perkIcons) < 4:
+            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
+            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
+        perksLayout = QGridLayout()
+        index = 0
+        for i in range(2):
+            for j in range(2):
+                icon = perkIcons[index]
+                label = QLabel()
+                label.setPixmap(icon)
+                perksLayout.addWidget(label, i, j)
+                index += 1
+        self.layout().addLayout(perksLayout)
 
 
     def __setupKillerMatchUI(self):
@@ -707,3 +725,19 @@ class DBDMatchListItem(QWidget):
             label.setPixmap(icon)
             lowerLayout.addWidget(label)
             label.setFixedSize(icon.size())
+
+        perkIconSize = (Globals.PERK_ICON_SIZE[0]//2, Globals.PERK_ICON_SIZE[1]//2)
+        perkIcons = [Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for p in self.match.perks]
+        if len(perkIcons) < 4:
+            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
+            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
+        perksLayout = QGridLayout()
+        index = 0
+        for i in range(2):
+            for j in range(2):
+                icon = perkIcons[index]
+                label = QLabel()
+                label.setPixmap(icon)
+                perksLayout.addWidget(label, i, j)
+                index+=1
+        self.layout().addLayout(perksLayout)
