@@ -647,6 +647,29 @@ class DBDMatchListItem(QWidget):
         partySizeStr = f"Party size: {self.match.partySize}" if self.match.partySize else "No party size data"
         partySizeLabel = QLabel(partySizeStr)
         generalInfoLayout.addWidget(partySizeLabel)
+        lowerLayout = QHBoxLayout()
+        generalInfoLayout.addLayout(lowerLayout)
+        itemIconSize = (Globals.ITEM_ICON_SIZE[0]//2,Globals.ITEM_ICON_SIZE[1]//2)
+        itemIcon = Globals.DEFAULT_ITEM_ICON.scaled(*itemIconSize) if not self.match.item else Globals.ITEM_ICONS[toResourceName(self.match.item.itemName)].scaled(*itemIconSize)
+        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
+        addonIcons = ()
+        if len(self.match.itemAddons) > 0:
+            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.itemAddon.addonName)].scaled(*addonIconSize) for
+                          addon in self.match.itemAddons]
+        else:
+            icon = Globals.DEFAULT_ADDON_ICON.scaled(Globals.ADDON_ICON_SIZE[0]//2.25,Globals.ADDON_ICON_SIZE[1]//2.25)
+            addonIcons = (icon, icon)
+
+        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
+        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
+            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        for icon in [itemIcon, *addonIcons, offeringIcon]:
+            label = QLabel()
+            label.setPixmap(icon)
+            lowerLayout.addWidget(label)
+            label.setFixedSize(icon.size())
+
+
 
     def __setupKillerMatchUI(self):
         killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.killer.killerAlias)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
@@ -657,6 +680,7 @@ class DBDMatchListItem(QWidget):
         generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
+        generalInfoLayout.setAlignment(Qt.AlignLeft)
         dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
         dateLabel.setStyleSheet("font-weight: bold;")
         generalInfoLayout.addWidget(dateLabel)
@@ -666,3 +690,20 @@ class DBDMatchListItem(QWidget):
         rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
         rankLabel = QLabel(rankStr)
         generalInfoLayout.addWidget(rankLabel)
+        lowerLayout = QHBoxLayout()
+        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
+        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
+            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        generalInfoLayout.addLayout(lowerLayout)
+        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
+        addonIcons = ()
+        if len(self.match.killerAddons) > 0:
+            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.killerAddon.addonName)].scaled(*addonIconSize) for addon in self.match.killerAddons]
+        else:
+            icon = Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)
+            addonIcons = (icon, icon)
+        for icon in [*addonIcons, offeringIcon]:
+            label = QLabel()
+            label.setPixmap(icon)
+            lowerLayout.addWidget(label)
+            label.setFixedSize(icon.size())
