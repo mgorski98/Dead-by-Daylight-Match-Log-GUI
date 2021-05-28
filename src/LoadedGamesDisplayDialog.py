@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QListWidgetItem, \
-    QTabWidget, QWidget
+    QTabWidget, QWidget, QGridLayout
 
 from guicontrols import DBDMatchListItem
 from models import DBDMatch, SurvivorMatch, KillerMatch
@@ -18,7 +18,7 @@ class LoadedGamesDisplayDialog(QDialog):
         #setup code
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
-        displayLayout = QHBoxLayout()
+        displayLayout = QGridLayout()
         buttonsLayout = QHBoxLayout()
         mainLayout.addLayout(displayLayout)
         mainLayout.addLayout(buttonsLayout)
@@ -33,8 +33,8 @@ class LoadedGamesDisplayDialog(QDialog):
         buttonsLayout.setAlignment(discardButton,Qt.AlignRight)
         gamesDisplayLayout = QVBoxLayout()
         errorsDisplayLayout = QVBoxLayout()
-        displayLayout.addLayout(gamesDisplayLayout)
-        displayLayout.addLayout(errorsDisplayLayout)
+        displayLayout.addLayout(gamesDisplayLayout, 0, 0, 1, 4)
+        displayLayout.addLayout(errorsDisplayLayout, 0, 4, 1, 2)
         self.survivorGamesListWidget = QListWidget()
         self.killerGamesListWidget = QListWidget()
         self.errorsListWidget = QListWidget()

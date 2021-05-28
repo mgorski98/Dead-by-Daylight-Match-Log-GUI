@@ -626,7 +626,6 @@ class DBDMatchListItem(QWidget):
             self.__setupKillerMatchUI()
         else:
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
-        # self.layout().addSpacerItem(QSpacerItem(200,0))
 
     def __setupSurvivorMatchUI(self):
         survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
@@ -772,7 +771,7 @@ class DBDMatchListItem(QWidget):
             noInfoLabel.setStyleSheet("font-weight: bold;")
             self.layout().addStretch(1)
             self.layout().addWidget(noInfoLabel)
-            self.layout().setAlignment(noInfoLabel, Qt.AlignRight)
+            self.layout().addSpacerItem(QSpacerItem(100,0))
         else:
             facedSurvivorsLayout = QGridLayout()
             for i in range(4):
