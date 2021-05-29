@@ -6,12 +6,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QLineEdit, QMessageBox, QListWidgetItem
+    QLineEdit, QMessageBox, QListWidgetItem, QListWidget
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor, DBDMatch, KillerMatch, SurvivorMatch
-from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName
+from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -789,3 +789,68 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+class PaginatedMatchListWidget(QWidget):
+
+    def __init__(self, items: list[DBDMatch], pageLimit=50, parent=None):
+        super().__init__(parent=parent)
+        self.listWidget = QListWidget()
+        self.items = items
+        self.pageLimit = pageLimit
+        self.currentIndex = 0
+        self.setLayout(QVBoxLayout())
+        moveForwardButton = QPushButton('>')
+        moveBackwardsButton = QPushButton('<')
+        moveBackwardsButton.clicked.connect(self._backwards)
+        moveForwardButton.clicked.connect(self._forward)
+        self.itemsDisplayLabel = QLabel(f'{self.currentIndex} - {len(self.items) if len(self.items) < self.pageLimit else self.pageLimit}')
+        self.itemsDisplayLabel.setAlignment(Qt.AlignCenter)
+        lowerLayout = QHBoxLayout()
+        addWidgets(lowerLayout, moveBackwardsButton, self.itemsDisplayLabel, moveForwardButton)
+        self.layout().addWidget(self.listWidget)
+        self.layout().addLayout(lowerLayout)
+        for item in self.items[self.currentIndex:self.currentIndex+self.pageLimit]:
+            matchWidget = DBDMatchListItem(item)
+            listItem = QListWidgetItem()
+            listItem.setSizeHint(matchWidget.sizeHint())
+            self.listWidget.addItem(listItem)
+            self.listWidget.setItemWidget(listItem, matchWidget)
+
+    def setPageLimit(self, limit: int):
+        self.pageLimit = limit
+
+    def _forward(self):
+        itemCount = len(self.items)
+        if self.currentIndex + self.pageLimit >= itemCount:
+            return
+        self.listWidget.clear()
+        self.currentIndex += self.pageLimit #move the pointer to the next set of items
+        end = self.currentIndex + self.pageLimit #set the end
+        currentItems = self.items[self.currentIndex:end]
+        end = end if end <= itemCount else itemCount #if the end pointer is more than items count then set it to item count
+        for item in currentItems:
+            matchWidget = DBDMatchListItem(item)
+            listItem = QListWidgetItem()
+            listItem.setSizeHint(matchWidget.sizeHint())
+            self.listWidget.addItem(listItem)
+            self.listWidget.setItemWidget(listItem, matchWidget)
+        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
+
+    def _backwards(self):
+        if self.currentIndex == 0:
+            return
+        self.listWidget.clear()
+        if self.currentIndex % self.pageLimit != 0:
+            self.currentIndex -= (self.currentIndex % self.pageLimit) + self.pageLimit
+        else:
+            self.currentIndex -= self.pageLimit
+        self.currentIndex = clamp(self.currentIndex, 0, len(self.items))
+        end = clamp(self.currentIndex + self.pageLimit, 0, len(self.items))
+        currentItems = self.items[self.currentIndex:end]
+        for item in currentItems:
+            matchWidget = DBDMatchListItem(item)
+            listItem = QListWidgetItem()
+            listItem.setSizeHint(matchWidget.sizeHint())
+            self.listWidget.addItem(listItem)
+            self.listWidget.setItemWidget(listItem, matchWidget)
+        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
