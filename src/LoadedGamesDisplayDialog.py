@@ -1,10 +1,8 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QListWidgetItem, \
-    QTabWidget, QWidget, QGridLayout
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QTabWidget, QGridLayout
 
-from guicontrols import DBDMatchListItem
+from guicontrols import PaginatedMatchListWidget
 from models import DBDMatch, SurvivorMatch, KillerMatch
-from util import setQWidgetLayout
 
 
 class LoadedGamesDisplayDialog(QDialog):
@@ -12,13 +10,16 @@ class LoadedGamesDisplayDialog(QDialog):
     def __init__(self, games: list[DBDMatch], errors: list[str], title="PyQt5 dialog", dialogSize=(1000,750), parent=None):
         super().__init__(parent)
         self.games = games
+        self.survivorGames = list(filter(lambda g: isinstance(g, SurvivorMatch), self.games))
+        self.killerGames = list(filter(lambda g: isinstance(g, KillerMatch), self.games))
         self.errors = errors
         self.resize(*dialogSize)
         self.setWindowTitle(title)
-
         #setup code
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
+
+
         displayLayout = QGridLayout()
         buttonsLayout = QHBoxLayout()
         mainLayout.addLayout(displayLayout)
@@ -36,8 +37,9 @@ class LoadedGamesDisplayDialog(QDialog):
         errorsDisplayLayout = QVBoxLayout()
         displayLayout.addLayout(gamesDisplayLayout, 0, 0, 1, 4)
         displayLayout.addLayout(errorsDisplayLayout, 0, 4, 1, 2)
-        self.survivorGamesListWidget = QListWidget()
-        self.killerGamesListWidget = QListWidget()
+        self.survivorGamesListWidget = PaginatedMatchListWidget(self.survivorGames)
+        self.killerGamesListWidget = PaginatedMatchListWidget(self.killerGames)
+
         self.errorsListWidget = QListWidget()
         errorsLabel = QLabel('Encountered errors')
         gamesDisplayTabWidget = QTabWidget()
@@ -47,12 +49,3 @@ class LoadedGamesDisplayDialog(QDialog):
         errorsDisplayLayout.addWidget(errorsLabel)
         errorsDisplayLayout.addWidget(self.errorsListWidget)
         self.errorsListWidget.addItems(self.errors if len(self.errors) > 0 else ('No errors',))
-        survivorGames = filter(lambda g: isinstance(g, SurvivorMatch), self.games)
-        killerGames = filter(lambda g: isinstance(g, KillerMatch), self.games)
-        for listWidget, gamesList in zip((self.killerGamesListWidget, self.survivorGamesListWidget),(killerGames, survivorGames)):
-            for match in gamesList:
-                matchWidget = DBDMatchListItem(match)
-                listItem = QListWidgetItem()
-                listItem.setSizeHint(matchWidget.sizeHint())
-                listWidget.addItem(listItem)
-                listWidget.setItemWidget(listItem, matchWidget)

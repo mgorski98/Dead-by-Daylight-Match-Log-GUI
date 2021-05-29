@@ -6,12 +6,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QComboBox, QDialog, QScrollArea, \
     QGridLayout, QSizePolicy, QSpacerItem, QStylePainter, QStyleOptionComboBox, QStyle, \
-    QLineEdit, QMessageBox, QListWidgetItem
+    QLineEdit, QMessageBox, QListWidgetItem, QListWidget
 
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor, DBDMatch, KillerMatch, SurvivorMatch
-from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName
+from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -789,3 +789,75 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+class PaginatedMatchListWidget(QWidget):
+    #todo: set margins on buttons and page limit combo box
+    def __init__(self, items: list[DBDMatch], pageLimit=50, parent=None):
+        super().__init__(parent=parent)
+        self.listWidget = QListWidget()
+        self.items = items
+        self.pageLimit = pageLimit
+        self.currentIndex = 0
+        self.setLayout(QVBoxLayout())
+        self.pageLimitSelectionComboBox = QComboBox()
+        self.pageLimitSelectionComboBox.setPlaceholderText("Select page limit")
+        self.pageLimitSelectionComboBox.addItems(map(str, (10, 25, 50, 75, 100)))
+        self.pageLimitSelectionComboBox.activated.connect(self.__selectPageLimit)
+        self.pageLimitSelectionComboBox.setFixedWidth(150)
+        moveForwardButton = QPushButton('>')
+        moveBackwardsButton = QPushButton('<')
+        moveBackwardsButton.clicked.connect(self._backwards)
+        moveForwardButton.clicked.connect(self._forward)
+        self.itemsDisplayLabel = QLabel(f'{self.currentIndex} - {len(self.items) if len(self.items) < self.pageLimit else self.pageLimit}')
+        self.itemsDisplayLabel.setAlignment(Qt.AlignCenter)
+        lowerLayout = QHBoxLayout()
+        lowerLayout.addStretch(1)
+        addWidgets(lowerLayout, moveBackwardsButton, self.itemsDisplayLabel, moveForwardButton)
+        lowerLayout.addStretch(1)
+        self.layout().addWidget(QLabel("Select items per page"))
+        self.layout().addWidget(self.pageLimitSelectionComboBox)
+        self.layout().addWidget(self.listWidget)
+        self.layout().addLayout(lowerLayout)
+        self.__refillListWidget(self.items[self.currentIndex:self.currentIndex+self.pageLimit])
+
+    def setPageLimit(self, limit: int):
+        self.pageLimit = limit
+        self.currentIndex = 0
+        self.__refillListWidget(self.items[self.currentIndex: self.pageLimit])
+        self.itemsDisplayLabel.setText(f"{self.currentIndex} - {len(self.items) if self.pageLimit > len(self.items) else self.pageLimit}")
+
+    def __selectPageLimit(self, index: int=0):
+        self.setPageLimit(int(self.pageLimitSelectionComboBox.currentText()))
+
+    def _forward(self):
+        itemCount = len(self.items)
+        if self.currentIndex + self.pageLimit >= itemCount:
+            return
+        self.currentIndex += self.pageLimit #move the pointer to the next set of items
+        end = self.currentIndex + self.pageLimit #set the end
+        currentItems = self.items[self.currentIndex:end]
+        end = end if end <= itemCount else itemCount #if the end pointer is more than items count then set it to item count
+        self.__refillListWidget(currentItems)
+        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
+
+    def _backwards(self):
+        if self.currentIndex == 0:
+            return
+        if self.currentIndex % self.pageLimit != 0:
+            self.currentIndex -= (self.currentIndex % self.pageLimit) + self.pageLimit
+        else:
+            self.currentIndex -= self.pageLimit
+        self.currentIndex = clamp(self.currentIndex, 0, len(self.items))
+        end = clamp(self.currentIndex + self.pageLimit, 0, len(self.items))
+        currentItems = self.items[self.currentIndex:end]
+        self.__refillListWidget(currentItems)
+        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
+
+    def __refillListWidget(self, items: list[DBDMatch]):
+        self.listWidget.clear()
+        for item in items:
+            matchWidget = DBDMatchListItem(item)
+            listItem = QListWidgetItem()
+            listItem.setSizeHint(matchWidget.sizeHint())
+            self.listWidget.addItem(listItem)
+            self.listWidget.setItemWidget(listItem, matchWidget)
