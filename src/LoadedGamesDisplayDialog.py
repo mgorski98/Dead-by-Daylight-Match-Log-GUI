@@ -1,11 +1,8 @@
-import operator
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QListWidgetItem, \
-    QTabWidget, QWidget, QGridLayout
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QTabWidget, QGridLayout
 
-from guicontrols import DBDMatchListItem, PaginatedMatchListWidget
+from guicontrols import PaginatedMatchListWidget
 from models import DBDMatch, SurvivorMatch, KillerMatch
-from util import setQWidgetLayout, addWidgets
 
 
 class LoadedGamesDisplayDialog(QDialog):

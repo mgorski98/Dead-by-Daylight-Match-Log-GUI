@@ -799,6 +799,11 @@ class PaginatedMatchListWidget(QWidget):
         self.pageLimit = pageLimit
         self.currentIndex = 0
         self.setLayout(QVBoxLayout())
+        self.pageLimitSelectionComboBox = QComboBox()
+        self.pageLimitSelectionComboBox.setPlaceholderText("Select page limit")
+        self.pageLimitSelectionComboBox.addItems(map(str, (10, 25, 50, 75, 100)))
+        self.pageLimitSelectionComboBox.setCurrentIndex(2)
+        self.pageLimitSelectionComboBox.activated.connect(self.__selectPageLimit)
         moveForwardButton = QPushButton('>')
         moveBackwardsButton = QPushButton('<')
         moveBackwardsButton.clicked.connect(self._backwards)
@@ -807,39 +812,34 @@ class PaginatedMatchListWidget(QWidget):
         self.itemsDisplayLabel.setAlignment(Qt.AlignCenter)
         lowerLayout = QHBoxLayout()
         addWidgets(lowerLayout, moveBackwardsButton, self.itemsDisplayLabel, moveForwardButton)
+        self.layout().addWidget(self.pageLimitSelectionComboBox)
         self.layout().addWidget(self.listWidget)
         self.layout().addLayout(lowerLayout)
-        for item in self.items[self.currentIndex:self.currentIndex+self.pageLimit]:
-            matchWidget = DBDMatchListItem(item)
-            listItem = QListWidgetItem()
-            listItem.setSizeHint(matchWidget.sizeHint())
-            self.listWidget.addItem(listItem)
-            self.listWidget.setItemWidget(listItem, matchWidget)
+        self.__refillListWidget(self.items[self.currentIndex:self.currentIndex+self.pageLimit])
 
     def setPageLimit(self, limit: int):
         self.pageLimit = limit
+        self.currentIndex = 0
+        self.__refillListWidget(self.items[self.currentIndex: self.pageLimit])
+        self.itemsDisplayLabel.setText(f"{self.currentIndex} - {self.pageLimit}")
+
+    def __selectPageLimit(self, index: int=0):
+        self.setPageLimit(int(self.pageLimitSelectionComboBox.currentText()))
 
     def _forward(self):
         itemCount = len(self.items)
         if self.currentIndex + self.pageLimit >= itemCount:
             return
-        self.listWidget.clear()
         self.currentIndex += self.pageLimit #move the pointer to the next set of items
         end = self.currentIndex + self.pageLimit #set the end
         currentItems = self.items[self.currentIndex:end]
         end = end if end <= itemCount else itemCount #if the end pointer is more than items count then set it to item count
-        for item in currentItems:
-            matchWidget = DBDMatchListItem(item)
-            listItem = QListWidgetItem()
-            listItem.setSizeHint(matchWidget.sizeHint())
-            self.listWidget.addItem(listItem)
-            self.listWidget.setItemWidget(listItem, matchWidget)
+        self.__refillListWidget(currentItems)
         self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
 
     def _backwards(self):
         if self.currentIndex == 0:
             return
-        self.listWidget.clear()
         if self.currentIndex % self.pageLimit != 0:
             self.currentIndex -= (self.currentIndex % self.pageLimit) + self.pageLimit
         else:
@@ -847,10 +847,14 @@ class PaginatedMatchListWidget(QWidget):
         self.currentIndex = clamp(self.currentIndex, 0, len(self.items))
         end = clamp(self.currentIndex + self.pageLimit, 0, len(self.items))
         currentItems = self.items[self.currentIndex:end]
-        for item in currentItems:
+        self.__refillListWidget(currentItems)
+        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
+
+    def __refillListWidget(self, items: list[DBDMatch]):
+        self.listWidget.clear()
+        for item in items:
             matchWidget = DBDMatchListItem(item)
             listItem = QListWidgetItem()
             listItem.setSizeHint(matchWidget.sizeHint())
             self.listWidget.addItem(listItem)
             self.listWidget.setItemWidget(listItem, matchWidget)
-        self.itemsDisplayLabel.setText(f'{self.currentIndex} - {end}')
