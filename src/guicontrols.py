@@ -791,7 +791,7 @@ class DBDMatchListItem(QWidget):
             self.layout().addStretch(1)
 
 class PaginatedMatchListWidget(QWidget):
-
+    #todo: set margins on buttons and page limit combo box
     def __init__(self, items: list[DBDMatch], pageLimit=50, parent=None):
         super().__init__(parent=parent)
         self.listWidget = QListWidget()
@@ -802,8 +802,8 @@ class PaginatedMatchListWidget(QWidget):
         self.pageLimitSelectionComboBox = QComboBox()
         self.pageLimitSelectionComboBox.setPlaceholderText("Select page limit")
         self.pageLimitSelectionComboBox.addItems(map(str, (10, 25, 50, 75, 100)))
-        self.pageLimitSelectionComboBox.setCurrentIndex(2)
         self.pageLimitSelectionComboBox.activated.connect(self.__selectPageLimit)
+        self.pageLimitSelectionComboBox.setFixedWidth(150)
         moveForwardButton = QPushButton('>')
         moveBackwardsButton = QPushButton('<')
         moveBackwardsButton.clicked.connect(self._backwards)
@@ -811,7 +811,10 @@ class PaginatedMatchListWidget(QWidget):
         self.itemsDisplayLabel = QLabel(f'{self.currentIndex} - {len(self.items) if len(self.items) < self.pageLimit else self.pageLimit}')
         self.itemsDisplayLabel.setAlignment(Qt.AlignCenter)
         lowerLayout = QHBoxLayout()
+        lowerLayout.addStretch(1)
         addWidgets(lowerLayout, moveBackwardsButton, self.itemsDisplayLabel, moveForwardButton)
+        lowerLayout.addStretch(1)
+        self.layout().addWidget(QLabel("Select items per page"))
         self.layout().addWidget(self.pageLimitSelectionComboBox)
         self.layout().addWidget(self.listWidget)
         self.layout().addLayout(lowerLayout)
@@ -821,7 +824,7 @@ class PaginatedMatchListWidget(QWidget):
         self.pageLimit = limit
         self.currentIndex = 0
         self.__refillListWidget(self.items[self.currentIndex: self.pageLimit])
-        self.itemsDisplayLabel.setText(f"{self.currentIndex} - {self.pageLimit}")
+        self.itemsDisplayLabel.setText(f"{self.currentIndex} - {len(self.items) if self.pageLimit > len(self.items) else self.pageLimit}")
 
     def __selectPageLimit(self, index: int=0):
         self.setPageLimit(int(self.pageLimitSelectionComboBox.currentText()))
