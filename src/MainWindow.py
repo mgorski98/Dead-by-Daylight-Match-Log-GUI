@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
         offering = self.survivorOfferingSelect.selectedItem
         addons = list(i for i in self.itemAddonSelection.selectedAddons.values() if i is not None)
         perks = list(i for i in self.survivorPerkSelection.selectedPerks.values() if i is not None)
-        pointsStr = self.killerMatchPointsTextBox.text().strip()
+        pointsStr = self.survivorPointsTextBox.text().strip()
         points = 0 if not pointsStr else int(pointsStr)
         matchDate = self.survivorMatchDatePicker.date().toPyDate()
         rank = self.survivorRankSpinner.value()
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
 
         self.killerMatchDateComboBox = QComboBox()
-        self.killerMatchDateComboBox.activated.connect(lambda: print())
+        self.killerMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(KillerMatch, self.killerMatchListWidget, self.killerMatchDateComboBox.itemText(index)))
             
         with Database.instance().getNewSession() as s:
             dates = s.query(KillerMatch.matchDate).distinct().all()
@@ -169,8 +169,15 @@ class MainWindow(QMainWindow):
         killerListLayout.setAlignment(self.addKillerMatchButton, Qt.AlignHCenter)
         killerListLayout.addSpacerItem(QSpacerItem(1, 90))
 
-    def __filterMatches(self, d: datetime.date):
-        pass
+    def __filterMatches(self, matchType, listWidget: QListWidget, dateStr: str):
+        if not dateStr.strip():
+            return
+        listWidget.clear()
+        filterDate = datetime.datetime.strptime(dateStr, '%d/%m/%Y').date()
+        with Database.instance().getNewSession() as s:
+            items = s.execute(sqlalchemy.select(matchType).where(matchType.matchDate == filterDate)).all()
+            for item in items:
+                self.__addMatchToList(listWidget, item)
 
     def __onMatchAdded(self, match: DBDMatch, dateFilterComboBox: QComboBox, listWidget: QListWidget):
         matchDate = match.matchDate
@@ -188,7 +195,7 @@ class MainWindow(QMainWindow):
         survivorMainTabWidget = QTabWidget()
         self.survivorMatchListWidget = QListWidget()
         self.survivorMatchDateComboBox = QComboBox()
-
+        self.survivorMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(SurvivorMatch, self.survivorMatchListWidget, self.survivorMatchDateComboBox.itemText(index)))
         with Database.instance().getNewSession() as s:
             dates = s.query(SurvivorMatch.matchDate).distinct().all()
             self.survivorMatchDateComboBox.addItems(map(lambda d: d.strftime('%d/%m/%Y'), dates))
@@ -216,7 +223,6 @@ class MainWindow(QMainWindow):
         self.itemSelection = SurvivorItemSelect(items=self.resources.items, icons=Globals.ITEM_ICONS, iconSize=Globals.ITEM_ICON_SIZE)
         self.itemSelection.selectionChanged.connect(lambda item: self.itemAddonSelection.filterAddons(
             lambda addon: isinstance(addon, ItemAddon) and addon.itemType == item.itemType if item is not None else False))
-        self.itemSelection.selectFromIndex(0)
         self.survivorPerkSelection = PerkSelection([p for p in self.resources.perks if p.perkType == PerkType.Survivor])
         upperSurvivorWidget, upperSurvivorLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         upperSurvivorLayout.addWidget(self.survivorSelect)
