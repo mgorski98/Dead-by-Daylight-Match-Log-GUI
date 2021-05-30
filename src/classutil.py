@@ -296,3 +296,16 @@ class LogFileLoadWorker(QRunnable):
             allGames += games
             allErrors += errors
         self.signals.finished.emit(allGames, allErrors)
+
+class DatabaseMatchListWorkerSignals(QObject):
+    finished = pyqtSignal()
+
+class DatabaseMatchListSaveWorker(QRunnable):
+
+    def __init__(self, matchesToSave: list[DBDMatch]):
+        super().__init__()
+        self.matches = matchesToSave
+        self.signals = DatabaseMatchListWorkerSignals()
+
+    def run(self) -> None:
+        self.signals.finished.emit()

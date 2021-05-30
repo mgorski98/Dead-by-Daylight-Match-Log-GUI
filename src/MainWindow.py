@@ -304,12 +304,15 @@ class MainWindow(QMainWindow):
         helpMenu.addAction(logHelpAction)
 
     def __saveMatches(self):
-        if len(self.currentlyAddedMatches) > 0:
+        if len(self.currentlyAddedMatches) <= 0:
             return
-        # with Database.instance().getNewSession() as s:
-        #     s.add_all(self.currentlyAddedMatches)
-        #     s.commit()
-        # self.currentlyAddedMatches.clear()
+        with Database.instance().getNewSession() as s:
+            s.add_all(self.currentlyAddedMatches)
+            s.commit()
+        msgBox = QMessageBox()
+        msgBox.setInformativeText("Matches saved successfully!")
+        msgBox.exec_()
+        self.currentlyAddedMatches.clear()
 
     def __confirmUpdate(self):
         msgBox = QMessageBox()
