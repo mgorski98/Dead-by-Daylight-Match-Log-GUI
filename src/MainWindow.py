@@ -305,19 +305,21 @@ class MainWindow(QMainWindow):
         helpMenu.addAction(logHelpAction)
 
     def __saveMatches(self):
-        if len(self.currentlyAddedMatches) <= 0:
+        matchCount = len(self.currentlyAddedMatches)
+        if matchCount <= 0:
             return
 
         def showSuccessMessageAndClearList():
             msgBox = QMessageBox()
-            msgBox.setInformativeText("Matches saved successfully!")
+            msgBox.setWindowTitle("Saving result")
+            msgBox.setText("Matches saved successfully!")
             msgBox.exec_()
-            self.statusBar().showMessage(f"Saved {len(self.currentlyAddedMatches)} matches to database", 5000)
+            self.statusBar().showMessage(f"Saved {matchCount} matches to database", 5000)
             self.currentlyAddedMatches.clear()
 
         progressDialog = QProgressDialog()
         progressDialog.setWindowTitle("Saving data")
-        progressDialog.setLabelText(f"Saving {len(self.currentlyAddedMatches)} matches...")
+        progressDialog.setLabelText(f"Saving {matchCount} matches...")
         progressDialog.setRange(0,0)
         progressDialog.setFixedSize(500, 150)
         progressDialog.setCancelButton(None)
@@ -327,9 +329,6 @@ class MainWindow(QMainWindow):
         self.saveWorker.signals.finished.connect(showSuccessMessageAndClearList)
         self.threadPool.start(self.saveWorker)
         progressDialog.show()
-
-
-
 
     def __confirmUpdate(self):
         msgBox = QMessageBox()

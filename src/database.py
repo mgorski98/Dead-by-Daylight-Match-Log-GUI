@@ -11,7 +11,7 @@ from PIL import Image
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal, QObject, QRunnable
 from bs4 import BeautifulSoup
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap, KillerAddon, ItemAddon
 from util import saveImageFromURL
@@ -22,9 +22,12 @@ class Database:
 
     def __init__(self, url: str):
         self._engine = sqlalchemy.create_engine(url)
+        self._sessionmaker = sessionmaker(self._engine)
 
     def getNewSession(self) -> Session:
-        return Session(self._engine)
+        session = self._sessionmaker()
+        session.expire_on_commit=False
+        return session
 
     @staticmethod
     def instance() -> Database:
