@@ -10,12 +10,20 @@ from MainWindow import MainWindow
 from database import Database
 from globaldata import Globals
 
+import json
+
+def loadConfig(path: str):
+    with open(path,mode='r') as f:
+        return json.load(f)
+
+
 def updateSplash(splash: QSplashScreen, message:str) -> None:
     splash.showMessage(message, Qt.AlignBottom)
     QApplication.processEvents()
 
 def main() -> None:
-    Database.init('sqlite:///../dbd-match-log-DEV.db')
+    config = loadConfig('../config-dev.cfg')
+    Database.init(config["DB_URL"])
     app = QApplication(sys.argv)
     splash = QSplashScreen(app.primaryScreen())
     splash.show()
