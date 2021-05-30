@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import datetime
 import operator
 import sqlalchemy
 from PyQt5.QtCore import *
@@ -44,6 +46,7 @@ class MainWindow(QMainWindow):
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
 
+        self.statusBar().showMessage("Ready", 5000)
         self.__setupKillerForm()
         self.__setupSurvivorForm()
 
@@ -66,7 +69,7 @@ class MainWindow(QMainWindow):
                                   points=points, offering=offering, rank=rank,
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
-        self.__addMatchToList(self.killerMatchListWidget, killerMatch)
+        self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget)
 
     def addNewSurvivorMatch(self):
         survivor = self.survivorSelect.getSelectedItem()
@@ -88,7 +91,7 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
-        self.__addMatchToList(self.survivorMatchListWidget, survivorMatch)
+        self.__onMatchAdded(survivorMatch, self.survivorMatchDateComboBox, self.survivorMatchListWidget)
 
     def __setupKillerForm(self):
         killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
@@ -101,6 +104,13 @@ class MainWindow(QMainWindow):
         killerLayout.addWidget(killerMatchInfoTabWidget, 0, 0, 1, 3)
         killerListWidget, killerListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
+
+        self.killerMatchDateComboBox = QComboBox()
+        self.killerMatchDateComboBox.activated.connect(lambda: print())
+            
+        with Database.instance().getNewSession() as s:
+            dates = s.query(KillerMatch.matchDate).distinct().all()
+            self.killerMatchDateComboBox.addItems(map(lambda d: d.strftime('%d/%m/%Y'), dates))
 
         self.killerSelection = KillerSelect(killers=self.resources.killers, icons=Globals.KILLER_ICONS,
                                             iconSize=Globals.CHARACTER_ICON_SIZE)
@@ -148,6 +158,8 @@ class MainWindow(QMainWindow):
 
         killerListLayout.setContentsMargins(5, 23, 5, 0)
         self.killerMatchListWidget = QListWidget()
+        killerListLayout.addWidget(QLabel("Filter matches by date"))
+        killerListLayout.addWidget(self.killerMatchDateComboBox)
         killerListLayout.addWidget(self.killerMatchListWidget)
         killerListLayout.addSpacerItem(QSpacerItem(1, 15))
         self.addKillerMatchButton = QPushButton("Add new killer match")
@@ -157,11 +169,30 @@ class MainWindow(QMainWindow):
         killerListLayout.setAlignment(self.addKillerMatchButton, Qt.AlignHCenter)
         killerListLayout.addSpacerItem(QSpacerItem(1, 90))
 
+    def __filterMatches(self, d: datetime.date):
+        pass
+
+    def __onMatchAdded(self, match: DBDMatch, dateFilterComboBox: QComboBox, listWidget: QListWidget):
+        matchDate = match.matchDate
+        if matchDate is not None:
+            matchDateStr = matchDate.strftime("%d/%m/%Y")
+            textIndex = dateFilterComboBox.findText(matchDateStr)
+            if textIndex == -1:
+                dateFilterComboBox.addItem(matchDateStr)
+                dateFilterComboBox.model().sort(0, Qt.AscendingOrder)
+        self.__addMatchToList(listWidget, match)
+
     def __setupSurvivorForm(self):
         survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
         self.centralWidget().addTab(survivorWidget, "Survivors")
         survivorMainTabWidget = QTabWidget()
         self.survivorMatchListWidget = QListWidget()
+        self.survivorMatchDateComboBox = QComboBox()
+
+        with Database.instance().getNewSession() as s:
+            dates = s.query(SurvivorMatch.matchDate).distinct().all()
+            self.survivorMatchDateComboBox.addItems(map(lambda d: d.strftime('%d/%m/%Y'), dates))
+
         survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         survivorInfoWidget, survivorInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         survivorMatchInfoWidget, survivorMatchInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
@@ -169,6 +200,8 @@ class MainWindow(QMainWindow):
         survivorMainTabWidget.addTab(survivorMatchInfoWidget, "Match info")
         survivorLayout.addWidget(survivorMainTabWidget, 0, 0, 1, 3)
         survivorLayout.addWidget(survivorListWidget, 0, 4, 1, 2)
+        survivorListLayout.addWidget(QLabel("Filter matches by date"))
+        survivorListLayout.addWidget(self.survivorMatchDateComboBox)
         survivorListLayout.addWidget(self.survivorMatchListWidget)
         self.addSurvivorMatchButton = QPushButton("Add new survivor match")
         survivorListLayout.addSpacerItem(QSpacerItem(0, 15))

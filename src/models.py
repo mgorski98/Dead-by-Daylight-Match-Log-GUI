@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional, Callable
@@ -344,6 +344,10 @@ class DBDMatch(ABC):
     matchDate: date
     rank: int
 
+    @abstractmethod
+    def asDict(self) -> dict[str, object]:
+        pass
+
 
 @mapperRegistry.mapped
 @dataclass
@@ -397,6 +401,9 @@ class SurvivorMatch(DBDMatch):
     def __repr__(self):
         return self.__str__()
 
+    def asDict(self) -> dict[str, object]:
+        return {}
+
     __mapper_args__ = {
         "properties": {
             "facedKiller": relationship("Killer",uselist=False, lazy='subquery'),
@@ -413,6 +420,7 @@ class SurvivorMatch(DBDMatch):
 @mapperRegistry.mapped
 @dataclass
 class KillerMatch(DBDMatch):
+
     __table__ = Table(
         "killer_matches",
         mapperRegistry.metadata,
@@ -468,6 +476,9 @@ class KillerMatch(DBDMatch):
 
     def __repr__(self):
         return self.__str__()
+
+    def asDict(self) -> dict[str, object]:
+        return {}
 
     __mapper_args__ = {
         "properties": {
