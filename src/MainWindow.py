@@ -10,7 +10,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QFileDialog, QListWidgetItem, QDialog
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
-from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
+from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources, \
+    DatabaseMatchListSaveWorker
 from database import Database, DatabaseUpdateWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
@@ -111,7 +112,7 @@ class MainWindow(QMainWindow):
             
         with Database.instance().getNewSession() as s:
             dates = s.query(KillerMatch.matchDate).distinct().all()
-            self.killerMatchDateComboBox.addItems(map(lambda d: d.strftime('%d/%m/%Y'), dates))
+            self.killerMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
 
         self.killerSelection = KillerSelect(killers=self.resources.killers, icons=Globals.KILLER_ICONS,
                                             iconSize=Globals.CHARACTER_ICON_SIZE)
@@ -176,7 +177,7 @@ class MainWindow(QMainWindow):
         listWidget.clear()
         filterDate = datetime.datetime.strptime(dateStr, '%d/%m/%Y').date()
         with Database.instance().getNewSession() as s:
-            items = s.execute(sqlalchemy.select(matchType).where(matchType.matchDate == filterDate)).all()
+            items = map(operator.itemgetter(0), s.execute(sqlalchemy.select(matchType).where(matchType.matchDate == filterDate)).all())
             for item in items:
                 self.__addMatchToList(listWidget, item)
 
@@ -200,7 +201,7 @@ class MainWindow(QMainWindow):
         self.survivorMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(SurvivorMatch, self.survivorMatchListWidget, self.survivorMatchDateComboBox.itemText(index)))
         with Database.instance().getNewSession() as s:
             dates = s.query(SurvivorMatch.matchDate).distinct().all()
-            self.survivorMatchDateComboBox.addItems(map(lambda d: d.strftime('%d/%m/%Y'), dates))
+            self.survivorMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
 
         survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         survivorInfoWidget, survivorInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
@@ -306,13 +307,29 @@ class MainWindow(QMainWindow):
     def __saveMatches(self):
         if len(self.currentlyAddedMatches) <= 0:
             return
-        with Database.instance().getNewSession() as s:
-            s.add_all(self.currentlyAddedMatches)
-            s.commit()
-        msgBox = QMessageBox()
-        msgBox.setInformativeText("Matches saved successfully!")
-        msgBox.exec_()
-        self.currentlyAddedMatches.clear()
+
+        def showSuccessMessageAndClearList():
+            msgBox = QMessageBox()
+            msgBox.setInformativeText("Matches saved successfully!")
+            msgBox.exec_()
+            self.statusBar().showMessage(f"Saved {len(self.currentlyAddedMatches)} matches to database", 5000)
+            self.currentlyAddedMatches.clear()
+
+        progressDialog = QProgressDialog()
+        progressDialog.setWindowTitle("Saving data")
+        progressDialog.setLabelText(f"Saving {len(self.currentlyAddedMatches)} matches...")
+        progressDialog.setRange(0,0)
+        progressDialog.setFixedSize(500, 150)
+        progressDialog.setCancelButton(None)
+        progressDialog.setModal(True)
+
+        self.saveWorker = DatabaseMatchListSaveWorker(self.currentlyAddedMatches)
+        self.saveWorker.signals.finished.connect(showSuccessMessageAndClearList)
+        self.threadPool.start(self.saveWorker)
+        progressDialog.show()
+
+
+
 
     def __confirmUpdate(self):
         msgBox = QMessageBox()

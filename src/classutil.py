@@ -5,6 +5,7 @@ from typing import Union, Callable, Optional
 
 from PyQt5.QtCore import QRunnable, QObject, pyqtSignal
 
+from database import Database
 from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
@@ -308,4 +309,7 @@ class DatabaseMatchListSaveWorker(QRunnable):
         self.signals = DatabaseMatchListWorkerSignals()
 
     def run(self) -> None:
-        self.signals.finished.emit()
+        with Database.instance().getNewSession() as s:
+            s.add_all(self.matches)
+            s.commit()
+            self.signals.finished.emit()
