@@ -582,6 +582,7 @@ class SurvivorItemSelect(ItemSelect):
         self.currentItems = []
         self.itemTypeFilterComboBox = self.itemSelectionComboBox
         delattr(self, "itemSelectionComboBox")
+        self.itemTypeFilterComboBox.addItem("None")
         self.itemTypeFilterComboBox.addItems(map(lambda it: it.name, ItemType))
         buttonSize = (25,35)
         self.rightButton.setFixedSize(*buttonSize)
@@ -590,7 +591,15 @@ class SurvivorItemSelect(ItemSelect):
         self.selectFromIndex(0)
 
     def selectFromIndex(self, index: int):
-        itemType = ItemType(index)
+        t = index - 1
+        if t == -1:
+            self.currentIndex = 0
+            self.currentItems = []
+            self.selectedItem = None
+            self.selectionChanged.emit(None)
+            self.imageLabel.setPixmap(QPixmap())
+            return
+        itemType = ItemType(t)
         self.currentItems = [i for i in self.items if i.itemType == itemType]
         self.selectedItem = self.currentItems[0]
         self.currentIndex = 0
@@ -791,7 +800,7 @@ class DBDMatchListItem(QWidget):
             self.layout().addStretch(1)
 
 class PaginatedMatchListWidget(QWidget):
-    #todo: set margins on buttons and page limit combo box
+
     def __init__(self, items: list[DBDMatch], pageLimit=50, parent=None):
         super().__init__(parent=parent)
         self.listWidget = QListWidget()

@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         self.survivorOfferingSelect = OfferingSelection(offerings=self.resources.offerings)
         self.itemSelection = SurvivorItemSelect(items=self.resources.items, icons=Globals.ITEM_ICONS, iconSize=Globals.ITEM_ICON_SIZE)
         self.itemSelection.selectionChanged.connect(lambda item: self.itemAddonSelection.filterAddons(
-            lambda addon: isinstance(addon, ItemAddon) and addon.itemType == item.itemType))
+            lambda addon: isinstance(addon, ItemAddon) and addon.itemType == item.itemType if item is not None else False))
         self.itemSelection.selectFromIndex(0)
         self.survivorPerkSelection = PerkSelection([p for p in self.resources.perks if p.perkType == PerkType.Survivor])
         upperSurvivorWidget, upperSurvivorLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
