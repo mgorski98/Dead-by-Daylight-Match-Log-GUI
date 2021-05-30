@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
         killerLayout.addWidget(killerListWidget, 0, 4, 1, 2)
 
         self.killerMatchDateComboBox = QComboBox()
+        self.killerMatchDateComboBox.setFixedWidth(250)
         self.killerMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(KillerMatch, self.killerMatchListWidget, self.killerMatchDateComboBox.itemText(index)))
             
         with Database.instance().getNewSession() as s:
@@ -195,6 +196,7 @@ class MainWindow(QMainWindow):
         survivorMainTabWidget = QTabWidget()
         self.survivorMatchListWidget = QListWidget()
         self.survivorMatchDateComboBox = QComboBox()
+        self.survivorMatchDateComboBox.setFixedWidth(250)
         self.survivorMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(SurvivorMatch, self.survivorMatchListWidget, self.survivorMatchDateComboBox.itemText(index)))
         with Database.instance().getNewSession() as s:
             dates = s.query(SurvivorMatch.matchDate).distinct().all()

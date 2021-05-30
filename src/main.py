@@ -25,7 +25,7 @@ def main() -> None:
     config = loadConfig('../config-dev.cfg')
     Database.init(config["DB_URL"])
     app = QApplication(sys.argv)
-    splash = QSplashScreen(app.primaryScreen())
+    splash = QSplashScreen(QPixmap())
     splash.show()
     QLocale.setDefault(QLocale(QLocale.English))
     Globals.init()
