@@ -703,6 +703,8 @@ class DBDMatchListItem(QWidget):
                 perksLayout.addWidget(label, i, j)
                 index += 1
         self.layout().addLayout(perksLayout)
+        mapDisplayLayout = self.__setupMapDisplay()
+        self.layout().addLayout(mapDisplayLayout)
         killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         facedKillerLayout = QVBoxLayout()
         killerIconLabel = QLabel()
@@ -775,6 +777,8 @@ class DBDMatchListItem(QWidget):
                 index+=1
         self.layout().addLayout(perksLayout)
 
+        mapDisplayLayout = self.__setupMapDisplay()
+        self.layout().addLayout(mapDisplayLayout)
         facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         facedSurvivorIcons = [Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs in self.match.facedSurvivors]
         if len(facedSurvivorIcons) <= 0:
@@ -798,6 +802,24 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+    def __setupMapDisplay(self) -> QVBoxLayout:
+        mapDisplayLayout = QVBoxLayout()
+        mapDisplayLayout.setAlignment(Qt.AlignCenter)
+        if self.match.gameMap is not None:
+            mapIcon = Globals.MAP_ICONS[toResourceName(self.match.gameMap.mapName)]
+            mapIconLabel = QLabel()
+            mapIconLabel.setPixmap(mapIcon)
+            mapNameLabel = QLabel(f"<b>{self.match.gameMap.mapName}</b>")
+            mapNameLabel.setAlignment(Qt.AlignCenter)
+            mapDisplayLayout.addWidget(mapIconLabel)
+            mapDisplayLayout.addWidget(mapNameLabel)
+        else:
+            noInfoLabel = QLabel("<b>No map info found</b>")
+            noInfoLabel.setAlignment(Qt.AlignCenter)
+            mapDisplayLayout.addWidget(noInfoLabel)
+        return mapDisplayLayout
+
 
 class PaginatedMatchListWidget(QWidget):
 
