@@ -11,10 +11,12 @@ from PIL import Image
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal, QObject, QRunnable
 from bs4 import BeautifulSoup
 from sqlalchemy import select
+from sqlalchemy.engine import Transaction
 from sqlalchemy.orm import Session, sessionmaker
 
 from classutil import DBDResources
-from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap, KillerAddon, ItemAddon
+from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap, KillerAddon, ItemAddon, \
+    DBDMatch
 from util import saveImageFromURL
 
 
@@ -306,15 +308,15 @@ class DatabaseUpdateWorker(QRunnable):
         realms = self.__updateRealms(f'{self._BASE_WIKI_URL}Realms')
 
         guiMessageTemplates = [
-            "Saving killers: progress {0}/{1}",
             "Saving survivors: progress {0}/{1}",
             "Saving items: progress {0}/{1}",
             "Saving perks: progress {0}/{1}",
             "Saving addons: progress {0}/{1}",
             "Saving offerings: progress {0}/{1}",
-            "Saving realms: progress {0}/{1}",
+            "Saving realms: progress {0}/{1}"
         ]
         with Database.instance().getNewSession() as session:
+            curIndex, total = 0, len(killers)
             for item in killers:
                 try:
                     with session.begin():
@@ -322,7 +324,10 @@ class DatabaseUpdateWorker(QRunnable):
                         session.commit()
                         session.flush(item)
                 except Exception as e:
-                    print(e)
+                    pass
+                finally:
+                    curIndex+=1
+                    self.signals.progressUpdated.emit(f"Saving killers: progress {curIndex}/{total}")
             killers = list(map(itemgetter(0), session.execute(select(Killer)).all()))
 
         for addon in addons:
@@ -332,32 +337,18 @@ class DatabaseUpdateWorker(QRunnable):
                     addon.killer = killer
 
         with Database.instance().getNewSession() as session:
-            for itemList in [survivors, realms, items, perks, offerings, addons]:
+            for itemList, messageTemplate in zip([survivors, items, perks, addons, offerings, realms], guiMessageTemplates):
+                curIndex, totalWork = 0, len(itemList)
                 for item in itemList:
                     try:
                         with session.begin():
                             session.add(item)
                             session.commit()
-                            session.flush(item)
                     except Exception as e:
-                        print(e)
-
-        # for itemList, message in zip([killers, survivors, items, perks, addons, offerings, realms],guiMessageTemplates):
-        #     currentItems, totalItems = 0, len(itemList)
-        #     with Database.instance().getNewSession() as session:
-        #         for item in itemList:
-        #             with session.begin_nested():
-        #                 try:
-        #                     session.add(item)
-        #                     session.commit()
-        #                 except Exception as e:
-        #                     print(e)
-        #                     session.rollback()
-        #                     session.flush(item)
-        #                 finally:
-        #                     currentItems += 1
-        #                     self.signals.progressUpdated.emit(message.format(currentItems, totalItems))
-
+                        pass
+                    finally:
+                        curIndex += 1
+                        self.signals.progressUpdated.emit(messageTemplate.format(curIndex, totalWork))
 
         self.signals.finished.emit()
 
@@ -368,7 +359,7 @@ class DatabaseUpdateWorker(QRunnable):
         killersParser = BeautifulSoup(killersDoc, 'html.parser')
         mainDiv = killersParser.find('div', attrs={'style': 'color: #fff;'})
         aTags = mainDiv.find_all('a')
-        killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias='The ' + aTags[j + 1].get('title', '')) for
+        killers = [Killer(killerName=aTags[j].get('title', ''), killerAlias=aTags[j + 1].get('title', '')) for
                    i, j in enumerate(range(0, len(aTags), 2))]
         killerUrls = [f"{self._BASE_URL}{a.get('href', '')}" for a in aTags[::2]]
         self.signals.progressUpdated.emit("Updating killer portraits...")
@@ -420,7 +411,7 @@ class DatabaseUpdateWorker(QRunnable):
         ]
         itemsTable = itemsParser.find_all('table', class_='wikitable')[
             1]  # we need the second one, first one has rarities
-        itemRows = itemsTable.find('tbody').find_all('tr')
+        itemRows = itemsTable.find('tbody').find_all('tr')[4:]#we now skip first 4 rows because it contains information about the craftable items
         ITEM_ROW_CHILD_COUNT = 3
         currentIndex = -1
         currentItemType = itemTypesInParsingOrder[0]
