@@ -13,19 +13,7 @@ class TestDBDMatchParser(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         Database.init('sqlite:///../dbd-match-log-DEV.db')
-        with Database.instance().getNewSession() as s:
-            extractor = operator.itemgetter(0)
-            killers = list(map(extractor, s.execute(
-                sqlalchemy.select(Killer)).all()))  # for some ungodly reason this returns list of 1-element tuples
-            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
-            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
-            killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
-            itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
-            addons = killerAddons + itemAddons
-            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
-            perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
-            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-            cls.resources = DBDResources(killers,survivors,addons, items, offerings, realms, perks)
+        cls.resources = Database.instance().newResourceInstance()
         cls.parser = DBDMatchParser(cls.resources)
 
     def test_parseKillerGame_everythingCorrect(self):
