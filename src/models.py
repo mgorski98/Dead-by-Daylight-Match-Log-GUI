@@ -63,7 +63,7 @@ class Killer:
         return f'{self.killerName} - {self.killerAlias}'
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Survivor:
     __table__ = Table(
         "survivors",
@@ -346,7 +346,13 @@ class DBDMatch(ABC):
 
     @abstractmethod
     def asDict(self) -> dict[str, object]:
-        pass
+        return {
+            "points": self.points,
+            "map": self.gameMap,
+            "offering:": self.offering,
+            "date": self.matchDate,
+            "rank": self.rank
+        }
 
 
 @mapperRegistry.mapped
@@ -402,7 +408,15 @@ class SurvivorMatch(DBDMatch):
         return self.__str__()
 
     def asDict(self) -> dict[str, object]:
-        return {}
+        return super().asDict() | {
+            "survivor": self.survivor,
+            "faced killer": self.facedKiller,
+            "item": self.item,
+            "match result": self.matchResult,
+            "party size": self.partySize,
+            "perks": self.perks,
+            "addons": self.itemAddons
+        }
 
     __mapper_args__ = {
         "properties": {
@@ -478,16 +492,11 @@ class KillerMatch(DBDMatch):
         return self.__str__()
 
     def asDict(self) -> dict[str, object]:
-        return {
+        return super().asDict() | {
             "killer": self.killer,
-            "points": self.points,
-            "map": self.gameMap,
             "perks": self.perks,
             "survivors": self.facedSurvivors,
-            "offering": self.offering,
-            "addons": self.killerAddons,
-            "rank": self.rank,
-            "date": self.matchDate
+            "addons": self.killerAddons
         }
 
     __mapper_args__ = {
