@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import re
 from datetime import date, datetime
@@ -5,7 +7,6 @@ from typing import Union, Callable, Optional
 
 from PyQt5.QtCore import QRunnable, QObject, pyqtSignal
 
-from database import Database
 from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
@@ -298,18 +299,3 @@ class LogFileLoadWorker(QRunnable):
             allErrors += errors
         self.signals.finished.emit(allGames, allErrors)
 
-class DatabaseMatchListWorkerSignals(QObject):
-    finished = pyqtSignal()
-
-class DatabaseMatchListSaveWorker(QRunnable):
-
-    def __init__(self, matchesToSave: list[DBDMatch]):
-        super().__init__()
-        self.matches = matchesToSave
-        self.signals = DatabaseMatchListWorkerSignals()
-
-    def run(self) -> None:
-        with Database.instance().getNewSession() as s:
-            s.add_all(self.matches)
-            s.commit()
-            self.signals.finished.emit()

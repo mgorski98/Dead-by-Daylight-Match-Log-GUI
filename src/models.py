@@ -46,7 +46,7 @@ class FacedSurvivorState(enum.Enum):
 #</editor-fold>
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Killer:
     __table__ = Table(
         "killers",
@@ -79,7 +79,7 @@ class Survivor:
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Item:
     __table__ = Table(
         "items",
@@ -96,7 +96,7 @@ class Item:
         return self.itemName
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class GameMap:
     __table__ = Table(
         "maps",
@@ -113,7 +113,7 @@ class GameMap:
         return self.mapName
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Realm:
     __table__ = Table(
         "realms",
@@ -134,7 +134,7 @@ class Realm:
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class ItemAddon:
     __table__ = Table(
         "item_addons",
@@ -151,7 +151,7 @@ class ItemAddon:
         return self.addonName
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class KillerAddon:
     __table__ = Table(
         "killer_addons",
@@ -175,7 +175,7 @@ class KillerAddon:
         return self.addonName
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Perk:
     __table__ = Table(
         "perks",
@@ -195,7 +195,7 @@ class Perk:
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class Offering:
     __table__ = Table(
         "offerings",
@@ -211,7 +211,7 @@ class Offering:
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class KillerMatchPerk:
     __table__ = Table(
         "killer_match_perks",
@@ -235,7 +235,7 @@ class KillerMatchPerk:
         return str(self.perk)
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class SurvivorMatchPerk:
     __table__ = Table(
         "survivor_match_perks",
@@ -259,7 +259,7 @@ class SurvivorMatchPerk:
         return str(self.perk)
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class MatchKillerAddon:
     __table__ = Table(
         "match_killer_addons",
@@ -283,7 +283,7 @@ class MatchKillerAddon:
         return str(self.killerAddon)
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class MatchItemAddon:
     __table__ = Table(
         "match_item_addons",
@@ -307,7 +307,7 @@ class MatchItemAddon:
         return str(self.itemAddon)
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class FacedSurvivor:
     __table__ = Table(
         "faced_survivors",
@@ -350,7 +350,7 @@ class DBDMatch(ABC):
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class SurvivorMatch(DBDMatch):
     __table__ = Table(
         "survivor_matches",
@@ -418,7 +418,7 @@ class SurvivorMatch(DBDMatch):
 
 
 @mapperRegistry.mapped
-@dataclass
+@dataclass(unsafe_hash=True)
 class KillerMatch(DBDMatch):
 
     __table__ = Table(
@@ -478,7 +478,17 @@ class KillerMatch(DBDMatch):
         return self.__str__()
 
     def asDict(self) -> dict[str, object]:
-        return {}
+        return {
+            "killer": self.killer,
+            "points": self.points,
+            "map": self.gameMap,
+            "perks": self.perks,
+            "survivors": self.facedSurvivors,
+            "offering": self.offering,
+            "addons": self.killerAddons,
+            "rank": self.rank,
+            "date": self.matchDate
+        }
 
     __mapper_args__ = {
         "properties": {

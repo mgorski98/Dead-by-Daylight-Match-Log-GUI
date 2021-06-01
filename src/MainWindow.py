@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import operator
 import sqlalchemy
+import pandas as pd
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
@@ -10,9 +11,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
     QFileDialog, QListWidgetItem, QDialog
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
-from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources, \
-    DatabaseMatchListSaveWorker
-from database import Database, DatabaseUpdateWorker
+from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
+from database import Database, DatabaseUpdateWorker, DatabaseMatchListSaveWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect, DBDMatchListItem
@@ -21,23 +21,10 @@ from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, 
     SurvivorMatch
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
 
-#todo: add statistics calculation and allow exporting those statistics to other file formats, e.g. json
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
         super(MainWindow, self).__init__(parent=parent)
-        with Database.instance().getNewSession() as s:
-            extractor = operator.itemgetter(0)
-            killers = list(map(extractor, s.execute(sqlalchemy.select(Killer)).all())) #for some ungodly reason this returns list of 1-element tuples
-            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
-            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
-            killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
-            itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
-            addons = killerAddons + itemAddons
-            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
-            perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
-            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
-            resources = DBDResources(killers, survivors, addons, items, offerings, realms, perks)
-        self.resources = resources
+        self.resources = Database.instance().newResourceInstance()
         self.currentlyAddedMatches: list[DBDMatch] = []
         self.setWindowTitle(title)
         self.setContentsMargins(5, 5, 5, 5)
@@ -46,6 +33,8 @@ class MainWindow(QMainWindow):
         self.__setupMenuBar()
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
+
+
 
         self.statusBar().showMessage("Ready", 5000)
         self.__setupKillerForm()

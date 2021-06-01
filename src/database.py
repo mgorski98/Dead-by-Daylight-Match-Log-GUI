@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from classutil import DBDResources
 from models import Killer, Survivor, Perk, PerkType, ItemType, Item, Offering, Realm, GameMap, KillerAddon, ItemAddon
 from util import saveImageFromURL
 
@@ -23,6 +24,21 @@ class Database:
     def __init__(self, url: str):
         self._engine = sqlalchemy.create_engine(url)
         self._sessionmaker = sessionmaker(self._engine)
+
+    def newResourceInstance(self) -> DBDResources:
+        with self.getNewSession() as s:
+            extractor = itemgetter(0)
+            killers = list(map(extractor, s.execute(
+                sqlalchemy.select(Killer)).all()))  # for some ungodly reason this returns list of 1-element tuples
+            realms = list(map(extractor, s.execute(sqlalchemy.select(Realm)).all()))
+            survivors = list(map(extractor, s.execute(sqlalchemy.select(Survivor)).all()))
+            killerAddons = list(map(extractor, s.execute(sqlalchemy.select(KillerAddon)).all()))
+            itemAddons = list(map(extractor, s.execute(sqlalchemy.select(ItemAddon)).all()))
+            addons = killerAddons + itemAddons
+            offerings = list(map(extractor, s.execute(sqlalchemy.select(Offering)).all()))
+            perks = list(map(extractor, s.execute(sqlalchemy.select(Perk)).all()))
+            items = list(map(extractor, s.execute(sqlalchemy.select(Item)).all()))
+            return DBDResources(killers, survivors, addons, items, offerings, realms, perks)
 
     def getNewSession(self) -> Session:
         session = self._sessionmaker()
@@ -37,11 +53,6 @@ class Database:
     def init(dbUrl: str):
         if Database.__instance is None:
             Database.__instance = Database(dbUrl)
-
-    @staticmethod
-    def fetchAll(t: type):
-        statement = sqlalchemy.select(t)
-        return list(Database.instance()._engine.execute(statement).all())
 
     @staticmethod
     def _update():
@@ -636,3 +647,20 @@ class DatabaseUpdateWorker(QRunnable):
                 else:
                     self.signals.progressUpdated.emit(f"Skipping icon for {addonName} because it already exists")
         return itemAddons + killerAddons
+
+
+class DatabaseMatchListWorkerSignals(QObject):
+    finished = pyqtSignal()
+
+class DatabaseMatchListSaveWorker(QRunnable):
+
+    def __init__(self, matchesToSave: list[DBDMatch]):
+        super().__init__()
+        self.matches = matchesToSave
+        self.signals = DatabaseMatchListWorkerSignals()
+
+    def run(self) -> None:
+        with Database.instance().getNewSession() as s:
+            s.add_all(self.matches)
+            s.commit()
+            self.signals.finished.emit()
