@@ -1,6 +1,6 @@
 import operator
 from functools import partial
-from typing import Union, Callable
+from typing import Union, Callable, Iterable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor, DBDMatch, KillerMatch, SurvivorMatch
-from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp
+from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp, qtMakeBold
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -246,6 +246,11 @@ class AddonSelection(QWidget):
         self.addons = addons
         self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
+        clearAddonButton = QPushButton('Clear addon')
+        clearAddonButton.clicked.connect(lambda: self.popupSelect.selectItem(None))
+        clearAddonButton.setFixedWidth(125)
+        self.popupSelect.layout().addWidget(clearAddonButton)
+        self.popupSelect.layout().setAlignment(clearAddonButton, Qt.AlignCenter)
         self.defaultIcon = QIcon(Globals.DEFAULT_ADDON_ICON)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
@@ -627,8 +632,7 @@ class DBDMatchListItem(QWidget):
     def __init__(self, match: DBDMatch, parent=None):
         super().__init__(parent=parent)
         self.match = match
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        self.setLayout(QHBoxLayout())
         if isinstance(match, SurvivorMatch):
             self.__setupSurvivorMatchUI()
         elif isinstance(match, KillerMatch):
@@ -637,55 +641,135 @@ class DBDMatchListItem(QWidget):
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
 
     def __setupSurvivorMatchUI(self):
-        survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        iconLabel = QLabel()
-        iconLabel.setPixmap(survivorIcon)
-        matchResultLabel = QLabel(' '.join(splitUpper(self.match.matchResult.name)))
-        matchResultLabel.setStyleSheet("font-weight: bold;")
-        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
-        survivorLayout.addWidget(iconLabel)
-        survivorLayout.addWidget(matchResultLabel)
-        survivorLayout.setAlignment(iconLabel, Qt.AlignCenter)
-        survivorLayout.setAlignment(matchResultLabel, Qt.AlignCenter)
+        survivorWidget = self.__setupSurvivorDisplay()
         self.layout().addWidget(survivorWidget)
         self.layout().setAlignment(survivorWidget, Qt.AlignLeft)
+
         generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
-        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
-        dateLabel.setStyleSheet("font-weight: bold;")
-        generalInfoLayout.addWidget(dateLabel)
+
+        generalInfoLayout.addWidget(QLabel(qtMakeBold(self.match.matchDate.strftime('%d/%m/%Y'))))
+
         pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
         pointsLabel = QLabel(f"Points: {pointsStr}")
         generalInfoLayout.addWidget(pointsLabel)
+
         rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
         rankLabel = QLabel(rankStr)
         generalInfoLayout.addWidget(rankLabel)
+
         partySizeStr = f"Party size: {self.match.partySize}" if self.match.partySize else "No party size data"
         partySizeLabel = QLabel(partySizeStr)
         generalInfoLayout.addWidget(partySizeLabel)
+
         lowerLayout = QHBoxLayout()
         generalInfoLayout.addLayout(lowerLayout)
+
         itemIconSize = (Globals.ITEM_ICON_SIZE[0]//2,Globals.ITEM_ICON_SIZE[1]//2)
         itemIcon = Globals.DEFAULT_ITEM_ICON.scaled(*itemIconSize) if not self.match.item else Globals.ITEM_ICONS[toResourceName(self.match.item.itemName)].scaled(*itemIconSize)
-        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
-        addonIcons = ()
-        if len(self.match.itemAddons) > 0:
-            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.itemAddon.addonName)].scaled(*addonIconSize) for
-                          addon in self.match.itemAddons]
-        else:
-            icon = Globals.DEFAULT_ADDON_ICON.scaled(Globals.ADDON_ICON_SIZE[0]//2.25,Globals.ADDON_ICON_SIZE[1]//2.25)
-            addonIcons = (icon, icon)
 
-        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
-        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
-            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        addonIcons = self.__setupAddonIcons([addon.itemAddon for addon in self.match.itemAddons])
+
+        offeringIcon = self.__setupOfferingIcon()
+
         for icon in [itemIcon, *addonIcons, offeringIcon]:
             label = QLabel()
             label.setPixmap(icon)
             lowerLayout.addWidget(label)
             label.setFixedSize(icon.size())
 
+        perksLayout = self.__setupPerksDisplay()
+        self.layout().addLayout(perksLayout)
+
+        mapDisplayLayout = self.__setupMapDisplay()
+        self.layout().addLayout(mapDisplayLayout)
+
+        facedKillerWidget = self.__setupFacedKillerLayout()
+
+        self.layout().addWidget(facedKillerWidget)
+        self.layout().setAlignment(facedKillerWidget, Qt.AlignRight)
+
+
+    def __setupKillerMatchUI(self):
+        iconLabel = self.__setupCharacterIconDisplay(self.match.killer.killerAlias, Globals.KILLER_ICONS)
+        self.layout().addWidget(iconLabel)
+        self.layout().setAlignment(iconLabel, Qt.AlignLeft)
+        generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
+        self.layout().addWidget(generalInfoWidget)
+        self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
+        generalInfoLayout.setAlignment(Qt.AlignLeft)
+        generalInfoLayout.addWidget(QLabel(qtMakeBold(self.match.matchDate.strftime('%d/%m/%Y'))))
+
+        pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
+        pointsLabel = QLabel(f"Points: {pointsStr}")
+        generalInfoLayout.addWidget(pointsLabel)
+
+        rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
+        rankLabel = QLabel(rankStr)
+        generalInfoLayout.addWidget(rankLabel)
+
+        lowerLayout = QHBoxLayout()
+        generalInfoLayout.addLayout(lowerLayout)
+
+        offeringIcon = self.__setupOfferingIcon()
+
+        addonIcons = self.__setupAddonIcons([addon.killerAddon for addon in self.match.killerAddons])
+
+        for icon in [*addonIcons, offeringIcon]:
+            label = QLabel()
+            label.setPixmap(icon)
+            lowerLayout.addWidget(label)
+            label.setFixedSize(icon.size())
+
+        perksLayout = self.__setupPerksDisplay()
+        self.layout().addLayout(perksLayout)
+
+        mapDisplayLayout = self.__setupMapDisplay()
+        self.layout().addLayout(mapDisplayLayout)
+
+        self.__setupFacedSurvivorsDisplay()
+
+
+    def __setupSurvivorDisplay(self) -> QWidget:
+        iconLabel = self.__setupCharacterIconDisplay(self.match.survivor.survivorName, Globals.SURVIVOR_ICONS)
+        matchResultLabel = QLabel(qtMakeBold(' '.join(splitUpper(self.match.matchResult.name))))
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorLayout.addWidget(iconLabel)
+        survivorLayout.addWidget(matchResultLabel)
+        survivorLayout.setAlignment(iconLabel, Qt.AlignCenter)
+        survivorLayout.setAlignment(matchResultLabel, Qt.AlignCenter)
+        return survivorWidget
+
+    def __setupOfferingIcon(self) -> QPixmap:
+        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
+        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
+            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        return offeringIcon
+
+    def __setupAddonIcons(self, addons: list[Union[ItemAddon, KillerAddon]]) -> list[QPixmap]:
+        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
+        addonIcons = []
+        if len(addons) > 0:
+            addonIcons += [Globals.ADDON_ICONS[toResourceName(addon.addonName)].scaled(*addonIconSize) for
+                          addon in addons]
+            iconCount = len(addonIcons)
+            if iconCount < 2:
+                addonIcons += [Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)] * (2 - iconCount)
+        else:
+            icon = Globals.DEFAULT_ADDON_ICON.scaled(Globals.ADDON_ICON_SIZE[0] // 2.25,
+                                                     Globals.ADDON_ICON_SIZE[1] // 2.25)
+            addonIcons += [icon, icon]
+        return addonIcons
+
+    def __setupCharacterIconDisplay(self, charName: str, iconsDict: dict[str, QPixmap]) -> QLabel:
+        size = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
+        icon = iconsDict[toResourceName(charName)].scaled(*size)
+        label = QLabel()
+        label.setPixmap(icon)
+        return label
+
+    def __setupPerksDisplay(self) -> QGridLayout:
         perkIconSize = (Globals.PERK_ICON_SIZE[0] // 2, Globals.PERK_ICON_SIZE[1] // 2)
         perkIcons = [
             Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for
@@ -702,87 +786,35 @@ class DBDMatchListItem(QWidget):
                 label.setPixmap(icon)
                 perksLayout.addWidget(label, i, j)
                 index += 1
-        self.layout().addLayout(perksLayout)
-        killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        facedKillerLayout = QVBoxLayout()
-        killerIconLabel = QLabel()
-        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.facedKiller.killerAlias)].scaled(*killerIconSize)
-        killerIconLabel.setPixmap(killerIcon)
-        headerLabel = QLabel("Faced killer")
-        headerLabel.setStyleSheet("font-weight: bold;")
-        facedKillerLayout.addWidget(headerLabel)
-        facedKillerLayout.setAlignment(headerLabel, Qt.AlignCenter)
-        facedKillerLayout.addWidget(killerIconLabel)
-        facedKillerLayout.setAlignment(killerIconLabel, Qt.AlignCenter)
-        facedKillerWidget = QWidget()
-        facedKillerWidget.setLayout(facedKillerLayout)
-        self.layout().addWidget(facedKillerWidget)
-        self.layout().setAlignment(facedKillerWidget, Qt.AlignRight)
+        return perksLayout
 
-
-    def __setupKillerMatchUI(self):
-        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.killer.killerAlias)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        iconLabel = QLabel()
-        iconLabel.setPixmap(killerIcon)
-        self.layout().addWidget(iconLabel)
-        self.layout().setAlignment(iconLabel, Qt.AlignLeft)
-        generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
-        self.layout().addWidget(generalInfoWidget)
-        self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
-        generalInfoLayout.setAlignment(Qt.AlignLeft)
-        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
-        dateLabel.setStyleSheet("font-weight: bold;")
-        generalInfoLayout.addWidget(dateLabel)
-        pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
-        pointsLabel = QLabel(f"Points: {pointsStr}")
-        generalInfoLayout.addWidget(pointsLabel)
-        rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
-        rankLabel = QLabel(rankStr)
-        generalInfoLayout.addWidget(rankLabel)
-        lowerLayout = QHBoxLayout()
-        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
-        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
-            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
-        generalInfoLayout.addLayout(lowerLayout)
-        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
-        addonIcons = ()
-        if len(self.match.killerAddons) > 0:
-            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.killerAddon.addonName)].scaled(*addonIconSize) for addon in self.match.killerAddons]
-            if len(addonIcons) < 2:
-                addonIcons += [Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)] * (2 - len(addonIcons))
+    def __setupMapDisplay(self) -> QVBoxLayout:
+        mapDisplayLayout = QVBoxLayout()
+        mapDisplayLayout.setAlignment(Qt.AlignCenter)
+        if self.match.gameMap is not None:
+            mapIcon = Globals.MAP_ICONS[toResourceName(self.match.gameMap.mapName)]
+            mapIconLabel = QLabel()
+            mapIconLabel.setPixmap(mapIcon)
+            mapNameLabel = QLabel(f"<b>{self.match.gameMap.mapName}</b>")
+            mapNameLabel.setAlignment(Qt.AlignCenter)
+            mapDisplayLayout.addWidget(mapIconLabel)
+            mapDisplayLayout.addWidget(mapNameLabel)
         else:
-            icon = Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)
-            addonIcons = (icon, icon)
-        for icon in [*addonIcons, offeringIcon]:
-            label = QLabel()
-            label.setPixmap(icon)
-            lowerLayout.addWidget(label)
-            label.setFixedSize(icon.size())
+            noInfoLabel = QLabel("<b>No map info found</b>")
+            noInfoLabel.setAlignment(Qt.AlignCenter)
+            mapDisplayLayout.addWidget(noInfoLabel)
+        return mapDisplayLayout
 
-        perkIconSize = (Globals.PERK_ICON_SIZE[0]//2, Globals.PERK_ICON_SIZE[1]//2)
-        perkIcons = [Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for p in self.match.perks]
-        if len(perkIcons) < 4:
-            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
-            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
-        perksLayout = QGridLayout()
-        index = 0
-        for i in range(2):
-            for j in range(2):
-                icon = perkIcons[index]
-                label = QLabel()
-                label.setPixmap(icon)
-                perksLayout.addWidget(label, i, j)
-                index+=1
-        self.layout().addLayout(perksLayout)
-
-        facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        facedSurvivorIcons = [Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs in self.match.facedSurvivors]
+    def __setupFacedSurvivorsDisplay(self):
+        facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
+        facedSurvivorIcons = [
+            Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs
+            in self.match.facedSurvivors]
         if len(facedSurvivorIcons) <= 0:
-            noInfoLabel = QLabel("No faced survivors data found")
-            noInfoLabel.setStyleSheet("font-weight: bold;")
+            noInfoLabel = QLabel(qtMakeBold("No faced survivors data found"))
             self.layout().addStretch(1)
             self.layout().addWidget(noInfoLabel)
-            self.layout().addSpacerItem(QSpacerItem(100,0))
+            self.layout().addSpacerItem(QSpacerItem(100, 0))
         else:
             facedSurvivorsLayout = QGridLayout()
             for i in range(4):
@@ -798,6 +830,22 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+
+    def __setupFacedKillerLayout(self) -> QWidget:
+        killerIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
+        facedKillerLayout = QVBoxLayout()
+        killerIconLabel = QLabel()
+        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.facedKiller.killerAlias)].scaled(*killerIconSize)
+        killerIconLabel.setPixmap(killerIcon)
+        headerLabel = QLabel(qtMakeBold("Faced killer"))
+        facedKillerLayout.addWidget(headerLabel)
+        facedKillerLayout.setAlignment(headerLabel, Qt.AlignCenter)
+        facedKillerLayout.addWidget(killerIconLabel)
+        facedKillerLayout.setAlignment(killerIconLabel, Qt.AlignCenter)
+        facedKillerWidget, facedKillerLayout = setQWidgetLayout(QWidget(), facedKillerLayout)
+        return facedKillerWidget
+
 
 class PaginatedMatchListWidget(QWidget):
 

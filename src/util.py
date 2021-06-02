@@ -73,3 +73,12 @@ def isDateString(s:str, fmt: str) -> bool:
         return True
     except Exception:
         return False
+
+def wrapInTag(s: str, tagName: str) -> str:
+    return f"<{tagName}>{s}</{tagName}>"
+
+def qtMakeBold(s: str) -> str:
+    return wrapInTag(s, 'b')
+
+def qtMakeItalic(s: str) -> str:
+    return wrapInTag(s, 'i')
