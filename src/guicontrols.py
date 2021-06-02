@@ -691,25 +691,12 @@ class DBDMatchListItem(QWidget):
             lowerLayout.addWidget(label)
             label.setFixedSize(icon.size())
 
-        perkIconSize = (Globals.PERK_ICON_SIZE[0] // 2, Globals.PERK_ICON_SIZE[1] // 2)
-        perkIcons = [
-            Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for
-            p in self.match.perks]
-        if len(perkIcons) < 4:
-            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
-            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
-        perksLayout = QGridLayout()
-        index = 0
-        for i in range(2):
-            for j in range(2):
-                icon = perkIcons[index]
-                label = QLabel()
-                label.setPixmap(icon)
-                perksLayout.addWidget(label, i, j)
-                index += 1
+        perksLayout = self.__setupPerksDisplay()
         self.layout().addLayout(perksLayout)
+
         mapDisplayLayout = self.__setupMapDisplay()
         self.layout().addLayout(mapDisplayLayout)
+        
         killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         facedKillerLayout = QVBoxLayout()
         killerIconLabel = QLabel()
@@ -728,18 +715,14 @@ class DBDMatchListItem(QWidget):
 
 
     def __setupKillerMatchUI(self):
-        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.killer.killerAlias)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        iconLabel = QLabel()
-        iconLabel.setPixmap(killerIcon)
+        iconLabel = self.__setupCharacterIconDisplay(self.match.killer.killerAlias, Globals.KILLER_ICONS)
         self.layout().addWidget(iconLabel)
         self.layout().setAlignment(iconLabel, Qt.AlignLeft)
         generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
         generalInfoLayout.setAlignment(Qt.AlignLeft)
-        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
-        dateLabel.setStyleSheet("font-weight: bold;")
-        generalInfoLayout.addWidget(dateLabel)
+        generalInfoLayout.addWidget(QLabel(f"<b>{self.match.matchDate.strftime('%d/%m/%Y')}</b>"))
         pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
         pointsLabel = QLabel(f"Points: {pointsStr}")
         generalInfoLayout.addWidget(pointsLabel)
@@ -766,20 +749,7 @@ class DBDMatchListItem(QWidget):
             lowerLayout.addWidget(label)
             label.setFixedSize(icon.size())
 
-        perkIconSize = (Globals.PERK_ICON_SIZE[0]//2, Globals.PERK_ICON_SIZE[1]//2)
-        perkIcons = [Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for p in self.match.perks]
-        if len(perkIcons) < 4:
-            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
-            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
-        perksLayout = QGridLayout()
-        index = 0
-        for i in range(2):
-            for j in range(2):
-                icon = perkIcons[index]
-                label = QLabel()
-                label.setPixmap(icon)
-                perksLayout.addWidget(label, i, j)
-                index+=1
+        perksLayout = self.__setupPerksDisplay()
         self.layout().addLayout(perksLayout)
 
         mapDisplayLayout = self.__setupMapDisplay()
@@ -807,6 +777,32 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+    def __setupCharacterIconDisplay(self, charName: str, iconsDict: dict[str, QPixmap]) -> QLabel:
+        size = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
+        icon = iconsDict[toResourceName(charName)].scaled(*size)
+        label = QLabel()
+        label.setPixmap(icon)
+        return label
+
+    def __setupPerksDisplay(self) -> QGridLayout:
+        perkIconSize = (Globals.PERK_ICON_SIZE[0] // 2, Globals.PERK_ICON_SIZE[1] // 2)
+        perkIcons = [
+            Globals.PERK_ICONS[toResourceName(p.perk.perkName + f'-{"i" * p.perk.perkTier}')].scaled(*perkIconSize) for
+            p in self.match.perks]
+        if len(perkIcons) < 4:
+            defaultPerkIcon = Globals.DEFAULT_PERK_ICON.scaled(*perkIconSize)
+            perkIcons += [defaultPerkIcon] * (4 - len(perkIcons))
+        perksLayout = QGridLayout()
+        index = 0
+        for i in range(2):
+            for j in range(2):
+                icon = perkIcons[index]
+                label = QLabel()
+                label.setPixmap(icon)
+                perksLayout.addWidget(label, i, j)
+                index += 1
+        return perksLayout
 
     def __setupMapDisplay(self) -> QVBoxLayout:
         mapDisplayLayout = QVBoxLayout()
