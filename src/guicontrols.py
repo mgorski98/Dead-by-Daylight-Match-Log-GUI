@@ -246,6 +246,11 @@ class AddonSelection(QWidget):
         self.addons = addons
         self.selectedAddons: dict[int, AddonSelectionResult] = {0: None, 1: None}
         self.popupSelect = AddonSelectPopup(self.addons)
+        clearAddonButton = QPushButton('Clear addon')
+        clearAddonButton.clicked.connect(lambda: self.popupSelect.selectItem(None))
+        clearAddonButton.setFixedWidth(125)
+        self.popupSelect.layout().addWidget(clearAddonButton)
+        self.popupSelect.layout().setAlignment(clearAddonButton, Qt.AlignCenter)
         self.defaultIcon = QIcon(Globals.DEFAULT_ADDON_ICON)
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
