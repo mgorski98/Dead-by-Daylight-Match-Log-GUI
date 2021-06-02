@@ -1,6 +1,6 @@
 import operator
 from functools import partial
-from typing import Union, Callable
+from typing import Union, Callable, Iterable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
@@ -671,20 +671,14 @@ class DBDMatchListItem(QWidget):
         generalInfoLayout.addWidget(partySizeLabel)
         lowerLayout = QHBoxLayout()
         generalInfoLayout.addLayout(lowerLayout)
+
         itemIconSize = (Globals.ITEM_ICON_SIZE[0]//2,Globals.ITEM_ICON_SIZE[1]//2)
         itemIcon = Globals.DEFAULT_ITEM_ICON.scaled(*itemIconSize) if not self.match.item else Globals.ITEM_ICONS[toResourceName(self.match.item.itemName)].scaled(*itemIconSize)
-        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
-        addonIcons = ()
-        if len(self.match.itemAddons) > 0:
-            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.itemAddon.addonName)].scaled(*addonIconSize) for
-                          addon in self.match.itemAddons]
-        else:
-            icon = Globals.DEFAULT_ADDON_ICON.scaled(Globals.ADDON_ICON_SIZE[0]//2.25,Globals.ADDON_ICON_SIZE[1]//2.25)
-            addonIcons = (icon, icon)
 
-        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
-        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
-            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        addonIcons = self.__setupAddonIcons([addon.itemAddon for addon in self.match.itemAddons])
+
+        offeringIcon = self.__setupOfferingIcon()
+
         for icon in [itemIcon, *addonIcons, offeringIcon]:
             label = QLabel()
             label.setPixmap(icon)
@@ -696,7 +690,7 @@ class DBDMatchListItem(QWidget):
 
         mapDisplayLayout = self.__setupMapDisplay()
         self.layout().addLayout(mapDisplayLayout)
-        
+
         killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         facedKillerLayout = QVBoxLayout()
         killerIconLabel = QLabel()
@@ -730,19 +724,13 @@ class DBDMatchListItem(QWidget):
         rankLabel = QLabel(rankStr)
         generalInfoLayout.addWidget(rankLabel)
         lowerLayout = QHBoxLayout()
-        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
-        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
-            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+
+        offeringIcon = self.__setupOfferingIcon()
+
         generalInfoLayout.addLayout(lowerLayout)
-        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
-        addonIcons = ()
-        if len(self.match.killerAddons) > 0:
-            addonIcons = [Globals.ADDON_ICONS[toResourceName(addon.killerAddon.addonName)].scaled(*addonIconSize) for addon in self.match.killerAddons]
-            if len(addonIcons) < 2:
-                addonIcons += [Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)] * (2 - len(addonIcons))
-        else:
-            icon = Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)
-            addonIcons = (icon, icon)
+
+        addonIcons = self.__setupAddonIcons([addon.killerAddon for addon in self.match.killerAddons])
+
         for icon in [*addonIcons, offeringIcon]:
             label = QLabel()
             label.setPixmap(icon)
@@ -777,6 +765,27 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+    def __setupOfferingIcon(self) -> QPixmap:
+        offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
+        offeringIcon = Globals.OFFERING_ICONS[toResourceName(self.match.offering.offeringName)].scaled(
+            *offeringIconSize) if self.match.offering else Globals.DEFAULT_OFFERING_ICON.scaled(*offeringIconSize)
+        return offeringIcon
+
+    def __setupAddonIcons(self, addons: list[Union[ItemAddon, KillerAddon]]) -> list[QPixmap]:
+        addonIconSize = (Globals.ADDON_ICON_SIZE[0] // 2, Globals.ADDON_ICON_SIZE[1] // 2)
+        addonIcons = []
+        if len(addons) > 0:
+            addonIcons += [Globals.ADDON_ICONS[toResourceName(addon.addonName)].scaled(*addonIconSize) for
+                          addon in addons]
+            iconCount = len(addonIcons)
+            if iconCount < 2:
+                addonIcons += [Globals.DEFAULT_ADDON_ICON.scaled(*addonIconSize)] * (2 - iconCount)
+        else:
+            icon = Globals.DEFAULT_ADDON_ICON.scaled(Globals.ADDON_ICON_SIZE[0] // 2.25,
+                                                     Globals.ADDON_ICON_SIZE[1] // 2.25)
+            addonIcons += [icon, icon]
+        return addonIcons
 
     def __setupCharacterIconDisplay(self, charName: str, iconsDict: dict[str, QPixmap]) -> QLabel:
         size = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
