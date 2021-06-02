@@ -728,28 +728,8 @@ class DBDMatchListItem(QWidget):
         mapDisplayLayout = self.__setupMapDisplay()
         self.layout().addLayout(mapDisplayLayout)
 
-        facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        facedSurvivorIcons = [Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs in self.match.facedSurvivors]
-        if len(facedSurvivorIcons) <= 0:
-            noInfoLabel = QLabel(qtMakeBold("No faced survivors data found"))
-            self.layout().addStretch(1)
-            self.layout().addWidget(noInfoLabel)
-            self.layout().addSpacerItem(QSpacerItem(100,0))
-        else:
-            facedSurvivorsLayout = QGridLayout()
-            for i in range(4):
-                cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
-                label = QLabel()
-                label.setPixmap(facedSurvivorIcons[i])
-                survivorStateLabel = QLabel(' '.join(splitUpper(self.match.facedSurvivors[i].state.name)))
-                survivorStateLabel.setStyleSheet("font-weight: bold;")
-                cellLayout.addWidget(label)
-                cellLayout.addWidget(survivorStateLabel)
-                cellLayout.setAlignment(survivorStateLabel, Qt.AlignCenter)
-                cellLayout.setAlignment(label, Qt.AlignCenter)
-                facedSurvivorsLayout.addWidget(cellWidget, 0, i)
-            self.layout().addLayout(facedSurvivorsLayout)
-            self.layout().addStretch(1)
+        self.__setupFacedSurvivorsDisplay()
+
 
     def __setupSurvivorDisplay(self) -> QWidget:
         iconLabel = self.__setupCharacterIconDisplay(self.match.survivor.survivorName, Globals.SURVIVOR_ICONS)
@@ -826,7 +806,31 @@ class DBDMatchListItem(QWidget):
         return mapDisplayLayout
 
     def __setupFacedSurvivorsDisplay(self):
-        pass
+        facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
+        facedSurvivorIcons = [
+            Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs
+            in self.match.facedSurvivors]
+        if len(facedSurvivorIcons) <= 0:
+            noInfoLabel = QLabel(qtMakeBold("No faced survivors data found"))
+            self.layout().addStretch(1)
+            self.layout().addWidget(noInfoLabel)
+            self.layout().addSpacerItem(QSpacerItem(100, 0))
+        else:
+            facedSurvivorsLayout = QGridLayout()
+            for i in range(4):
+                cellWidget, cellLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+                label = QLabel()
+                label.setPixmap(facedSurvivorIcons[i])
+                survivorStateLabel = QLabel(' '.join(splitUpper(self.match.facedSurvivors[i].state.name)))
+                survivorStateLabel.setStyleSheet("font-weight: bold;")
+                cellLayout.addWidget(label)
+                cellLayout.addWidget(survivorStateLabel)
+                cellLayout.setAlignment(survivorStateLabel, Qt.AlignCenter)
+                cellLayout.setAlignment(label, Qt.AlignCenter)
+                facedSurvivorsLayout.addWidget(cellWidget, 0, i)
+            self.layout().addLayout(facedSurvivorsLayout)
+            self.layout().addStretch(1)
+
 
     def __setupFacedKillerLayout(self) -> QWidget:
         killerIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
