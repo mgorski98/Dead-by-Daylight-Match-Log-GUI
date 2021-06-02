@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayo
 from globaldata import *
 from models import Killer, Survivor, KillerAddon, ItemAddon, Perk, Item, ItemType, FacedSurvivorState, Offering, \
     GameMap, Realm, FacedSurvivor, DBDMatch, KillerMatch, SurvivorMatch
-from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp
+from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toResourceName, addWidgets, clamp, qtMakeBold
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
@@ -632,8 +632,7 @@ class DBDMatchListItem(QWidget):
     def __init__(self, match: DBDMatch, parent=None):
         super().__init__(parent=parent)
         self.match = match
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        self.setLayout(QHBoxLayout())
         if isinstance(match, SurvivorMatch):
             self.__setupSurvivorMatchUI()
         elif isinstance(match, KillerMatch):
@@ -642,33 +641,28 @@ class DBDMatchListItem(QWidget):
             raise ValueError("'match' is neither an instance of KillerMatch nor SurvivorMatch")
 
     def __setupSurvivorMatchUI(self):
-        survivorIcon = Globals.SURVIVOR_ICONS[toResourceName(self.match.survivor.survivorName)].scaled(Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        iconLabel = QLabel()
-        iconLabel.setPixmap(survivorIcon)
-        matchResultLabel = QLabel(' '.join(splitUpper(self.match.matchResult.name)))
-        matchResultLabel.setStyleSheet("font-weight: bold;")
-        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(),QVBoxLayout())
-        survivorLayout.addWidget(iconLabel)
-        survivorLayout.addWidget(matchResultLabel)
-        survivorLayout.setAlignment(iconLabel, Qt.AlignCenter)
-        survivorLayout.setAlignment(matchResultLabel, Qt.AlignCenter)
+        survivorWidget = self.__setupSurvivorDisplay()
         self.layout().addWidget(survivorWidget)
         self.layout().setAlignment(survivorWidget, Qt.AlignLeft)
+
         generalInfoWidget, generalInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
-        dateLabel = QLabel(self.match.matchDate.strftime('%d/%m/%Y'))
-        dateLabel.setStyleSheet("font-weight: bold;")
-        generalInfoLayout.addWidget(dateLabel)
+
+        generalInfoLayout.addWidget(QLabel(qtMakeBold(self.match.matchDate.strftime('%d/%m/%Y'))))
+
         pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
         pointsLabel = QLabel(f"Points: {pointsStr}")
         generalInfoLayout.addWidget(pointsLabel)
+
         rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
         rankLabel = QLabel(rankStr)
         generalInfoLayout.addWidget(rankLabel)
+
         partySizeStr = f"Party size: {self.match.partySize}" if self.match.partySize else "No party size data"
         partySizeLabel = QLabel(partySizeStr)
         generalInfoLayout.addWidget(partySizeLabel)
+
         lowerLayout = QHBoxLayout()
         generalInfoLayout.addLayout(lowerLayout)
 
@@ -691,19 +685,8 @@ class DBDMatchListItem(QWidget):
         mapDisplayLayout = self.__setupMapDisplay()
         self.layout().addLayout(mapDisplayLayout)
 
-        killerIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
-        facedKillerLayout = QVBoxLayout()
-        killerIconLabel = QLabel()
-        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.facedKiller.killerAlias)].scaled(*killerIconSize)
-        killerIconLabel.setPixmap(killerIcon)
-        headerLabel = QLabel("Faced killer")
-        headerLabel.setStyleSheet("font-weight: bold;")
-        facedKillerLayout.addWidget(headerLabel)
-        facedKillerLayout.setAlignment(headerLabel, Qt.AlignCenter)
-        facedKillerLayout.addWidget(killerIconLabel)
-        facedKillerLayout.setAlignment(killerIconLabel, Qt.AlignCenter)
-        facedKillerWidget = QWidget()
-        facedKillerWidget.setLayout(facedKillerLayout)
+        facedKillerWidget = self.__setupFacedKillerLayout()
+
         self.layout().addWidget(facedKillerWidget)
         self.layout().setAlignment(facedKillerWidget, Qt.AlignRight)
 
@@ -716,18 +699,20 @@ class DBDMatchListItem(QWidget):
         self.layout().addWidget(generalInfoWidget)
         self.layout().setAlignment(generalInfoWidget, Qt.AlignLeft)
         generalInfoLayout.setAlignment(Qt.AlignLeft)
-        generalInfoLayout.addWidget(QLabel(f"<b>{self.match.matchDate.strftime('%d/%m/%Y')}</b>"))
+        generalInfoLayout.addWidget(QLabel(qtMakeBold(self.match.matchDate.strftime('%d/%m/%Y'))))
+
         pointsStr = "{0:,}".format(self.match.points) if self.match.points else "no data"
         pointsLabel = QLabel(f"Points: {pointsStr}")
         generalInfoLayout.addWidget(pointsLabel)
+
         rankStr = f"Played at rank: {self.match.rank}" if self.match.rank else "No match rank data"
         rankLabel = QLabel(rankStr)
         generalInfoLayout.addWidget(rankLabel)
+
         lowerLayout = QHBoxLayout()
+        generalInfoLayout.addLayout(lowerLayout)
 
         offeringIcon = self.__setupOfferingIcon()
-
-        generalInfoLayout.addLayout(lowerLayout)
 
         addonIcons = self.__setupAddonIcons([addon.killerAddon for addon in self.match.killerAddons])
 
@@ -742,11 +727,11 @@ class DBDMatchListItem(QWidget):
 
         mapDisplayLayout = self.__setupMapDisplay()
         self.layout().addLayout(mapDisplayLayout)
+
         facedSurvivorIconSize = (Globals.CHARACTER_ICON_SIZE[0]//2, Globals.CHARACTER_ICON_SIZE[1]//2)
         facedSurvivorIcons = [Globals.SURVIVOR_ICONS[toResourceName(fs.facedSurvivor.survivorName)].scaled(*facedSurvivorIconSize) for fs in self.match.facedSurvivors]
         if len(facedSurvivorIcons) <= 0:
-            noInfoLabel = QLabel("No faced survivors data found")
-            noInfoLabel.setStyleSheet("font-weight: bold;")
+            noInfoLabel = QLabel(qtMakeBold("No faced survivors data found"))
             self.layout().addStretch(1)
             self.layout().addWidget(noInfoLabel)
             self.layout().addSpacerItem(QSpacerItem(100,0))
@@ -765,6 +750,16 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
+
+    def __setupSurvivorDisplay(self) -> QWidget:
+        iconLabel = self.__setupCharacterIconDisplay(self.match.survivor.survivorName, Globals.SURVIVOR_ICONS)
+        matchResultLabel = QLabel(qtMakeBold(' '.join(splitUpper(self.match.matchResult.name))))
+        survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
+        survivorLayout.addWidget(iconLabel)
+        survivorLayout.addWidget(matchResultLabel)
+        survivorLayout.setAlignment(iconLabel, Qt.AlignCenter)
+        survivorLayout.setAlignment(matchResultLabel, Qt.AlignCenter)
+        return survivorWidget
 
     def __setupOfferingIcon(self) -> QPixmap:
         offeringIconSize = (Globals.OFFERING_ICON_SIZE[0] // 2, Globals.OFFERING_ICON_SIZE[1] // 2)
@@ -829,6 +824,23 @@ class DBDMatchListItem(QWidget):
             noInfoLabel.setAlignment(Qt.AlignCenter)
             mapDisplayLayout.addWidget(noInfoLabel)
         return mapDisplayLayout
+
+    def __setupFacedSurvivorsDisplay(self):
+        pass
+
+    def __setupFacedKillerLayout(self) -> QWidget:
+        killerIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
+        facedKillerLayout = QVBoxLayout()
+        killerIconLabel = QLabel()
+        killerIcon = Globals.KILLER_ICONS[toResourceName(self.match.facedKiller.killerAlias)].scaled(*killerIconSize)
+        killerIconLabel.setPixmap(killerIcon)
+        headerLabel = QLabel(qtMakeBold("Faced killer"))
+        facedKillerLayout.addWidget(headerLabel)
+        facedKillerLayout.setAlignment(headerLabel, Qt.AlignCenter)
+        facedKillerLayout.addWidget(killerIconLabel)
+        facedKillerLayout.setAlignment(killerIconLabel, Qt.AlignCenter)
+        facedKillerWidget, facedKillerLayout = setQWidgetLayout(QWidget(), facedKillerLayout)
+        return facedKillerWidget
 
 
 class PaginatedMatchListWidget(QWidget):
