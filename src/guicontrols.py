@@ -97,6 +97,7 @@ class ItemSelect(QWidget):
         if not self._itemsPresent():
             return
         self.selectedItem = self.items[index]
+        self.itemSelectionComboBox.setCurrentIndex(index)
         self.selectionChanged.emit(self.selectedItem)
         self.currentIndex = index
         self.updateSelected()
@@ -410,7 +411,7 @@ class FacedSurvivorSelect(ItemSelect):
         for survivor, icon in zip(comboItems, iconsCombo):
             self.itemSelectionComboBox.addItem(icon, survivor)
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
-        self.itemSelectionComboBox.view().setIconSize(QSize(*iconSize))
+        self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//2, iconSize[1]//2))
         self.selectFromIndex(0)
 
     def selectState(self, index: int=0):
@@ -795,12 +796,12 @@ class DBDMatchListItem(QWidget):
             mapIcon = Globals.MAP_ICONS[toResourceName(self.match.gameMap.mapName)]
             mapIconLabel = QLabel()
             mapIconLabel.setPixmap(mapIcon)
-            mapNameLabel = QLabel(f"<b>{self.match.gameMap.mapName}</b>")
+            mapNameLabel = QLabel(qtMakeBold(self.match.gameMap.mapName))
             mapNameLabel.setAlignment(Qt.AlignCenter)
             mapDisplayLayout.addWidget(mapIconLabel)
             mapDisplayLayout.addWidget(mapNameLabel)
         else:
-            noInfoLabel = QLabel("<b>No map info found</b>")
+            noInfoLabel = QLabel(qtMakeBold("No map info found"))
             noInfoLabel.setAlignment(Qt.AlignCenter)
             mapDisplayLayout.addWidget(noInfoLabel)
         return mapDisplayLayout
@@ -829,7 +830,6 @@ class DBDMatchListItem(QWidget):
                 facedSurvivorsLayout.addWidget(cellWidget, 0, i)
             self.layout().addLayout(facedSurvivorsLayout)
             self.layout().addStretch(1)
-
 
     def __setupFacedKillerLayout(self) -> QWidget:
         killerIconSize = (Globals.CHARACTER_ICON_SIZE[0] // 2, Globals.CHARACTER_ICON_SIZE[1] // 2)
