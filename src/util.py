@@ -6,7 +6,7 @@ import numpy as np
 import requests
 
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import QLayout, QWidget
+from PyQt5.QtWidgets import QLayout, QWidget, QMessageBox
 
 
 def saveImageFromURL(url: str, dest: str):
@@ -82,3 +82,18 @@ def qtMakeBold(s: str) -> str:
 
 def qtMakeItalic(s: str) -> str:
     return wrapInTag(s, 'i')
+
+def confirmation(text: str, informativeText: str, title: str):
+    def outerWrapper(func):
+        def wrapper():
+            msgBox = QMessageBox()
+            msgBox.setText(text)
+            msgBox.setIcon(QMessageBox.Question)
+            msgBox.setInformativeText(informativeText)
+            msgBox.setWindowTitle(title)
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            result = msgBox.exec_()
+            if result == QMessageBox.Yes:
+                func()
+        return wrapper
+    return outerWrapper
