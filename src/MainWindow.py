@@ -4,6 +4,7 @@ import datetime
 import operator
 import sqlalchemy
 import pandas as pd
+from PyQt5 import QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
@@ -36,12 +37,23 @@ class MainWindow(QMainWindow):
         self.worker = None
 
 
-
         self.statusBar().showMessage("Ready", 5000)
         self.__setupKillerForm()
         self.__setupSurvivorForm()
 
-
+    def closeEvent(self, e: QtGui.QCloseEvent) -> None:
+        if len(self.currentlyAddedMatches) > 0:
+            msgBox = QMessageBox()
+            msgBox.setText("Unsaved data present")
+            msgBox.setInformativeText("There are unsaved matches present. Are you sure you want to quit?")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            res = msgBox.exec_()
+            if res == QMessageBox.Yes:
+                super().closeEvent(e)
+            else:
+                e.ignore()
+        else:
+            super().closeEvent(e)
 
     def addNewKillerMatch(self):
         killer = self.killerSelection.getSelectedItem()
@@ -358,7 +370,8 @@ class MainWindow(QMainWindow):
         dialog = LoadedGamesDisplayDialog(loadedGames, errors, title="Show loaded matches")
         result = dialog.exec_()
         if result == QDialog.Accepted:
-            pass
+            self.currentlyAddedMatches += loadedGames
+            self.statusBar().showMessage(f"{len(loadedGames)}x matches loaded in", 7500)
 
     def __showLogHelpWindow(self):
         pass
