@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QTabWidget, QGridLayout
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QTabWidget, \
+    QGridLayout, QMessageBox
 
 from guicontrols import PaginatedMatchListWidget
 from models import DBDMatch, SurvivorMatch, KillerMatch
@@ -24,10 +25,21 @@ class LoadedGamesDisplayDialog(QDialog):
         buttonsLayout = QHBoxLayout()
         mainLayout.addLayout(displayLayout)
         mainLayout.addLayout(buttonsLayout)
+
+        def confirmLoadedGames():
+            msgBox = QMessageBox()
+            msgBox.setInformativeText("Are you sure you want to discard loaded games?")
+            msgBox.setText("Confirm discard")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            result = msgBox.exec_()
+            if result == QMessageBox.Yes:
+                self.close()
+
+
         discardButton = QPushButton("Discard")
         acceptButton = QPushButton("Accept")
         acceptButton.clicked.connect(self.accept)
-        discardButton.clicked.connect(self.close)
+        discardButton.clicked.connect(confirmLoadedGames)
         buttonsLayout.addStretch(1)
         buttonsLayout.addWidget(acceptButton)
         buttonsLayout.addWidget(discardButton)
