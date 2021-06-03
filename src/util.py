@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Optional
+from typing import Optional, Callable
 import numpy as np
 
 import requests
@@ -83,9 +83,9 @@ def qtMakeBold(s: str) -> str:
 def qtMakeItalic(s: str) -> str:
     return wrapInTag(s, 'i')
 
-def confirmation(text: str, informativeText: str, title: str):
+def confirmation(text: str="Confirmation", informativeText: str="Please confirm your action", title: str="Confirmation dialog") -> Callable:
     def outerWrapper(func):
-        def wrapper():
+        def wrapper(self=None): #this is needed if we also want to use this decorator on class member functions
             msgBox = QMessageBox()
             msgBox.setText(text)
             msgBox.setIcon(QMessageBox.Question)

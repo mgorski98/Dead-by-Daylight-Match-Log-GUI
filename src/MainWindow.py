@@ -19,7 +19,8 @@ from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWind
 from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
     SurvivorMatch
-from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper
+from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper, confirmation
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None, title='PyQt5 Application', windowSize=(800,600)):
@@ -319,25 +320,20 @@ class MainWindow(QMainWindow):
         self.threadPool.start(self.saveWorker)
         progressDialog.show()
 
+    @confirmation(text='Resources update',informativeText='Do you really want to update resources? It might take a while.', title="Resources update")
     def __confirmUpdate(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Question)
-        msgBox.setText('Resources update')
-        msgBox.setInformativeText('Do you really want to update resources? It might take a while.')
-        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        result = msgBox.exec_()
-        if result == QMessageBox.Yes:
-            progressDialog = QProgressDialog()
-            progressDialog.setWindowTitle("Updating database")
-            progressDialog.setModal(True)
-            progressDialog.setCancelButton(None)
-            progressDialog.setFixedSize(450, 75)
-            progressDialog.setRange(0,0)
-            self.worker = DatabaseUpdateWorker()
-            self.worker.signals.progressUpdated.connect(lambda s: progressDialog.setLabelText(s))
-            self.worker.signals.finished.connect(progressDialog.close)
-            self.threadPool.start(self.worker)
-            progressDialog.show()
+        progressDialog = QProgressDialog()
+        progressDialog.setWindowTitle("Updating database")
+        progressDialog.setModal(True)
+        progressDialog.setCancelButton(None)
+        progressDialog.setFixedSize(450, 75)
+        progressDialog.setRange(0, 0)
+        self.worker = DatabaseUpdateWorker()
+        self.worker.signals.progressUpdated.connect(lambda s: progressDialog.setLabelText(s))
+        self.worker.signals.finished.connect(progressDialog.close)
+        self.threadPool.start(self.worker)
+        progressDialog.show()
+
 
     def __loadMatchLogs(self):
         files, _ = QFileDialog.getOpenFileNames(self,"Select match log files",filter="Text files (*.txt)")
