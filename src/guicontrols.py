@@ -54,9 +54,9 @@ class ItemSelect(QWidget):
         self.itemSelectionComboBox.view().setIconSize(QSize(iconSize[0]//4,iconSize[1]//4))
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
-        width, height = 35, 50
-        self.leftButton.setFixedSize(width, height)
-        self.rightButton.setFixedSize(width, height)
+        size = (35, 50)
+        self.leftButton.setFixedSize(*size)
+        self.rightButton.setFixedSize(*size)
         layout.addWidget(self.nameDisplayLabel)
         layout.addWidget(self.itemSelectionComboBox)
         self.nameDisplayLabel.setAlignment(Qt.AlignCenter)
@@ -127,8 +127,6 @@ class SurvivorSelect(ItemSelect):
         self.itemSelectionComboBox.activated.connect(self.selectFromIndex)
         self.selectFromIndex(0)
 
-#todo: add a button to clear selection
-#if the dialog result is Accepted and item is None then clear selection
 class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
@@ -256,8 +254,7 @@ class AddonSelection(QWidget):
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
-        addonsLabel = QLabel('Addons')
-        addonsLabel.setStyleSheet("font-weight: bold")
+        addonsLabel = QLabel(qtMakeBold('Addons'))
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addSpacerItem(QSpacerItem(5, 25))
@@ -343,8 +340,7 @@ class PerkSelection(QWidget):
         self.selectedPerks: dict[int, Optional[Perk]] = {n:None for n in range(4)}
         self.defaultPerkIcon = QIcon(Globals.DEFAULT_PERK_ICON)
         self.setLayout(QVBoxLayout())
-        l = QLabel("Character perks")
-        l.setStyleSheet("font-weight: bold")
+        l = QLabel(qtMakeBold("Character perks"))
         l.setAlignment(Qt.AlignCenter)
         self.layout().addWidget(l)
         perksWidget, perksLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
