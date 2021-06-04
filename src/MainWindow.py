@@ -9,7 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
-    QFileDialog, QListWidgetItem, QDialog
+    QFileDialog, QListWidgetItem, QDialog, QSizePolicy, QApplication
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
@@ -32,10 +32,11 @@ class MainWindow(QMainWindow):
         self.setContentsMargins(5, 5, 5, 5)
         self.resize(windowSize[0], windowSize[1])
         self.setCentralWidget(QTabWidget())
+        self.unsavedChangesLabel = QLabel("")
+        self.unsavedChangesLabel.setStyleSheet("font-weight: bold; color: red;")
         self.__setupMenuBar()
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
-
 
         self.statusBar().showMessage("Ready", 5000)
         self.__setupKillerForm()
@@ -192,6 +193,13 @@ class MainWindow(QMainWindow):
                 dateFilterComboBox.addItem(matchDateStr)
                 dateFilterComboBox.model().sort(0, Qt.AscendingOrder)
         self.__addMatchToList(listWidget, match)
+        self.__updateUnsavedChanges("Unsaved changes!")
+
+    def __updateUnsavedChanges(self, text: str):
+        self.unsavedChangesLabel.setText(text)
+        self.unsavedChangesLabel.adjustSize() #this is needed to properly adjust it inside the menubar
+        x = (self.unsavedChangesLabel.parent().width() - self.unsavedChangesLabel.size().width()) #we move it to fit exactly where we want to
+        self.unsavedChangesLabel.move(x, self.unsavedChangesLabel.y()) #and then call move on them parameters
 
     def __setupSurvivorForm(self):
         survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
@@ -305,6 +313,7 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(loadLogAction)
         fileMenu.addAction(exportDBAction)
         helpMenu.addAction(logHelpAction)
+        menubar.setCornerWidget(self.unsavedChangesLabel, Qt.TopRightCorner)
 
     def __saveMatches(self):
         matchCount = len(self.currentlyAddedMatches)
@@ -318,6 +327,7 @@ class MainWindow(QMainWindow):
             msgBox.exec_()
             self.statusBar().showMessage(f"Saved {matchCount} matches to database", 5000)
             self.currentlyAddedMatches.clear()
+            self.__updateUnsavedChanges('')
 
         progressDialog = QProgressDialog()
         progressDialog.setWindowTitle("Saving data")
@@ -372,6 +382,7 @@ class MainWindow(QMainWindow):
         if result == QDialog.Accepted:
             self.currentlyAddedMatches += loadedGames
             self.statusBar().showMessage(f"{len(loadedGames)}x matches loaded in", 7500)
+            self.__updateUnsavedChanges("Unsaved changes!")
 
     def __showLogHelpWindow(self):
         pass
