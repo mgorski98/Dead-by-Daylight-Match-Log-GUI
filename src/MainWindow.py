@@ -19,7 +19,7 @@ from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWind
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect, DBDMatchListItem
 from models import KillerAddon, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, PerkType, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
-    SurvivorMatch
+    SurvivorMatch, FacedSurvivorState
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper, confirmation
 
 
@@ -69,9 +69,13 @@ class MainWindow(QMainWindow):
         facedSurvivors = [selection.getFacedSurvivor() for selection in self.facedSurvivorSelection.selections.values()]
         killerMatchPerks = [KillerMatchPerk(perk=perk) for perk in perks if perk is not None]
         killerAddons = [MatchKillerAddon(killerAddon=addon) for addon in addons if addon is not None]
+        sacrifices = sum(1 if fs.state == FacedSurvivorState.Sacrificed else 0 for fs in facedSurvivors)
+        kills = sum(1 if fs.state == FacedSurvivorState.Killed else 0 for fs in facedSurvivors)
+        disconnects = sum(1 if fs.state == FacedSurvivorState.Disconnected else 0 for fs in facedSurvivors)
         killerMatch = KillerMatch(killer=killer, facedSurvivors=facedSurvivors, gameMap=gameMap,
                                   points=points, offering=offering, rank=rank,
-                                  matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
+                                  matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks,
+                                  sacrifices=sacrifices,kills=kills,disconnects=disconnects)
         self.currentlyAddedMatches.append(killerMatch)
         self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget)
         self.killerMatchPointsTextBox.setText('')

@@ -444,28 +444,19 @@ class KillerMatch(DBDMatch):
         Column("matchDate", Date, nullable=False),
         Column("rank", Integer, nullable=True, default=20),
         Column("offeringID", Integer, ForeignKey("offerings.offeringID"), nullable=True),
-        Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True)
+        Column("gameMapID", Integer, ForeignKey("maps.mapID"), nullable=True),
+        Column("sacrifices", Integer, nullable=False, default=0),
+        Column("kills", Integer, nullable=False, default=0),
+        Column("disconnects", Integer, nullable=False, default=0)
     )
     killer: Killer
     killerID: int = field(init=False,compare=False,hash=False)
+    sacrifices: int
+    kills: int
+    disconnects: int
     facedSurvivors: list[FacedSurvivor] = field(default_factory=list)
     perks: list[KillerMatchPerk] = field(default_factory=list)
     killerAddons: list[MatchKillerAddon] = field(default_factory=list)
-
-    @property
-    def disconnects(self) -> int:
-        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Disconnected)
-
-    @property
-    def sacrifices(self) -> int:
-        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Sacrificed)
-
-    @property
-    def kills(self) -> int:
-        return self.__countOf(lambda surv: surv.state == FacedSurvivorState.Killed)
-
-    def __countOf(self, filterFunc: Callable[[FacedSurvivor], int]):
-        return sum(1 if filterFunc(survivor) else 0 for survivor in self.facedSurvivors)
 
     def __str__(self):
         with StringIO('') as builder:

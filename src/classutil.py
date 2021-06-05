@@ -115,7 +115,8 @@ class DBDMatchParser(object):
 
         return KillerMatch(killer=killer, rank=rank, points=points, matchDate=self._matchDate,
                            gameMap=gameMap, offering=offering, killerAddons=addons, perks=[KillerMatchPerk(perk=perk) for perk in perks],
-                           facedSurvivors=facedSurvivors)
+                           facedSurvivors=facedSurvivors, sacrifices=elimsDict['kill'],
+                           kills=elimsDict['mori'],disconnects=elimsDict['disconnect'])
 
 
 
