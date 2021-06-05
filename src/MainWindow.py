@@ -293,7 +293,7 @@ class MainWindow(QMainWindow):
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
-        updateAction.triggered.connect(self.__confirmUpdate)
+        updateAction.triggered.connect(self.__updateResources)
         loadLogAction = QAction('Load match log data', self)
         loadLogAction.setShortcut(QKeySequence("Ctrl+O"))
         loadLogAction.triggered.connect(self.__loadMatchLogs)
@@ -343,7 +343,7 @@ class MainWindow(QMainWindow):
         progressDialog.show()
 
     @confirmation(text='Resources update',informativeText='Do you really want to update resources? It might take a while.', title="Resources update")
-    def __confirmUpdate(self):
+    def __updateResources(self):
         progressDialog = QProgressDialog()
         progressDialog.setWindowTitle("Updating database")
         progressDialog.setModal(True)
