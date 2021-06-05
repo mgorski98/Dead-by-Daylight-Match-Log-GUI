@@ -15,7 +15,6 @@ from util import clampReverse, splitUpper, setQWidgetLayout, clearLayout, toReso
 
 AddonSelectionResult = Optional[Union[KillerAddon, ItemAddon]]
 
-#todo: add match display controls for listwidget
 
 class IconDropDownComboBox(QComboBox):#combobox with icons in dropdown but without them on currently selected item
 
@@ -131,7 +130,7 @@ class GridViewSelectionPopup(QDialog):
     def __init__(self, columns: int, parent=None):
         super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
         self.items = []
-        self.clearSelectionButton = QPushButton()
+        self.clearSelectionButton = QPushButton("Clear")
         self.clearSelectionButton.setToolTip("Clear selected item")
         self.clearSelectionButton.clicked.connect(self.clearSelectedItem)
         layout = QVBoxLayout()
