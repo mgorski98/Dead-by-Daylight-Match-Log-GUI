@@ -2,23 +2,23 @@ from __future__ import annotations
 
 import datetime
 import operator
+
 import sqlalchemy
-import pandas as pd
 from PyQt5 import QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
-    QFileDialog, QListWidgetItem, QDialog, QSizePolicy, QApplication
+    QFileDialog, QListWidgetItem, QDialog
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
-from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker, DBDResources
+from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
 from database import Database, DatabaseUpdateWorker, DatabaseMatchListSaveWorker
 from globaldata import Globals
 from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWindow, PerkSelection, \
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect, DBDMatchListItem
-from models import KillerAddon, Killer, Offering, Survivor, Realm, KillerMatch, KillerMatchPerk, \
-    MatchKillerAddon, DBDMatch, ItemAddon, Perk, PerkType, Item, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
+from models import KillerAddon, KillerMatch, KillerMatchPerk, \
+    MatchKillerAddon, DBDMatch, ItemAddon, PerkType, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
     SurvivorMatch
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper, confirmation
 
@@ -74,6 +74,7 @@ class MainWindow(QMainWindow):
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks)
         self.currentlyAddedMatches.append(killerMatch)
         self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget)
+        self.killerMatchPointsTextBox.setText('')
 
     def addNewSurvivorMatch(self):
         survivor = self.survivorSelect.getSelectedItem()
@@ -96,6 +97,7 @@ class MainWindow(QMainWindow):
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
         self.__onMatchAdded(survivorMatch, self.survivorMatchDateComboBox, self.survivorMatchListWidget)
+        self.survivorPointsTextBox.setText('')
 
     def __setupKillerForm(self):
         killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
