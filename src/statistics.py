@@ -1,20 +1,24 @@
 from dataclasses import dataclass
 
-from models import DBDMatch, SurvivorMatch, KillerMatch
+import pandas as pd
+
+from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap
 
 
 @dataclass
 class GeneralMatchStatistics:
-    pass
+    totalPoints: int
+    mostCommonMap: GameMap
+    mostCommonMapRealm: Realm
 
 @dataclass
-class GeneralKillerMatchStatistics(GeneralMatchStatistics):
+class GeneralKillerMatchStatistics(object):
     totalSacrifices: int
     totalKills: int
     totalDisconnects: int
 
 @dataclass
-class GeneralSurvivorMatchStatistics(GeneralMatchStatistics):
+class GeneralSurvivorMatchStatistics(object):
     pass
 
 @dataclass
@@ -22,11 +26,11 @@ class TargetStatistics(object):
     pass
 
 @dataclass
-class TargetKillerStatistics(TargetStatistics):
+class TargetKillerStatistics(object):
     pass
 
 @dataclass
-class TargetSurvivorStatistics(TargetStatistics):
+class TargetSurvivorStatistics(object):
     pass
 
 class StatisticsCalculator(object):
@@ -34,9 +38,21 @@ class StatisticsCalculator(object):
     def __init__(self, games: list[DBDMatch]):
         self.survivorGames = list(filter(lambda g: isinstance(g, SurvivorMatch), games))
         self.killerGames = list(filter(lambda g: isinstance(g, KillerMatch), games))
+        dictMapper = lambda g: g.asDict()
+        self.survivorGamesDf = pd.DataFrame(data=map(dictMapper, self.survivorGames))
+        self.killerGamesDf = pd.DataFrame(data=map(dictMapper, self.killerGames))
 
-    def calculateKiller(self) -> GeneralKillerMatchStatistics:
+    def calculateKillerGeneral(self) -> GeneralKillerMatchStatistics:
         raise NotImplementedError()
 
-    def calculateSurvivor(self) -> GeneralSurvivorMatchStatistics:
+    def calculateSurvivorGeneral(self) -> GeneralSurvivorMatchStatistics:
+        raise NotImplementedError()
+
+    def calculateForSurvivor(self, survivor: Survivor) -> TargetSurvivorStatistics:
+        raise NotImplementedError()
+
+    def calculateForKiller(self, killer: Killer) -> TargetKillerStatistics:
+        raise NotImplementedError()
+
+    def calculateGeneral(self) -> GeneralMatchStatistics:
         raise NotImplementedError()

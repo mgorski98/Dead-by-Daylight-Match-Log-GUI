@@ -487,7 +487,10 @@ class KillerMatch(DBDMatch):
             "killer": self.killer,
             "perks": self.perks,
             "survivors": self.facedSurvivors,
-            "addons": self.killerAddons
+            "addons": self.killerAddons,
+            "sacrifices": self.sacrifices,
+            "kills": self.kills,
+            "disconnects": self.disconnects
         }
 
     __mapper_args__ = {
