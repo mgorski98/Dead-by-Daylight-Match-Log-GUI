@@ -24,6 +24,7 @@ class SurvivorMatchResult(enum.Enum):
     Camped = 5
     Dead = 6
     KillerDisconnected = 7
+    KeyEscape = 8
 
 class ItemType(enum.Enum):
     Medkit = 0
@@ -131,7 +132,7 @@ class Realm:
 
     realmID: int = field(init=False,compare=False,hash=False)
     realmName: str
-    maps: list[GameMap] = field(default_factory=list)
+    maps: list[GameMap] = field(default_factory=list,hash=False)
 
 
 @mapperRegistry.mapped

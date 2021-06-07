@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from abc import ABC
 from typing import Callable
+from collections import defaultdict
 
 import pandas as pd
 
@@ -77,9 +78,12 @@ class StatisticsCalculator(object):
         survivorMapHistogram = self.survivorGamesDf.groupby('map',sort=False).size()
         killerMapHistogram = self.killerGamesDf.groupby('map',sort=False).size()
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
-        totalMapHistogram = pd.DataFrame(data=totalMapHistogram[0] + totalMapHistogram[1], columns=['map occurences'])
+        totalMapHistogram = pd.DataFrame(data=(totalMapHistogram[0] + totalMapHistogram[1]).astype(int), columns=['count'])
         mostCommonMap: GameMap = totalMapHistogram.idxmax()[0]
-        mostCommonRealm = None
+        realmsDict = defaultdict(int)
+        for row in totalMapHistogram.itertuples():
+            realmsDict[row.Index.realm] += row.count
+        mostCommonRealm = max(realmsDict, key=realmsDict.get)
         return GeneralMatchStatistics(totalPoints=totalPoints, mostCommonMap=mostCommonMap, mostCommonMapRealm=mostCommonRealm)
 
 
