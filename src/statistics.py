@@ -1,12 +1,14 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from abc import ABC
+from typing import Callable
 
 import pandas as pd
 
+from classutil import DBDResources
 from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, SurvivorMatchResult
 
 
-#todo: add export method so you can export statistics to external file (json, xml, some other formats like yaml)
 
 @dataclass(frozen=True)
 class EliminationInfo(object):
@@ -50,9 +52,10 @@ class TargetSurvivorStatistics(MatchStatistics):
 
 class StatisticsCalculator(object):
 
-    def __init__(self, games: list[DBDMatch]):
+    def __init__(self, games: list[DBDMatch], resources: DBDResources):
         self.survivorGames = list(filter(lambda g: isinstance(g, SurvivorMatch), games))
         self.killerGames = list(filter(lambda g: isinstance(g, KillerMatch), games))
+        self.resources = resources
         dictMapper = lambda g: g.asDict()
         self.survivorGamesDf = pd.DataFrame(data=map(dictMapper, self.survivorGames))
         self.killerGamesDf = pd.DataFrame(data=map(dictMapper, self.killerGames))
@@ -70,15 +73,31 @@ class StatisticsCalculator(object):
         raise NotImplementedError()
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
-        raise NotImplementedError()
+        totalPoints = self.survivorGamesDf['points'].sum() + self.killerGamesDf['points'].sum()
+        survivorMapHistogram = self.survivorGamesDf.groupby('map',sort=False).size()
+        killerMapHistogram = self.killerGamesDf.groupby('map',sort=False).size()
+        totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
+        totalMapHistogram = pd.DataFrame(data=totalMapHistogram[0] + totalMapHistogram[1], columns=['map occurences'])
+        mostCommonMap: GameMap = totalMapHistogram.idxmax()[0]
+        mostCommonRealm = None
+        return GeneralMatchStatistics(totalPoints=totalPoints, mostCommonMap=mostCommonMap, mostCommonMapRealm=mostCommonRealm)
 
+
+def exportAsJson(statistics: MatchStatistics, destinationPath: str):
+    pass
+
+def exportAsXML(statistics: MatchStatistics, destinationPath: str):
+    pass
+
+def exportAsYAML(statistics: MatchStatistics, destinationPath: str):
+    pass
 
 class StatisticsExporter(object):
 
-    __export_types__ = {
-        "xml": None,
-        "json": None,
-        "yaml": None
+    __export_types__ : dict[str, Callable[[object, str], None]] = {
+        "xml": exportAsXML,
+        "json": exportAsJson,
+        "yaml": exportAsYAML
     }
 
     def __init__(self, exportType: str):
@@ -88,4 +107,7 @@ class StatisticsExporter(object):
             raise ValueError(f"Unknown export type: {exportType}. Valid options are: {validOptions}")
 
     def export(self, statistics: MatchStatistics, destinationPath: str) -> None:
-        pass
+        if self.exportHandler is None:
+            raise ValueError("Export function handler is None")
+        self.exportHandler(statistics, destinationPath)
+

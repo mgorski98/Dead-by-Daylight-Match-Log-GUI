@@ -108,6 +108,7 @@ class GameMap:
     mapID: int = field(init=False,compare=False,hash=False)
     mapName: str
     realmID: int = field(init=False,compare=False,hash=False)
+    realm: Realm = field(init=False,compare=False,hash=False)
 
     def __str__(self):
         return self.mapName
@@ -124,7 +125,7 @@ class Realm:
 
     __mapper_args__ = {
         "properties": {
-            "maps": relationship("GameMap", lazy='subquery')
+            "maps": relationship("GameMap", lazy='subquery', backref="realm")
         }
     }
 
