@@ -7,8 +7,8 @@ from collections import defaultdict
 import pandas as pd
 
 from classutil import DBDResources
-from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, SurvivorMatchResult
-
+from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
+    SurvivorMatchResult, FacedSurvivorState
 
 
 @dataclass(frozen=True)
@@ -32,12 +32,16 @@ class GeneralKillerMatchStatistics(MatchStatistics):
     totalKills: int
     totalDisconnects: int
     gamesPlayedWithKiller: dict[Killer, int]
+    totalSurvivorStatesHistogram: dict[FacedSurvivorState, int]
+    facedSurvivorStatesHistogram: dict[Survivor, dict[FacedSurvivorState, int]] #amount of times certain survivor escaped, was killed, etc.
 
 @dataclass(frozen=True)
 class GeneralSurvivorMatchStatistics(MatchStatistics):
     gamesPlayedWithSurvivor: dict[Survivor, int]
     matchResultsHistogram: dict[SurvivorMatchResult, int]
     mostCommonItemType: ItemType
+    mostCommonKiller: Killer
+    mostLethalKiller: Killer
 
 @dataclass(frozen=True)
 class TargetStatistics(MatchStatistics):
@@ -62,10 +66,27 @@ class StatisticsCalculator(object):
         self.killerGamesDf = pd.DataFrame(data=map(dictMapper, self.killerGames))
 
     def calculateKillerGeneral(self) -> GeneralKillerMatchStatistics:
-        raise NotImplementedError()
+        totalMoris = self.killerGamesDf['kills'].sum()
+        totalSacrifices = self.killerGamesDf['sacrifices'].sum()
+        totalDcs = self.killerGamesDf['disconnects'].sum()
+        totalGamesWithKiller = self.killerGamesDf.groupby('killer', sort=False).size()
+
+        totalSurvivorStatesDict = defaultdict(int)
+        for facedSurvivorList in self.killerGamesDf['survivors']:
+            for fs in facedSurvivorList:
+                totalSurvivorStatesDict[fs.state] += 1
+
+        facedSurvivorStatesHistogram = defaultdict(lambda: defaultdict(int))
+        for facedSurvivorList in self.killerGamesDf['survivors']:
+            for fs in facedSurvivorList:
+                facedSurvivorStatesHistogram[fs.facedSurvivor][fs.state] += 1
+
 
     def calculateSurvivorGeneral(self) -> GeneralSurvivorMatchStatistics:
-        raise NotImplementedError()
+        mostCommonKiller = self.survivorGamesDf.groupby('faced killer', sort=False).size().idxmax()
+        mostCommonItemType = None
+        mostLethalKiller = None
+        matchResultsHistogram = None
 
     def calculateForSurvivor(self, survivor: Survivor) -> TargetSurvivorStatistics:
         raise NotImplementedError()
