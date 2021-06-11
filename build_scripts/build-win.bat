@@ -1,1 +1,1 @@
-pyinstaller ../src/main.py --name DeadByDaylightMatchLog --noconsole --onefile --distpath ../builds --specpath ../builds --workpath ../builds/build
+pyinstaller ../src/main.py

@@ -1,4 +1,6 @@
 __pycache__
 dbd-match-log-DEV.db
 images
+temp
+builds
 .idea

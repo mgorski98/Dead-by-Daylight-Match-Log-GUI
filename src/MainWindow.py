@@ -20,7 +20,6 @@ from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWind
 from models import KillerAddon, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, PerkType, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
     SurvivorMatch, FacedSurvivorState
-from statistics import StatisticsExporter, StatisticsCalculator
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper, confirmation
 
 
@@ -39,13 +38,7 @@ class MainWindow(QMainWindow):
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
 
-        with Database.instance().getNewSession() as s:
-            matches = list(map(lambda x: x[0], s.execute(sqlalchemy.select(KillerMatch)).all()))
-            matches += list(map(lambda x: x[0], s.execute(sqlalchemy.select(SurvivorMatch)).all()))
-            s = StatisticsCalculator(matches, self.resources)
-            s.calculateGeneral()
-            s.calculateSurvivorGeneral()
-            s.calculateKillerGeneral()
+
         self.statusBar().showMessage("Ready", 5000)
         self.__setupKillerForm()
         self.__setupSurvivorForm()
