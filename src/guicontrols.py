@@ -253,6 +253,8 @@ class AddonSelection(QWidget):
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         layout = QHBoxLayout()
+        clearSelectionButton = QPushButton('Clear all')
+        clearSelectionButton.clicked.connect(self.clearSelected)
         addonsLabel = QLabel(qtMakeBold('Addons'))
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
@@ -275,6 +277,8 @@ class AddonSelection(QWidget):
         rightLayout.setAlignment(self.addon2Button, Qt.AlignCenter)
         leftLayout.addSpacerItem(QSpacerItem(5, 65))
         rightLayout.addSpacerItem(QSpacerItem(5, 65))
+        mainLayout.addWidget(clearSelectionButton)
+        mainLayout.setAlignment(clearSelectionButton, Qt.AlignHCenter)
 
     def __createLabel(self):
         lbl = QLabel('No addon')
@@ -344,6 +348,7 @@ class PerkSelection(QWidget):
         self.layout().addWidget(l)
         perksWidget, perksLayout = setQWidgetLayout(QWidget(), QHBoxLayout())
         self.layout().addWidget(perksWidget)
+        self.perkWidgets = []
         for i in range(4):
             sublayout = QVBoxLayout()
             sublayout.addSpacerItem(QSpacerItem(1,50))
@@ -362,6 +367,18 @@ class PerkSelection(QWidget):
             sublayout.setAlignment(button, Qt.AlignCenter)
             sublayout.addSpacerItem(QSpacerItem(0,35))
             button.clicked.connect(partial(self.__selectPerkAndUpdateUI, button, label, i))
+            self.perkWidgets.append((button, label))
+        clearSelectionButton = QPushButton('Clear all')
+        clearSelectionButton.clicked.connect(self.__clearSelected)
+        self.layout().addWidget(clearSelectionButton)
+        self.layout().setAlignment(clearSelectionButton, Qt.AlignHCenter)
+
+    def __clearSelected(self):
+        for k in self.selectedPerks.keys():
+            self.selectedPerks[k] = None
+        for button, label in self.perkWidgets:
+            button.setIcon(self.defaultPerkIcon)
+            label.setText('No perk')
 
     def __selectPerkAndUpdateUI(self, btn: QPushButton, label: QLabel, index: int=0):
         point = btn.rect().topRight()
