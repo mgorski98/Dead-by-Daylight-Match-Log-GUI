@@ -5,6 +5,7 @@ from typing import Callable
 from collections import defaultdict
 
 import pandas as pd
+import numpy as np
 
 from classutil import DBDResources
 from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
@@ -71,22 +72,23 @@ class StatisticsCalculator(object):
         totalDcs = self.killerGamesDf['disconnects'].sum()
         totalGamesWithKiller = self.killerGamesDf.groupby('killer', sort=False).size()
 
-        totalSurvivorStatesDict = defaultdict(int)
-        for facedSurvivorList in self.killerGamesDf['survivors']:
-            for fs in facedSurvivorList:
-                totalSurvivorStatesDict[fs.state] += 1
+        flatSurvivorList = np.ravel(self.killerGamesDf['survivors'].tolist())
 
+        totalSurvivorStatesDict = defaultdict(int)
         facedSurvivorStatesHistogram = defaultdict(lambda: defaultdict(int))
-        for facedSurvivorList in self.killerGamesDf['survivors']:
-            for fs in facedSurvivorList:
-                facedSurvivorStatesHistogram[fs.facedSurvivor][fs.state] += 1
+
+        for fs in flatSurvivorList:
+            totalSurvivorStatesDict[fs.state] += 1
+            facedSurvivorStatesHistogram[fs.facedSurvivor][fs.state] += 1
 
 
     def calculateSurvivorGeneral(self) -> GeneralSurvivorMatchStatistics:
-        mostCommonKiller = self.survivorGamesDf.groupby('faced killer', sort=False).size().idxmax()
-        mostCommonItemType = None
+        facedKillerHistogram = self.survivorGamesDf.groupby('faced killer', sort=False).size()
+        mostCommonKiller = facedKillerHistogram.idxmax()
+        mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
         mostLethalKiller = None
-        matchResultsHistogram = None
+        matchResultsHistogram = self.survivorGamesDf.groupby('match result').size().to_dict()
+
 
     def calculateForSurvivor(self, survivor: Survivor) -> TargetSurvivorStatistics:
         raise NotImplementedError()

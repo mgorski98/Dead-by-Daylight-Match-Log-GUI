@@ -258,7 +258,7 @@ class AddonSelection(QWidget):
         addonsLabel = QLabel(qtMakeBold('Addons'))
         addonsLabel.setFixedHeight(25)
         addonsLabel.setAlignment(Qt.AlignCenter)
-        mainLayout.addSpacerItem(QSpacerItem(5, 25))
+        mainLayout.addSpacerItem(QSpacerItem(5, 30))
         mainLayout.addWidget(addonsLabel)
         mainLayout.addLayout(layout)
         leftLayout = QVBoxLayout()
