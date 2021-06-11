@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         self.killerMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(KillerMatch, self.killerMatchListWidget, self.killerMatchDateComboBox.itemText(index)))
             
         with Database.instance().getNewSession() as s:
-            dates = s.query(KillerMatch.matchDate).distinct().all()
+            dates = s.query(KillerMatch.matchDate).distinct().order_by(KillerMatch.matchDate.asc()).all()
             self.killerMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
 
         self.killerSelection = KillerSelect(killers=self.resources.killers, icons=Globals.KILLER_ICONS,
@@ -217,7 +217,7 @@ class MainWindow(QMainWindow):
         self.survivorMatchDateComboBox.setFixedWidth(250)
         self.survivorMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(SurvivorMatch, self.survivorMatchListWidget, self.survivorMatchDateComboBox.itemText(index)))
         with Database.instance().getNewSession() as s:
-            dates = s.query(SurvivorMatch.matchDate).distinct().all()
+            dates = s.query(SurvivorMatch.matchDate).distinct().order_by(SurvivorMatch.matchDate.asc()).all()
             self.survivorMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
 
         survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
@@ -395,7 +395,9 @@ class MainWindow(QMainWindow):
         pass
 
     def __exportDBAsLog(self):
-        pass
+        outputFilePath, _ = QFileDialog.getSaveFileName(self, "Select log file name", "", "All files (*);; Text Files (*.txt)")
+        if outputFilePath:
+            print(outputFilePath)
 
     def __addMatchToList(self, _list: QListWidget, match: DBDMatch):
         matchWidget = DBDMatchListItem(match)
