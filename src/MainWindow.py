@@ -119,10 +119,8 @@ class MainWindow(QMainWindow):
         self.killerMatchDateComboBox = QComboBox()
         self.killerMatchDateComboBox.setFixedWidth(250)
         self.killerMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(KillerMatch, self.killerMatchListWidget, self.killerMatchDateComboBox.itemText(index)))
-            
-        with Database.instance().getNewSession() as s:
-            dates = s.query(KillerMatch.matchDate).distinct().order_by(KillerMatch.matchDate.asc()).all()
-            self.killerMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
+
+        self.killerMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), self.__fetchDates(KillerMatch)))
 
         self.killerSelection = KillerSelect(killers=self.resources.killers, icons=Globals.KILLER_ICONS,
                                             iconSize=Globals.CHARACTER_ICON_SIZE)
@@ -208,6 +206,11 @@ class MainWindow(QMainWindow):
         x = (self.unsavedChangesLabel.parent().width() - self.unsavedChangesLabel.size().width()) #we move it to fit exactly where we want to
         self.unsavedChangesLabel.move(x, self.unsavedChangesLabel.y()) #and then call move on them parameters
 
+    def __fetchDates(self, matchType) -> list[datetime.date]:
+        with Database.instance().getNewSession() as s:
+            dates = s.query(matchType.matchDate).distinct().order_by(matchType.matchDate.asc()).all()
+        return dates
+
     def __setupSurvivorForm(self):
         survivorWidget, survivorLayout = setQWidgetLayout(QWidget(), QGridLayout())
         self.centralWidget().addTab(survivorWidget, "Survivors")
@@ -216,9 +219,8 @@ class MainWindow(QMainWindow):
         self.survivorMatchDateComboBox = QComboBox()
         self.survivorMatchDateComboBox.setFixedWidth(250)
         self.survivorMatchDateComboBox.activated.connect(lambda index: self.__filterMatches(SurvivorMatch, self.survivorMatchListWidget, self.survivorMatchDateComboBox.itemText(index)))
-        with Database.instance().getNewSession() as s:
-            dates = s.query(SurvivorMatch.matchDate).distinct().order_by(SurvivorMatch.matchDate.asc()).all()
-            self.survivorMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), dates))
+
+        self.survivorMatchDateComboBox.addItems(map(lambda tup: tup[0].strftime('%d/%m/%Y'), self.__fetchDates(SurvivorMatch)))
 
         survivorListWidget, survivorListLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
         survivorInfoWidget, survivorInfoLayout = setQWidgetLayout(QWidget(), QVBoxLayout())
