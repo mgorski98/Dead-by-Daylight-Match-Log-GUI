@@ -183,6 +183,15 @@ class SearchableGridViewSelectionPopup(GridViewSelectionPopup):
         self.currentItems = self.items if not searchText.strip() else [i for i in self.items if self.filterFunction(i,searchText)]
         self.initPopupGrid()
 
+    def exec_(self) -> int:
+        self.searchBar.setFocus()
+        return super().exec_()
+
+    def selectItem(self, item):
+        self.filterItems('')
+        self.searchBar.clear()
+        super().selectItem(item)
+
 class AddonSelectPopup(GridViewSelectionPopup):
 
 
@@ -219,7 +228,7 @@ class AddonSelectPopup(GridViewSelectionPopup):
 class PerkPopupSelect(SearchableGridViewSelectionPopup):
 
     def __init__(self, perks: list[Perk], parent=None):
-        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3, filterFunction=lambda p,s: s in f'{p.perkName} {"I" * p.perkTier}')
+        super().__init__(parent=parent, placeholderText="Input perk name to search for", columns=3, filterFunction=lambda p,s: s.lower() in f'{p.perkName.lower()} {"i" * p.perkTier}')
         self.items = perks
         self.currentItems = perks
         self.initPopupGrid()
