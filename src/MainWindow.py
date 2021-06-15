@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import operator
+from typing import Callable
 
 import sqlalchemy
 from PyQt5 import QtGui
@@ -78,8 +79,16 @@ class MainWindow(QMainWindow):
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks,
                                   sacrifices=sacrifices,kills=kills,disconnects=disconnects)
         self.currentlyAddedMatches.append(killerMatch)
-        self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget)
+        self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget, self.__clearKillerFormInputs)
+
+    def __clearKillerFormInputs(self):
         self.killerMatchPointsTextBox.setText('')
+        self.facedSurvivorSelection.resetSelection()
+        self.killerMapSelection.resetSelection()
+
+    def __clearSurvivorFormInputs(self):
+        self.survivorPointsTextBox.setText('')
+        self.survivorMapSelection.resetSelection()
 
     def addNewSurvivorMatch(self):
         survivor = self.survivorSelect.getSelectedItem()
@@ -101,8 +110,7 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
-        self.__onMatchAdded(survivorMatch, self.survivorMatchDateComboBox, self.survivorMatchListWidget)
-        self.survivorPointsTextBox.setText('')
+        self.__onMatchAdded(survivorMatch, self.survivorMatchDateComboBox, self.survivorMatchListWidget, self.__clearSurvivorFormInputs)
 
     def __setupKillerForm(self):
         killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
@@ -189,7 +197,7 @@ class MainWindow(QMainWindow):
             for item in items:
                 self.__addMatchToList(listWidget, item)
 
-    def __onMatchAdded(self, match: DBDMatch, dateFilterComboBox: QComboBox, listWidget: QListWidget):
+    def __onMatchAdded(self, match: DBDMatch, dateFilterComboBox: QComboBox, listWidget: QListWidget, clearInputsFunc: Callable):
         matchDate = match.matchDate
         if matchDate is not None:
             matchDateStr = matchDate.strftime("%d/%m/%Y")
@@ -197,6 +205,7 @@ class MainWindow(QMainWindow):
             if textIndex == -1:
                 dateFilterComboBox.addItem(matchDateStr)
                 dateFilterComboBox.model().sort(0, Qt.AscendingOrder)
+        clearInputsFunc()
         self.__addMatchToList(listWidget, match)
         self.__updateUnsavedChanges("Unsaved changes!")
 

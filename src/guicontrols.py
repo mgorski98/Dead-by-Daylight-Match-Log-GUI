@@ -102,6 +102,9 @@ class ItemSelect(QWidget):
         self.currentIndex = index
         self.updateSelected()
 
+    def resetSelection(self):
+        self.selectFromIndex(index=0)
+
 class KillerSelect(ItemSelect):
 
     def __init__(self, killers: list[Killer], icons: dict[str, QPixmap], iconSize=(100,100), parent=None):
@@ -433,6 +436,12 @@ class FacedSurvivorSelect(ItemSelect):
     def getFacedSurvivor(self):
         return FacedSurvivor(state=self.survivorState,facedSurvivor=self.selectedItem)
 
+    def resetSelection(self):
+        super(FacedSurvivorSelect, self).resetSelection()
+        self.survivorStateComboBox.setCurrentIndex(0)
+        self.survivorState = FacedSurvivorState.Sacrificed
+
+
 class FacedSurvivorSelectionWindow(QWidget):
 
     def __init__(self, survivors: list[Survivor], icons:dict[str, QPixmap], iconSize=(100,100), size=(1,4), parent=None):
@@ -452,6 +461,9 @@ class FacedSurvivorSelectionWindow(QWidget):
                 mainLayout.addWidget(selection, i, j)
                 index += 1
 
+    def resetSelection(self):
+        for selection in self.selections.values():
+            selection.resetSelection()
 
 class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
@@ -592,6 +604,9 @@ class MapSelect(QWidget):
             pixmap = Globals.MAP_ICONS[toResourceName(self.selectedMap.mapName)]
             self.mapImageLabel.setPixmap(pixmap)
 
+    def resetSelection(self):
+        self.realmSelectionComboBox.setCurrentIndex(0)
+        self.__switchRealmMaps(index=0)
 
 class SurvivorItemSelect(ItemSelect):
 
