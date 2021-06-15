@@ -29,9 +29,7 @@ class GeneralMatchStatistics(MatchStatistics):
 
 @dataclass(frozen=True)
 class GeneralKillerMatchStatistics(MatchStatistics):
-    totalSacrifices: int
-    totalKills: int
-    totalDisconnects: int
+    totalEliminationsInfo: EliminationInfo
     gamesPlayedWithKiller: dict[Killer, int]
     totalSurvivorStatesHistogram: dict[FacedSurvivorState, int]
     facedSurvivorStatesHistogram: dict[Survivor, dict[FacedSurvivorState, int]] #amount of times certain survivor escaped, was killed, etc.
@@ -70,7 +68,7 @@ class StatisticsCalculator(object):
         totalMoris = self.killerGamesDf['kills'].sum()
         totalSacrifices = self.killerGamesDf['sacrifices'].sum()
         totalDcs = self.killerGamesDf['disconnects'].sum()
-        totalGamesWithKiller = self.killerGamesDf.groupby('killer', sort=False).size()
+        totalGamesWithKiller = self.killerGamesDf.groupby('killer', sort=False).size().to_dict()
 
         flatSurvivorList = np.ravel(self.killerGamesDf['survivors'].tolist())
 
@@ -80,6 +78,11 @@ class StatisticsCalculator(object):
         for fs in flatSurvivorList:
             totalSurvivorStatesDict[fs.state] += 1
             facedSurvivorStatesHistogram[fs.facedSurvivor][fs.state] += 1
+
+        eliminationsInfo = EliminationInfo(sacrifices=totalSacrifices, kills=totalMoris, disconnects=totalDcs)
+
+        return GeneralKillerMatchStatistics(totalEliminationsInfo=eliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
+                                            totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram)
 
 
     def calculateSurvivorGeneral(self) -> GeneralSurvivorMatchStatistics:
