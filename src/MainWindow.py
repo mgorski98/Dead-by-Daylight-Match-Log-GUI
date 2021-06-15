@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
                                   matchDate=matchDate, killerAddons=killerAddons, perks=killerMatchPerks,
                                   sacrifices=sacrifices,kills=kills,disconnects=disconnects)
         self.currentlyAddedMatches.append(killerMatch)
-        self.__onMatchAdded(killerMatch, self.killerMatchDateComboBox, self.killerMatchListWidget, self.__clearKillerFormInputs)
+        self.__onMatchAdded(killerMatch, self.killerMatchListWidget, self.__clearKillerFormInputs)
 
     def __clearKillerFormInputs(self):
         self.killerMatchPointsTextBox.setText('')
@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
                                       rank=rank, partySize=partySize,matchResult=survivorMatchResult, gameMap=gameMap,
                                       matchDate=matchDate, offering=offering, points=points, perks=survivorMatchPerks)
         self.currentlyAddedMatches.append(survivorMatch)
-        self.__onMatchAdded(survivorMatch, self.survivorMatchDateComboBox, self.survivorMatchListWidget, self.__clearSurvivorFormInputs)
+        self.__onMatchAdded(survivorMatch, self.survivorMatchListWidget, self.__clearSurvivorFormInputs)
 
     def __setupKillerForm(self):
         killerWidget, killerLayout = setQWidgetLayout(QWidget(), QGridLayout())
@@ -197,14 +197,7 @@ class MainWindow(QMainWindow):
             for item in items:
                 self.__addMatchToList(listWidget, item)
 
-    def __onMatchAdded(self, match: DBDMatch, dateFilterComboBox: QComboBox, listWidget: QListWidget, clearInputsFunc: Callable):
-        matchDate = match.matchDate
-        if matchDate is not None:
-            matchDateStr = matchDate.strftime("%d/%m/%Y")
-            textIndex = dateFilterComboBox.findText(matchDateStr)
-            if textIndex == -1:
-                dateFilterComboBox.addItem(matchDateStr)
-                dateFilterComboBox.model().sort(0, Qt.AscendingOrder)
+    def __onMatchAdded(self, match: DBDMatch, listWidget: QListWidget, clearInputsFunc: Callable):
         clearInputsFunc()
         self.__addMatchToList(listWidget, match)
         self.__updateUnsavedChanges("Unsaved changes!")
@@ -217,7 +210,7 @@ class MainWindow(QMainWindow):
 
     def __fetchDates(self, matchType) -> list[datetime.date]:
         with Database.instance().getNewSession() as s:
-            dates = s.query(matchType.matchDate).distinct().order_by(matchType.matchDate.asc()).all()
+            dates = s.query(matchType.matchDate).distinct().order_by(matchType.matchDate).all()
         return dates
 
     def __setupSurvivorForm(self):
@@ -339,6 +332,14 @@ class MainWindow(QMainWindow):
             return
 
         def showSuccessMessageAndClearList():
+            def updateComboBoxes():
+                survivorDates = self.__fetchDates(SurvivorMatch)
+                killerDates = self.__fetchDates(KillerMatch)
+                self.killerMatchDateComboBox.clear()
+                self.survivorMatchDateComboBox.clear()
+                mapper = lambda tup: tup[0].strftime("%d/%m/%Y")
+                self.killerMatchDateComboBox.addItems(map(mapper, killerDates))
+                self.survivorMatchDateComboBox.addItems(map(mapper, survivorDates))
             msgBox = QMessageBox()
             msgBox.setWindowTitle("Saving result")
             msgBox.setText("Matches saved successfully!")
@@ -346,6 +347,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Saved {matchCount} matches to database", 5000)
             self.currentlyAddedMatches.clear()
             self.__updateUnsavedChanges('')
+            updateComboBoxes()
+
 
         progressDialog = QProgressDialog()
         progressDialog.setWindowTitle("Saving data")
