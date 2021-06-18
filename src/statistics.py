@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from abc import ABC
-from typing import Callable
+from typing import Callable, Iterable, Union, Optional
 from collections import defaultdict
 
 import pandas as pd
@@ -10,6 +10,7 @@ import numpy as np
 from classutil import DBDResources
 from models import DBDMatch, SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
     SurvivorMatchResult, FacedSurvivorState
+from util import failQuietly
 
 
 @dataclass(frozen=True)
@@ -56,13 +57,18 @@ class TargetSurvivorStatistics(MatchStatistics):
 
 class StatisticsCalculator(object):
 
-    def __init__(self, games: list[DBDMatch], resources: DBDResources):
+    def __init__(self, killerGames: Iterable[KillerMatch], survivorGames: Iterable[SurvivorMatch], resources: DBDResources):
         self.resources = resources
         dictMapper = lambda g: g.asDict()
-        self.survivorGamesDf = pd.DataFrame(data=map(dictMapper, filter(lambda g: isinstance(g, SurvivorMatch), games)))
-        self.killerGamesDf = pd.DataFrame(data=map(dictMapper, filter(lambda g: isinstance(g, KillerMatch), games)))
+        generalColumns = ["points", "map", "offering", "date", "rank"]
+        killerColumns = ["killer", "perks", "survivors", "addons", "sacrifices", "kills", "disconnects"]
+        survivorColumns = ["survivor", "faced killer", "item", "match result", "party size", "perks", "addons"]
+        self.survivorGamesDf = pd.DataFrame(data=map(dictMapper, survivorGames), columns=generalColumns + survivorColumns)
+        self.killerGamesDf = pd.DataFrame(data=map(dictMapper, killerGames), columns=generalColumns + killerColumns)
 
-    def calculateKillerGeneral(self) -> GeneralKillerMatchStatistics:
+    def calculateKillerGeneral(self) -> Optional[GeneralKillerMatchStatistics]:
+        if self.killerGamesDf.empty:
+            return None
         totalMoris = self.killerGamesDf['kills'].sum()
         totalSacrifices = self.killerGamesDf['sacrifices'].sum()
         totalDcs = self.killerGamesDf['disconnects'].sum()
@@ -82,14 +88,17 @@ class StatisticsCalculator(object):
         return GeneralKillerMatchStatistics(totalEliminationsInfo=eliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram)
 
-
-    def calculateSurvivorGeneral(self) -> GeneralSurvivorMatchStatistics:
+    def calculateSurvivorGeneral(self) -> Optional[GeneralSurvivorMatchStatistics]:
+        if self.survivorGamesDf.empty:
+            return None
         facedKillerHistogram = self.survivorGamesDf.groupby('faced killer', sort=False).size()
         mostCommonKiller = facedKillerHistogram.idxmax()
         mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
-
         mostLethalKiller = None
         matchResultsHistogram = self.survivorGamesDf.groupby('match result').size().to_dict()
+        killerEliminations = defaultdict(int)
+        for killer in facedKillerHistogram.index:
+            print(killer)
         # return GeneralSurvivorMatchStatistics(mostLethalKiller=mostLethalKiller, mostCommonItemType=mostCommonItemType,
         #                                       mostCommonKiller=mostCommonKiller, matchResultsHistogram=matchResultsHistogram)
 
@@ -101,7 +110,9 @@ class StatisticsCalculator(object):
         raise NotImplementedError()
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
-        totalPoints = self.survivorGamesDf['points'].sum() + self.killerGamesDf['points'].sum()
+        survivorPoints = self.survivorGamesDf['points'].sum() if not self.survivorGamesDf.empty else 0
+        killerPoints = self.killerGamesDf['points'].sum() if not self.killerGamesDf.empty else 0
+        totalPoints = survivorPoints + killerPoints
         survivorMapHistogram = self.survivorGamesDf.groupby('map',sort=False).size()
         killerMapHistogram = self.killerGamesDf.groupby('map',sort=False).size()
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)

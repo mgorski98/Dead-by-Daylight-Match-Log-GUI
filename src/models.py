@@ -114,6 +114,12 @@ class GameMap:
     def __str__(self):
         return self.mapName
 
+    __mapper_args__ = {
+        "properties": {
+            "realm": relationship("Realm", back_populates="maps", lazy="subquery")
+        }
+    }
+
 @mapperRegistry.mapped
 @dataclass(unsafe_hash=True)
 class Realm:
@@ -126,7 +132,7 @@ class Realm:
 
     __mapper_args__ = {
         "properties": {
-            "maps": relationship("GameMap", lazy='subquery', backref="realm")
+            "maps": relationship("GameMap", back_populates="realm", lazy='subquery')
         }
     }
 

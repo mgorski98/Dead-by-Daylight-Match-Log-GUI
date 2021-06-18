@@ -98,3 +98,13 @@ def confirmation(text: str="Confirmation", informativeText: str="Please confirm 
                 func()
         return wrapper
     return outerWrapper
+
+def failQuietly(excType=Exception, returnWhenFailed=None):
+    def outerWrapper(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except excType as e:
+                return returnWhenFailed
+        return wrapper
+    return outerWrapper

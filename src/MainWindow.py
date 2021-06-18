@@ -5,12 +5,14 @@ import operator
 from typing import Callable
 
 import sqlalchemy
+import sqlalchemy.orm
 from PyQt5 import QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog, QListWidgetItem, QDialog
+from sqlalchemy.orm.strategy_options import subqueryload
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
@@ -20,7 +22,8 @@ from guicontrols import KillerSelect, AddonSelection, FacedSurvivorSelectionWind
     OfferingSelection, MapSelect, SurvivorSelect, SurvivorItemSelect, DBDMatchListItem
 from models import KillerAddon, KillerMatch, KillerMatchPerk, \
     MatchKillerAddon, DBDMatch, ItemAddon, PerkType, SurvivorMatchResult, SurvivorMatchPerk, MatchItemAddon, \
-    SurvivorMatch, FacedSurvivorState
+    SurvivorMatch, FacedSurvivorState, Realm, GameMap
+from statistics import StatisticsCalculator
 from util import setQWidgetLayout, nonNegativeIntValidator, addWidgets, splitUpper, confirmation
 
 
@@ -318,6 +321,10 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         optionsMenu = menubar.addMenu('&Options')
+        calculateStatsAction = QAction("&Calculate statistics", self)
+        calculateStatsAction.triggered.connect(self.__calculateStatistics)
+        calculateStatsAction.setShortcut(QKeySequence("Alt+Shift+S"))
+        menubar.addAction(calculateStatsAction)
         helpMenu = menubar.addMenu('&Help')
         optionsMenu.addAction(saveMatchesAction)
         optionsMenu.addAction(updateAction)
@@ -325,6 +332,17 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(exportDBAction)
         helpMenu.addAction(logHelpAction)
         menubar.setCornerWidget(self.unsavedChangesLabel, Qt.TopRightCorner)
+
+    def __calculateStatistics(self):
+        with Database.instance().getNewSession() as s:
+            #this query is needed to avoid the DetachedInstanceException
+            realms = s.query(Realm).options(sqlalchemy.orm.subqueryload(Realm.maps, GameMap.realm)).all()
+            killerMatches = s.query(KillerMatch).all()
+            survivorMatches = s.query(SurvivorMatch).all()
+        calc = StatisticsCalculator(killerMatches, survivorMatches, self.resources)
+        print(calc.calculateSurvivorGeneral())
+        print(calc.calculateKillerGeneral())
+        print(calc.calculateGeneral())
 
     def __saveMatches(self):
         matchCount = len(self.currentlyAddedMatches)
