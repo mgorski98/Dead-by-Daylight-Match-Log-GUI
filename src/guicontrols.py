@@ -641,6 +641,7 @@ class SurvivorItemSelect(ItemSelect):
             self.selectedItem = None
             self.selectionChanged.emit(None)
             self.imageLabel.setPixmap(QPixmap())
+            self.nameDisplayLabel.setText('None')
             return
         itemType = ItemType(t)
         self.currentItems = [i for i in self.items if i.itemType == itemType]
