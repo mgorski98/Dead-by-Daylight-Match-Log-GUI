@@ -43,21 +43,23 @@ class GeneralMatchStatistics(MatchStatistics):
     mostCommonMapRealm: Realm
 
 @dataclass(frozen=True)
-class GeneralKillerMatchStatistics(MatchStatistics):
+class KillerMatchStatistics(MatchStatistics):
     totalEliminationsInfo: EliminationInfo
     gamesPlayedWithKiller: dict[Killer, int]
     totalSurvivorStatesHistogram: dict[FacedSurvivorState, int]
     facedSurvivorStatesHistogram: dict[Survivor, dict[FacedSurvivorState, int]] #amount of times certain survivor escaped, was killed, etc.
+    favouriteKillerInfo: tuple[Killer, int, int] #killer, games with him, total games
+    totalKillerEliminations: dict[Killer, EliminationInfo]
 
 @dataclass(frozen=True)
-class GeneralSurvivorMatchStatistics(MatchStatistics):
+class SurvivorMatchStatistics(MatchStatistics):
     gamesPlayedWithSurvivor: dict[Survivor, int]
     matchResultsHistogram: dict[SurvivorMatchResult, int]
     mostCommonItemType: ItemType
     mostCommonKillerData: CommonKillerInfo
     mostLethalKillerData: LethalKillerInfo
-    leastCommonKillerData: object
-    leastLethalKillerData: object
+    leastCommonKillerData: CommonKillerInfo
+    leastLethalKillerData: LethalKillerInfo
 
 
 class StatisticsCalculator(object):
@@ -71,7 +73,7 @@ class StatisticsCalculator(object):
         self.survivorGamesDf = pd.DataFrame(data=map(dictMapper, survivorGames), columns=generalColumns + survivorColumns)
         self.killerGamesDf = pd.DataFrame(data=map(dictMapper, killerGames), columns=generalColumns + killerColumns)
 
-    def calculateKillerGeneral(self) -> Optional[GeneralKillerMatchStatistics]:
+    def calculateKillerGeneral(self) -> Optional[KillerMatchStatistics]:
         if self.killerGamesDf.empty:
             return None
         totalMoris = self.killerGamesDf['kills'].sum()
@@ -89,13 +91,14 @@ class StatisticsCalculator(object):
             totalSurvivorStatesDict[fs.state] += 1
             facedSurvivorStatesHistogram[fs.facedSurvivor][fs.state] += 1
 
-        eliminationsInfo = EliminationInfo(sacrifices=totalSacrifices, kills=totalMoris, disconnects=totalDcs)
+        totalEliminationsInfo = EliminationInfo(sacrifices=totalSacrifices, kills=totalMoris, disconnects=totalDcs)
 
-        return GeneralKillerMatchStatistics(totalEliminationsInfo=eliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
+        return KillerMatchStatistics(totalEliminationsInfo=totalEliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram,
-                                            averagePointsPerMatch=averagePoints)
+                                            averagePointsPerMatch=averagePoints, totalKillerEliminations={},
+                                            favouriteKillerInfo=())
 
-    def calculateSurvivorGeneral(self) -> Optional[GeneralSurvivorMatchStatistics]:
+    def calculateSurvivorGeneral(self) -> Optional[SurvivorMatchStatistics]:
         if self.survivorGamesDf.empty:
             return None
         survivorGamesHistogram = self.survivorGamesDf.groupby('survivor', sort=False).size().to_dict()
@@ -103,6 +106,7 @@ class StatisticsCalculator(object):
         facedKillerHistogramDict = facedKillerHistogram.to_dict()
         averagePoints = self.survivorGamesDf['points'].sum() / self.survivorGamesDf.shape[0]
         mostCommonKiller = facedKillerHistogram.idxmax()
+        leastCommonKiller = facedKillerHistogram.idxmin()
         mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
         facedKillerMatchResults = self.survivorGamesDf.groupby(["faced killer", "match result"], sort=False).size()
         lossResults = (SurvivorMatchResult.Sacrificed, SurvivorMatchResult.Killed, SurvivorMatchResult.Camped,
@@ -111,7 +115,9 @@ class StatisticsCalculator(object):
         for index, count in facedKillerMatchResults.iteritems():
             killer, result = index
             killerEliminations[killer] += int(result in lossResults)
-        mostLethalKiller = max(killerEliminations, key=lambda k: killerEliminations[k] / facedKillerHistogramDict[k])
+        lethalityMapper = lambda k: killerEliminations[k] / facedKillerHistogramDict[k] #that name, lmao
+        mostLethalKiller = max(killerEliminations, key=lethalityMapper)
+        leastLethalKiller = min(killerEliminations, key=lethalityMapper)
         matchResultsHistogram = self.survivorGamesDf.groupby('match result', sort=False).size().to_dict()
         mostLethalKillerInfo = LethalKillerInfo(killer=mostLethalKiller, deathsCount=killerEliminations[mostLethalKiller],
                                                     totalGames=facedKillerHistogramDict[mostLethalKiller],
@@ -119,9 +125,16 @@ class StatisticsCalculator(object):
         mostCommonKillerInfo = CommonKillerInfo(killer=mostCommonKiller,
                                                     encounters=facedKillerHistogramDict[mostCommonKiller],
                                                     totalGames=self.survivorGamesDf.shape[0])
-        return GeneralSurvivorMatchStatistics(gamesPlayedWithSurvivor=survivorGamesHistogram, averagePointsPerMatch=averagePoints,
+        leastLethalKillerInfo = LethalKillerInfo(killer=leastLethalKiller, deathsCount=killerEliminations[leastLethalKiller],
+                                                 totalGames=facedKillerHistogramDict[leastLethalKiller],
+                                                 killRatio=killerEliminations[leastLethalKiller] / facedKillerHistogramDict[leastLethalKiller])
+        leastCommonKillerInfo = CommonKillerInfo(killer=leastCommonKiller,
+                                                 encounters=facedKillerHistogramDict[leastCommonKiller],
+                                                 totalGames=self.survivorGamesDf.shape[0])
+        return SurvivorMatchStatistics(gamesPlayedWithSurvivor=survivorGamesHistogram, averagePointsPerMatch=averagePoints,
                                               matchResultsHistogram=matchResultsHistogram, mostCommonItemType=mostCommonItemType,
-                                              mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo)
+                                              mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo,
+                                              leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo)
 
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
