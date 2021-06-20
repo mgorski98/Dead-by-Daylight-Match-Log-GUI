@@ -118,19 +118,33 @@ class StatisticsCalculator(object):
 
         totalEliminationsInfo = EliminationInfo(sacrifices=totalSacrifices, kills=totalMoris, disconnects=totalDcs)
 
-        totalKillerEliminations = {k: EliminationInfo(0,0,0) for k in self.killerGamesDf['killer'].unique()}
+        uniquePlayedKillers = self.killerGamesDf["killer"].unique()
+
+        totalKillerEliminations = {k: EliminationInfo(0,0,0) for k in uniquePlayedKillers}
         for killer in totalKillerEliminations.keys():
             df = self.killerGamesDf[self.killerGamesDf["killer"] == killer]
             totalKillerEliminations[killer] += EliminationInfo(df["sacrifices"].sum(), df["kills"].sum(), df["disconnects"].sum())
 
-        killerAverageKillsPerMatch = {k: 0 for k in self.killerGamesDf["killer"].unique()}
+        killerAverageKillsPerMatch = {k: 0 for k in uniquePlayedKillers}
         for killer in killerAverageKillsPerMatch.keys():
             df = self.killerGamesDf[self.killerGamesDf["killer"] == killer]
             totalEliminations = df["kills"].sum() + df["sacrifices"].sum() + df["disconnects"].sum()
             killerAverageKillsPerMatch[killer] = totalEliminations / totalGamesWithKiller[killer]
 
-        mostCommonSurvivorInfo = None
-        leastCommonSurvivorInfo = None
+        facedSurvivorsDf = pd.DataFrame(data=map(lambda _fs: _fs.facedSurvivor, flatSurvivorList))
+        facedSurvivorHistogram = facedSurvivorsDf["survivorName"].value_counts()
+        mostCommonSurvivor = next(s for s in self.resources.survivors if s.survivorName == facedSurvivorHistogram.idxmax())
+        leastCommonSurvivor = next(s for s in self.resources.survivors if s.survivorName == facedSurvivorHistogram.idxmin())
+        facedSurvivorsDict = facedSurvivorHistogram.to_dict()
+
+        def survivorGamesCount(surv: Survivor):
+            mask = self.killerGamesDf["survivors"].apply(lambda x: any(y.facedSurvivor == surv for y in x))
+            return self.killerGamesDf[mask].shape[0]
+
+        mostCommonSurvivorGames = survivorGamesCount(mostCommonSurvivor)
+        leastCommonSurvivorGames = survivorGamesCount(leastCommonSurvivor)
+        mostCommonSurvivorInfo = CommonSurvivorInfo(survivor=mostCommonSurvivor, encounters=facedSurvivorsDict[mostCommonSurvivor.survivorName], totalGames=mostCommonSurvivorGames)
+        leastCommonSurvivorInfo = CommonSurvivorInfo(survivor=leastCommonSurvivor, encounters=facedSurvivorsDict[leastCommonSurvivor.survivorName], totalGames=leastCommonSurvivorGames)
 
         return KillerMatchStatistics(totalEliminationsInfo=totalEliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram,

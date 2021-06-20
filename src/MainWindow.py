@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBo
 from sqlalchemy.orm.strategy_options import subqueryload
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
+from StatisticsWindow import StatisticsWindow
 from classutil import DBDMatchParser, DBDMatchLogFileLoader, LogFileLoadWorker
 from database import Database, DatabaseUpdateWorker, DatabaseMatchListSaveWorker
 from globaldata import Globals
@@ -343,6 +344,9 @@ class MainWindow(QMainWindow):
         print(calc.calculateSurvivorGeneral())
         print(calc.calculateKillerGeneral())
         print(calc.calculateGeneral())
+        self.statsWindow = StatisticsWindow()
+        self.statsWindow.setModal(True)
+        self.statsWindow.exec_()
 
     def __saveMatches(self):
         matchCount = len(self.currentlyAddedMatches)
