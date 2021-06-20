@@ -43,6 +43,11 @@ class LethalKillerInfo(object):
     totalGames: int
     killRatio: float
 
+@dataclass(frozen=True)
+class CommonSurvivorInfo(object):
+    survivor: Survivor
+    encounters: int
+    totalGames: int
 
 @dataclass(frozen=True)
 class MatchStatistics(ABC):
@@ -63,6 +68,8 @@ class KillerMatchStatistics(MatchStatistics):
     favouriteKillerInfo: FavouriteKillerInfo #killer, games with him, total games
     totalKillerEliminations: dict[Killer, EliminationInfo]
     averageKillerKillsPerMatch: dict[Killer, float]
+    mostCommonSurvivorData: CommonSurvivorInfo
+    leastCommonSurvivorData: CommonSurvivorInfo
 
 @dataclass(frozen=True)
 class SurvivorMatchStatistics(MatchStatistics):
@@ -122,10 +129,14 @@ class StatisticsCalculator(object):
             totalEliminations = df["kills"].sum() + df["sacrifices"].sum() + df["disconnects"].sum()
             killerAverageKillsPerMatch[killer] = totalEliminations / totalGamesWithKiller[killer]
 
+        mostCommonSurvivorInfo = None
+        leastCommonSurvivorInfo = None
+
         return KillerMatchStatistics(totalEliminationsInfo=totalEliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram,
                                             averagePointsPerMatch=averagePoints, totalKillerEliminations=totalKillerEliminations,
-                                            favouriteKillerInfo=favouriteKillerInfo, averageKillerKillsPerMatch=killerAverageKillsPerMatch)
+                                            favouriteKillerInfo=favouriteKillerInfo, averageKillerKillsPerMatch=killerAverageKillsPerMatch,
+                                            mostCommonSurvivorData=mostCommonSurvivorInfo, leastCommonSurvivorData=leastCommonSurvivorInfo)
 
     def calculateSurvivorGeneral(self) -> Optional[SurvivorMatchStatistics]:
         if self.survivorGamesDf.empty:
