@@ -19,6 +19,11 @@ class EliminationInfo(object):
     kills: int
     disconnects: int
 
+    def __add__(self, other):
+        if not isinstance(other, EliminationInfo):
+            raise TypeError("'add' operation not supported between instances of EliminationInfo and " + str(type(other)))
+        return EliminationInfo(self.sacrifices + other.sacrifices, self.kills + other.kills, self.disconnects + other.disconnects)
+
 @dataclass(frozen=True)
 class FavouriteKillerInfo(object):
     killer: Killer
@@ -57,6 +62,7 @@ class KillerMatchStatistics(MatchStatistics):
     facedSurvivorStatesHistogram: dict[Survivor, dict[FacedSurvivorState, int]] #amount of times certain survivor escaped, was killed, etc.
     favouriteKillerInfo: FavouriteKillerInfo #killer, games with him, total games
     totalKillerEliminations: dict[Killer, EliminationInfo]
+    averageKillerKillsPerMatch: dict[Killer, float]
 
 @dataclass(frozen=True)
 class SurvivorMatchStatistics(MatchStatistics):
@@ -105,10 +111,21 @@ class StatisticsCalculator(object):
 
         totalEliminationsInfo = EliminationInfo(sacrifices=totalSacrifices, kills=totalMoris, disconnects=totalDcs)
 
+        totalKillerEliminations = {k: EliminationInfo(0,0,0) for k in self.killerGamesDf['killer'].unique()}
+        for killer in totalKillerEliminations.keys():
+            df = self.killerGamesDf[self.killerGamesDf["killer"] == killer]
+            totalKillerEliminations[killer] += EliminationInfo(df["sacrifices"].sum(), df["kills"].sum(), df["disconnects"].sum())
+
+        killerAverageKillsPerMatch = {k: 0 for k in self.killerGamesDf["killer"].unique()}
+        for killer in killerAverageKillsPerMatch.keys():
+            df = self.killerGamesDf[self.killerGamesDf["killer"] == killer]
+            totalEliminations = df["kills"].sum() + df["sacrifices"].sum() + df["disconnects"].sum()
+            killerAverageKillsPerMatch[killer] = totalEliminations / totalGamesWithKiller[killer]
+
         return KillerMatchStatistics(totalEliminationsInfo=totalEliminationsInfo, gamesPlayedWithKiller=totalGamesWithKiller,
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram,
-                                            averagePointsPerMatch=averagePoints, totalKillerEliminations={},
-                                            favouriteKillerInfo=favouriteKillerInfo)
+                                            averagePointsPerMatch=averagePoints, totalKillerEliminations=totalKillerEliminations,
+                                            favouriteKillerInfo=favouriteKillerInfo, averageKillerKillsPerMatch=killerAverageKillsPerMatch)
 
     def calculateSurvivorGeneral(self) -> Optional[SurvivorMatchStatistics]:
         if self.survivorGamesDf.empty:
