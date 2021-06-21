@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabe
 from waitingspinnerwidget import QtWaitingSpinner
 
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics
-from util import clearLayout
+from util import clearLayout, qtMakeBold
 
 
 class StatisticsWorker(QThread):
@@ -62,16 +62,22 @@ class StatisticsWindow(QDialog):
         self.show() #we need this call because, apparently, setting window flags changes the parent. because of that, the window becomes hidden and we must show it again
 
     def __setupUIForStatistics(self, generalStats: GeneralMatchStatistics, killerStats: KillerMatchStatistics, survivorStats: SurvivorMatchStatistics):
-        # self.spinner.stop()
-        # clearLayout(self.layout())
-        # self.layout().deleteLater()
+        self.spinner.stop()
+        clearLayout(self.layout())
+        self.layout().deleteLater()
         mainLayout = QGridLayout() #create a box for general stats, and below it - a tab widget with survivor and killer stats
-        self.setLayout(mainLayout)
+        self.layout().destroyed.connect(lambda: self.setLayout(mainLayout))
         generalStatsLayout = QVBoxLayout()
         mainLayout.addLayout(generalStatsLayout, 0, 0, 1, 1)
         killerAndSurvivorStatsLayout = QVBoxLayout()
         mainLayout.addLayout(killerAndSurvivorStatsLayout, 1, 0, 3, 1)
         statsTabWidget = QTabWidget()
-        statsTabWidget.addTab(QWidget(), "Killer statistics")
-        statsTabWidget.addTab(QWidget(), "Survivor statistics")
-        print("done")
+        killerStatsWidget = QWidget()
+        survivorStatsWidget = QWidget()
+        statsTabWidget.addTab(killerStatsWidget, "Killer statistics")
+        statsTabWidget.addTab(survivorStatsWidget, "Survivor statistics")
+        killerAndSurvivorStatsLayout.addWidget(statsTabWidget)
+        generalStatsLabel = QLabel(qtMakeBold("General match statistics"))
+        generalStatsLabel.setAlignment(Qt.AlignCenter)
+        generalStatsLayout.addWidget(generalStatsLabel)
+        generalStatsLayout.setAlignment(generalStatsLabel, Qt.AlignCenter | Qt.AlignTop)
