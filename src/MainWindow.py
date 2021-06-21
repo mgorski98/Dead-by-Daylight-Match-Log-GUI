@@ -341,10 +341,7 @@ class MainWindow(QMainWindow):
             killerMatches = s.query(KillerMatch).all()
             survivorMatches = s.query(SurvivorMatch).all()
         calc = StatisticsCalculator(killerMatches, survivorMatches, self.resources)
-        print(calc.calculateSurvivorGeneral())
-        print(calc.calculateKillerGeneral())
-        print(calc.calculateGeneral())
-        self.statsWindow = StatisticsWindow()
+        self.statsWindow = StatisticsWindow(calc)
         self.statsWindow.setModal(True)
         self.statsWindow.exec_()
 

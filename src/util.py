@@ -43,7 +43,9 @@ def splitUpper(s: str) -> list[str]:
 def clearLayout(layout: QLayout):
     if layout is not None:
         for i in reversed(range(layout.count())):
-            layout.itemAt(i).widget().deleteLater()
+            w = layout.itemAt(i).widget()
+            if w is not None:
+                w.deleteLater()
 
 def toResourceName(s: str) -> str:
     return re.sub(r'[:\'\"]', '', s).lower().replace(' ', '-')
