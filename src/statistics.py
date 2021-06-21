@@ -52,6 +52,7 @@ class CommonSurvivorInfo(object):
 @dataclass(frozen=True)
 class MatchStatistics(ABC):
     averagePointsPerMatch: float
+    totalGames: int
 
 @dataclass(frozen=True)
 class GeneralMatchStatistics(MatchStatistics):
@@ -150,7 +151,8 @@ class StatisticsCalculator(object):
                                             totalSurvivorStatesHistogram=totalSurvivorStatesDict, facedSurvivorStatesHistogram=facedSurvivorStatesHistogram,
                                             averagePointsPerMatch=averagePoints, totalKillerEliminations=totalKillerEliminations,
                                             favouriteKillerInfo=favouriteKillerInfo, averageKillerKillsPerMatch=killerAverageKillsPerMatch,
-                                            mostCommonSurvivorData=mostCommonSurvivorInfo, leastCommonSurvivorData=leastCommonSurvivorInfo)
+                                            mostCommonSurvivorData=mostCommonSurvivorInfo, leastCommonSurvivorData=leastCommonSurvivorInfo,
+                                            totalGames=self.killerGamesDf.shape[0])
 
     def calculateSurvivorGeneral(self) -> Optional[SurvivorMatchStatistics]:
         if self.survivorGamesDf.empty:
@@ -188,10 +190,12 @@ class StatisticsCalculator(object):
         return SurvivorMatchStatistics(gamesPlayedWithSurvivor=survivorGamesHistogram, averagePointsPerMatch=averagePoints,
                                               matchResultsHistogram=matchResultsHistogram, mostCommonItemType=mostCommonItemType,
                                               mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo,
-                                              leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo)
+                                              leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo,
+                                              totalGames=self.survivorGamesDf.shape[0])
 
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
+        totalGames = self.survivorGamesDf.shape[0] + self.killerGamesDf.shape[0]
         survivorPoints = self.survivorGamesDf['points'].sum() if not self.survivorGamesDf.empty else 0
         killerPoints = self.killerGamesDf['points'].sum() if not self.killerGamesDf.empty else 0
         totalPoints = survivorPoints + killerPoints
@@ -207,7 +211,8 @@ class StatisticsCalculator(object):
             realmsDict[row.Index.realm] += row.count
         mostCommonRealm = max(realmsDict, key=realmsDict.get) if len(realmsDict) > 0 else None
         return GeneralMatchStatistics(averagePointsPerMatch=averagePoints, totalPoints=totalPoints,
-                                      mostCommonMap=mostCommonMap, mostCommonMapRealm=mostCommonRealm)
+                                      mostCommonMap=mostCommonMap, mostCommonMapRealm=mostCommonRealm,
+                                      totalGames=totalGames)
 
 
 def exportAsJson(statistics: MatchStatistics, destinationPath: str):

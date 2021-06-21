@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
 from PyQt5.QtGui import QMovie
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout
 from waitingspinnerwidget import QtWaitingSpinner
 
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics
@@ -81,3 +81,9 @@ class StatisticsWindow(QDialog):
         generalStatsLabel.setAlignment(Qt.AlignCenter)
         generalStatsLayout.addWidget(generalStatsLabel)
         generalStatsLayout.setAlignment(generalStatsLabel, Qt.AlignCenter | Qt.AlignTop)
+        mostCommonMapLayout = QHBoxLayout()
+        mostCommonRealmLayout = QHBoxLayout()
+        totalPointsLayout = QHBoxLayout()
+        averagePointsLayout = QHBoxLayout()
+        pointsLabel, totalPointsInfoLabel = QLabel(), QLabel(qtMakeBold("Total points: "))
+        avgPointsLabel, avgPointsInfoLabel = QLabel(), QLabel()
