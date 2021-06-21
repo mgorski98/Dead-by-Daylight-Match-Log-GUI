@@ -50,6 +50,18 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
 @dataclass(frozen=True)
+class MapInfo(object):
+    map: GameMap
+    mapGames: int
+    totalGames: int
+
+@dataclass(frozen=True)
+class MapRealmInfo(object):
+    realm: Realm
+    realmGames: int
+    totalGames: int
+
+@dataclass(frozen=True)
 class MatchStatistics(ABC):
     averagePointsPerMatch: int
     totalGames: int
@@ -57,8 +69,10 @@ class MatchStatistics(ABC):
 @dataclass(frozen=True)
 class GeneralMatchStatistics(MatchStatistics):
     totalPoints: int
-    mostCommonMap: GameMap
-    mostCommonMapRealm: Realm
+    mostCommonMapData: MapInfo
+    mostCommonMapRealmData: MapRealmInfo
+    leastCommonMapData: MapInfo
+    leastCommonMapRealmData: MapRealmInfo
 
 @dataclass(frozen=True)
 class KillerMatchStatistics(MatchStatistics):
@@ -196,23 +210,44 @@ class StatisticsCalculator(object):
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
         totalGames = self.survivorGamesDf.shape[0] + self.killerGamesDf.shape[0]
+
         survivorPoints = self.survivorGamesDf['points'].sum() if not self.survivorGamesDf.empty else 0
         killerPoints = self.killerGamesDf['points'].sum() if not self.killerGamesDf.empty else 0
         totalPoints = survivorPoints + killerPoints
         x = self.survivorGamesDf.shape[0] + self.killerGamesDf.shape[0]
         averagePoints = totalPoints // (1 if x == 0 else x)
+
         survivorMapHistogram = self.survivorGamesDf.groupby('map',sort=False).size()
         killerMapHistogram = self.killerGamesDf.groupby('map',sort=False).size()
+
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
         totalMapHistogram = pd.DataFrame(data=(totalMapHistogram[0] + totalMapHistogram[1]).astype(int), columns=['count'])
+
         mostCommonMap: GameMap = totalMapHistogram.idxmax()[0] if not totalMapHistogram.empty else None
+        leastCommonMap: GameMap = totalMapHistogram.idxmin()[0] if not totalMapHistogram.empty else None
+
         realmsDict = defaultdict(int)
         for row in totalMapHistogram.itertuples():
             realmsDict[row.Index.realm] += row.count
+
         mostCommonRealm = max(realmsDict, key=realmsDict.get) if len(realmsDict) > 0 else None
-        return GeneralMatchStatistics(averagePointsPerMatch=averagePoints, totalPoints=totalPoints,
-                                      mostCommonMap=mostCommonMap, mostCommonMapRealm=mostCommonRealm,
-                                      totalGames=totalGames)
+        leastCommonRealm = min(realmsDict, key=realmsDict.get) if len(realmsDict) > 0 else None
+
+        mostCommonMapGames = totalMapHistogram[totalMapHistogram.index == mostCommonMap]['count'][0]
+        leastCommonMapGames = totalMapHistogram[totalMapHistogram.index == leastCommonMap]['count'][0]
+
+        mostCommonRealmGames = realmsDict[mostCommonRealm]
+        leastCommonRealmGames = realmsDict[leastCommonRealm]
+
+        mostCommonMapInfo = MapInfo(totalGames=totalGames, map=mostCommonMap, mapGames=mostCommonMapGames)
+        leastCommonMapInfo = MapInfo(totalGames=totalGames, map=leastCommonMap, mapGames=leastCommonMapGames)
+        mostCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=mostCommonRealm, realmGames=mostCommonRealmGames)
+        leastCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=leastCommonRealm, realmGames=leastCommonRealmGames)
+
+        return GeneralMatchStatistics(averagePointsPerMatch=averagePoints, totalGames=totalGames, totalPoints=totalPoints,
+                                      mostCommonMapData=mostCommonMapInfo, mostCommonMapRealmData=mostCommonRealmInfo,
+                                      leastCommonMapData=leastCommonMapInfo, leastCommonMapRealmData=leastCommonRealmInfo)
+
 
 
 def exportAsJson(statistics: MatchStatistics, destinationPath: str):
