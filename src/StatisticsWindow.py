@@ -32,6 +32,7 @@ class StatisticsWindow(QDialog):
         self.worker.start()
         return super().exec_()
 
+
     def enableCloseButton(self):
         self.setWindowFlags(self.windowFlags() | Qt.WindowCloseButtonHint)
         self.show() #we need this call because, apparently, setting window flags changes the parent. because of that, the window becomes hidden and we must show it again

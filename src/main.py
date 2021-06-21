@@ -25,6 +25,7 @@ def main() -> None:
     config = loadConfig('../config.cfg' if len(sys.argv) <= 1 else sys.argv[1])
     Database.init(config["DB_URL"])
     app = QApplication(sys.argv)
+    app.setAttribute(Qt.AA_DisableWindowContextHelpButton)
     splash = QSplashScreen(QPixmap())
     splash.show()
     QLocale.setDefault(QLocale(QLocale.English))
