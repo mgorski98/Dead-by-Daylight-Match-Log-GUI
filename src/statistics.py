@@ -24,17 +24,35 @@ class EliminationInfo(object):
             raise TypeError("'add' operation not supported between instances of EliminationInfo and " + str(type(other)))
         return EliminationInfo(self.sacrifices + other.sacrifices, self.kills + other.kills, self.disconnects + other.disconnects)
 
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen=True)
 class FavouriteKillerInfo(object):
     killer: Killer
     gamesWithKiller: int
     totalGames: int
 
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen=True)
 class CommonKillerInfo(object):
     killer: Killer
     encounters: int
     totalGames: int
+
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
 
 @dataclass(frozen=True)
 class LethalKillerInfo(object):
@@ -43,11 +61,23 @@ class LethalKillerInfo(object):
     totalGames: int
     killRatio: float
 
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen=True)
 class CommonSurvivorInfo(object):
     survivor: Survivor
     encounters: int
     totalGames: int
+
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
 
 @dataclass(frozen=True)
 class MapInfo(object):
@@ -55,11 +85,23 @@ class MapInfo(object):
     mapGames: int
     totalGames: int
 
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen=True)
 class MapRealmInfo(object):
     realm: Realm
     realmGames: int
     totalGames: int
+
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return self.__str__()
 
 @dataclass(frozen=True)
 class MatchStatistics(ABC):
