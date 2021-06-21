@@ -51,7 +51,7 @@ class CommonSurvivorInfo(object):
 
 @dataclass(frozen=True)
 class MatchStatistics(ABC):
-    averagePointsPerMatch: float
+    averagePointsPerMatch: int
     totalGames: int
 
 @dataclass(frozen=True)
@@ -106,7 +106,7 @@ class StatisticsCalculator(object):
         favouriteKillerInfo = FavouriteKillerInfo(killer=favouriteKiller, gamesWithKiller=totalGamesWithKiller[favouriteKiller],
                                                   totalGames=self.killerGamesDf.shape[0])
 
-        averagePoints = self.killerGamesDf['points'].sum() / self.killerGamesDf.shape[0]
+        averagePoints = self.killerGamesDf['points'].sum() // self.killerGamesDf.shape[0]
 
         flatSurvivorList = np.ravel(self.killerGamesDf['survivors'].tolist())
 
@@ -160,7 +160,7 @@ class StatisticsCalculator(object):
         survivorGamesHistogram = self.survivorGamesDf.groupby('survivor', sort=False).size().to_dict()
         facedKillerHistogram = self.survivorGamesDf.groupby('faced killer', sort=False).size()
         facedKillerHistogramDict = facedKillerHistogram.to_dict()
-        averagePoints = self.survivorGamesDf['points'].sum() / self.survivorGamesDf.shape[0]
+        averagePoints = self.survivorGamesDf['points'].sum() // self.survivorGamesDf.shape[0]
         mostCommonKiller = facedKillerHistogram.idxmax()
         leastCommonKiller = facedKillerHistogram.idxmin()
         mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
@@ -200,7 +200,7 @@ class StatisticsCalculator(object):
         killerPoints = self.killerGamesDf['points'].sum() if not self.killerGamesDf.empty else 0
         totalPoints = survivorPoints + killerPoints
         x = self.survivorGamesDf.shape[0] + self.killerGamesDf.shape[0]
-        averagePoints = totalPoints / (1 if x == 0 else x)
+        averagePoints = totalPoints // (1 if x == 0 else x)
         survivorMapHistogram = self.survivorGamesDf.groupby('map',sort=False).size()
         killerMapHistogram = self.killerGamesDf.groupby('map',sort=False).size()
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
