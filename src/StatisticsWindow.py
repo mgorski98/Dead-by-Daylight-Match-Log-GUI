@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
-from PyQt5.QtGui import QMovie
+from PyQt5.QtGui import QMovie, QFont
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout
 from waitingspinnerwidget import QtWaitingSpinner
 
@@ -29,7 +29,7 @@ class StatisticsWindow(QDialog):
 
     def __init__(self, calc: StatisticsCalculator, parent=None):
         super().__init__(parent=parent)
-        self.resize(800, 600)
+        self.resize(1000, 840)
         self.setWindowTitle("Match statistics")
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.worker = StatisticsWorker(calc)
@@ -79,9 +79,11 @@ class StatisticsWindow(QDialog):
         statsTabWidget.addTab(survivorStatsWidget, "Survivor statistics")
         killerAndSurvivorStatsLayout.addWidget(statsTabWidget)
         generalStatsLabel = QLabel(qtMakeBold("General match statistics"))
+        generalStatsLabel.setStyleSheet("font-size: 20px;")
         generalStatsLabel.setAlignment(Qt.AlignCenter)
         generalStatsLayout.addWidget(generalStatsLabel)
         generalStatsLayout.setAlignment(generalStatsLabel, Qt.AlignCenter | Qt.AlignTop)
+        generalStatsLayout.addSpacerItem(QSpacerItem(0, 15))
         margins = (25, 0, 25, 0)
         mostCommonMapLayout, mostCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
         leastCommonMapLayout, leastCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
@@ -115,3 +117,23 @@ class StatisticsWindow(QDialog):
         sublayouts = [gamesLayout, totalPointsLayout, averagePointsLayout,
                       mostCommonMapLayout, mostCommonRealmLayout, leastCommonMapLayout, leastCommonRealmLayout]
         addSubLayouts(generalStatsLayout, *sublayouts)
+
+        #killer stats setup
+        if killerStats is None:
+            l = QLabel(qtMakeBold("Nothing to see here. No killer matches present."))
+            layout = QVBoxLayout()
+            killerStatsWidget.setLayout(layout)
+            layout.addWidget(l)
+            layout.setAlignment(l, Qt.AlignCenter)
+        else:
+            pass
+
+        #survivor stats setup
+        if survivorStats is None:
+            l = QLabel(qtMakeBold("Nothing to see here. No survivor matches present."))
+            layout = QVBoxLayout()
+            survivorStatsWidget.setLayout(layout)
+            layout.addWidget(l)
+            layout.setAlignment(l, Qt.AlignCenter)
+        else:
+            pass
