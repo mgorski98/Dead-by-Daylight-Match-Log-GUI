@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import reduce
 from typing import Callable, Iterable, Optional
 
 import numpy as np
@@ -165,7 +166,7 @@ class StatisticsCalculator(object):
 
         averagePoints = self.killerGamesDf['points'].sum() // self.killerGamesDf.shape[0]
 
-        flatSurvivorList = np.ravel(self.killerGamesDf['survivors'].tolist())
+        flatSurvivorList = reduce(lambda x, y: x + y, self.killerGamesDf['survivors'].tolist(), [])
 
         totalSurvivorStatesDict = defaultdict(int)
         facedSurvivorStatesHistogram = defaultdict(lambda: defaultdict(int))

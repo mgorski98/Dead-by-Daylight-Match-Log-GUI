@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
-from PyQt5.QtGui import QMovie, QFont
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout
+
+from models import FacedSurvivorState
 from waitingspinnerwidget import QtWaitingSpinner
 
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics
-from util import clearLayout, qtMakeBold, addSubLayouts
+from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper
+
 
 
 class StatisticsWorker(QThread):
@@ -126,7 +129,12 @@ class StatisticsWindow(QDialog):
             layout.addWidget(l)
             layout.setAlignment(l, Qt.AlignCenter)
         else:
-            pass
+            killerStatsLayout = QGridLayout()
+            killerStatsWidget.setLayout(killerStatsLayout)
+            leftSideLayout = QVBoxLayout()
+            plotLayout = QVBoxLayout()
+            facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
+            killerStatsLayout.addWidget(facedSurvivorsChartView)
 
         #survivor stats setup
         if survivorStats is None:
@@ -137,3 +145,34 @@ class StatisticsWindow(QDialog):
             layout.setAlignment(l, Qt.AlignCenter)
         else:
             pass
+
+    def __setupFacedSurvivorStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
+        categoryAxis = QBarCategoryAxis()
+        valueAxis = QValueAxis()
+        barSetPairs = [(QBarSet(' '.join(splitUpper(state.name))), state) for state in FacedSurvivorState]
+        maxVal = 0
+        for barset, state in barSetPairs:
+            for survivor in killerStats.facedSurvivorStatesHistogram.keys():
+                states = killerStats.facedSurvivorStatesHistogram[survivor]
+                count = states[state]
+                barset.append(count)
+                if count > maxVal:
+                    maxVal = count
+        categories = [survivor.survivorName for survivor in killerStats.facedSurvivorStatesHistogram.keys()]
+        categoryAxis.append(categories)
+        valueAxis.setRange(0, maxVal)
+        barSeries = QBarSeries()
+        for _set, _ in barSetPairs:
+            barSeries.append(_set)
+        chart = QChart()
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.addSeries(barSeries)
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        chart.setTitle("Faced survivors' fates")
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        return chartView
