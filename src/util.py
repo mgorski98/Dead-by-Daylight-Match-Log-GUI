@@ -110,3 +110,10 @@ def failQuietly(excType=Exception, returnWhenFailed=None):
                 return returnWhenFailed
         return wrapper
     return outerWrapper
+
+def addSubLayouts(layout: QLayout, *layouts):
+    for l in layouts:
+        layout.addLayout(l)
+
+def singleOrPlural(i: int, single: str):
+    return single + 's' if i != 1 else single

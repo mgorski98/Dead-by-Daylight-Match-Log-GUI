@@ -12,6 +12,7 @@ from classutil import DBDResources
 from models import SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
     SurvivorMatchResult, FacedSurvivorState
 
+from util import singleOrPlural
 
 @dataclass(frozen=True)
 class EliminationInfo(object):
@@ -37,7 +38,7 @@ class FavouriteKillerInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'Favourite killer: {self.killer.killerAlias} ({self.gamesWithKiller:,} games out of {self.totalGames:,})'
+        return f'Favourite killer: {self.killer.killerAlias} ({self.gamesWithKiller:,} {singleOrPlural(self.gamesWithKiller, "game")} out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -49,7 +50,7 @@ class CommonKillerInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.killer.killerAlias} ({self.encounters:,} games out of {self.totalGames:,})'
+        return f'{self.killer.killerAlias} ({self.encounters:,} {singleOrPlural(self.encounters, "game")} out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -62,7 +63,7 @@ class LethalKillerInfo(object):
     killRatio: float
 
     def __str__(self):
-        return f'Killed by {self.killer.killerAlias} {self.deathsCount:,} times out of {self.totalGames:,} with kill ratio of {self.killRatio:.2}'
+        return f'Killed by {self.killer.killerAlias} {self.deathsCount:,} {singleOrPlural(self.deathsCount, "time")} out of {self.totalGames:,} with kill ratio of {self.killRatio:.2}'
 
     def __repr__(self):
         return self.__str__()
@@ -74,7 +75,7 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.survivor.survivorName} ({self.encounters:,} games out of {self.totalGames:,})'
+        return f'{self.survivor.survivorName} ({self.encounters:,} {singleOrPlural(self.encounters, "game")} out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -86,7 +87,7 @@ class MapInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.map.mapName} ({self.mapGames:,} games out of {self.totalGames:,})'
+        return f'{self.map.mapName} ({self.mapGames:,} {singleOrPlural(self.mapGames, "game")} out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -98,7 +99,7 @@ class MapRealmInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.realm.realmName} ({self.realmGames:,} games out of {self.totalGames:,})'
+        return f'{self.realm.realmName} ({self.realmGames:,} {singleOrPlural(self.realmGames, "game")} out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -275,11 +276,11 @@ class StatisticsCalculator(object):
         mostCommonRealm = max(realmsDict, key=realmsDict.get) if len(realmsDict) > 0 else None
         leastCommonRealm = min(realmsDict, key=realmsDict.get) if len(realmsDict) > 0 else None
 
-        mostCommonMapGames = totalMapHistogram[totalMapHistogram.index == mostCommonMap]['count'][0]
-        leastCommonMapGames = totalMapHistogram[totalMapHistogram.index == leastCommonMap]['count'][0]
+        mostCommonMapGames = totalMapHistogram[totalMapHistogram.index == mostCommonMap]['count'][0] if not totalMapHistogram.empty else 0
+        leastCommonMapGames = totalMapHistogram[totalMapHistogram.index == leastCommonMap]['count'][0] if not totalMapHistogram.empty else 0
 
-        mostCommonRealmGames = realmsDict[mostCommonRealm]
-        leastCommonRealmGames = realmsDict[leastCommonRealm]
+        mostCommonRealmGames = realmsDict[mostCommonRealm] if len(realmsDict) > 0 else 0
+        leastCommonRealmGames = realmsDict[leastCommonRealm] if len(realmsDict) > 0 else 0
 
         mostCommonMapInfo = MapInfo(totalGames=totalGames, map=mostCommonMap, mapGames=mostCommonMapGames)
         leastCommonMapInfo = MapInfo(totalGames=totalGames, map=leastCommonMap, mapGames=leastCommonMapGames)
