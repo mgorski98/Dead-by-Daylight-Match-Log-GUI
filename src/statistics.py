@@ -74,7 +74,7 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.survivor.survivorName} - {self.encounters:,} games out of {self.totalGames:,}'
+        return f'{self.survivor.survivorName} ({self.encounters:,} games out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -86,7 +86,7 @@ class MapInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.map.mapName} - {self.mapGames:,} games out of {self.totalGames:,}'
+        return f'{self.map.mapName} ({self.mapGames:,} games out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -98,7 +98,7 @@ class MapRealmInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.realm.realmName} - {self.realmGames:,} games out of {self.totalGames:,}'
+        return f'{self.realm.realmName} ({self.realmGames:,} games out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
