@@ -25,7 +25,7 @@ class EliminationInfo(object):
         return EliminationInfo(self.sacrifices + other.sacrifices, self.kills + other.kills, self.disconnects + other.disconnects)
 
     def __str__(self):
-        return ''
+        return f'Sacrifices: {self.sacrifices:,}\nKills: {self.kills:,}\nDisconnects: {self.disconnects:,}'
 
     def __repr__(self):
         return self.__str__()
@@ -37,7 +37,7 @@ class FavouriteKillerInfo(object):
     totalGames: int
 
     def __str__(self):
-        return ''
+        return f'Favourite killer: {self.killer.killerAlias} ({self.gamesWithKiller:,} games out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -49,7 +49,7 @@ class CommonKillerInfo(object):
     totalGames: int
 
     def __str__(self):
-        return ''
+        return f'{self.killer.killerAlias} ({self.encounters:,} games out of {self.totalGames:,})'
 
     def __repr__(self):
         return self.__str__()
@@ -62,7 +62,7 @@ class LethalKillerInfo(object):
     killRatio: float
 
     def __str__(self):
-        return ''
+        return f'Killed by {self.killer.killerAlias} {self.deathsCount:,} times out of {self.totalGames:,} with kill ratio of {self.killRatio:.2}'
 
     def __repr__(self):
         return self.__str__()
@@ -74,7 +74,7 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
     def __str__(self):
-        return ''
+        return f'{self.survivor.survivorName} - {self.encounters:,} games out of {self.totalGames:,}'
 
     def __repr__(self):
         return self.__str__()
@@ -86,7 +86,7 @@ class MapInfo(object):
     totalGames: int
 
     def __str__(self):
-        return ''
+        return f'{self.map.mapName} - {self.mapGames:,} games out of {self.totalGames:,}'
 
     def __repr__(self):
         return self.__str__()
@@ -98,7 +98,7 @@ class MapRealmInfo(object):
     totalGames: int
 
     def __str__(self):
-        return ''
+        return f'{self.realm.realmName} - {self.realmGames:,} games out of {self.totalGames:,}'
 
     def __repr__(self):
         return self.__str__()
