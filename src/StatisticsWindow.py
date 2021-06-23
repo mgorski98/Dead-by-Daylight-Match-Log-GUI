@@ -10,8 +10,7 @@ from waitingspinnerwidget import QtWaitingSpinner
 
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics, \
     EliminationInfo
-from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper
-
+from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper, addWidgets
 
 
 class StatisticsWorker(QThread):
@@ -150,21 +149,22 @@ class StatisticsWindow(QDialog):
             addSubLayouts(generalKillerStatsLayout, favouriteKillerLayout, mostCommonSurvivorLayout,
                           leastCommonSurvivorLayout, eliminationInfoLayout)
             killerStatsLayout.addLayout(generalKillerStatsLayout)
-            # margins = (0,0,0,0)
-            # favouriteKillerLayout = QHBoxLayout()
-            # favouriteKillerInfoLabel, favouriteKillerLabel = QLabel(qtMakeBold("Favourite killer")), QLabel(qtMakeBold(str(killerStats.favouriteKillerInfo)))
-            # self.__setStatSubLayout(favouriteKillerLayout, favouriteKillerInfoLabel, favouriteKillerLabel, margins)
-            # mostCommonSurvivorLayout = QHBoxLayout()
-            # mostCommonSurvivorInfoLabel, mostCommonSurvivorLabel = QLabel(qtMakeBold("Most common survivor")), QLabel(qtMakeBold(str(killerStats.mostCommonSurvivorData)))
-            # self.__setStatSubLayout(mostCommonSurvivorLayout, mostCommonSurvivorInfoLabel, mostCommonSurvivorLabel, margins)
-            # leastCommonSurvivorLayout = QHBoxLayout()
-            # leastCommonSurvivorInfoLabel, leastCommonSurvivorLabel = QLabel(qtMakeBold("Least common survivor")), QLabel(qtMakeBold(str(killerStats.leastCommonSurvivorData)))
-            # self.__setStatSubLayout(leastCommonSurvivorLayout, leastCommonSurvivorInfoLabel, leastCommonSurvivorLabel, margins)
-            # killerStatsLayout.addLayout(favouriteKillerLayout)
-            # killerStatsLayout.addLayout(mostCommonSurvivorLayout)
-            # killerStatsLayout.addLayout(leastCommonSurvivorLayout)
-            # killerStatsLayout.addLayout(self.__setupTotalEliminationsInfo(killerStats.totalEliminationsInfo))
-            # killerStatsLayout.addSpacerItem(QSpacerItem(0, 15))
+            favouriteKillerLabel = QLabel(qtMakeBold("Favourite killer"))
+            mostCommonSurvivorLabel = QLabel(qtMakeBold("Most common survivor"))
+            leastCommonSurvivorLabel = QLabel(qtMakeBold("Least common survivor"))
+            eliminationInfoLabel = QLabel(qtMakeBold("Total eliminations"))
+            for layout, label in zip([favouriteKillerLayout, mostCommonSurvivorLayout, leastCommonSurvivorLayout, eliminationInfoLayout],
+                                     [favouriteKillerLabel, mostCommonSurvivorLabel, leastCommonSurvivorLabel, eliminationInfoLabel]):
+                layout.addWidget(label)
+                layout.setAlignment(label, Qt.AlignCenter | Qt.AlignTop)
+                label.setStyleSheet("font-size: 18px")
+
+            sacrificesLabel = QLabel(qtMakeBold(f"Sacrifices: {killerStats.totalEliminationsInfo.sacrifices:,}"))
+            killsLabel = QLabel(qtMakeBold(f"Kills: {killerStats.totalEliminationsInfo.kills:,}"))
+            disconnectsLabel = QLabel(qtMakeBold(f"Disconnects: {killerStats.totalEliminationsInfo.disconnects:,}"))
+            eliminationInfoLayout.addSpacerItem(QSpacerItem(0, 15))
+            addWidgets(eliminationInfoLayout, sacrificesLabel, killsLabel, disconnectsLabel)
+
             facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
             killerStatsLayout.addWidget(facedSurvivorsChartView)
 

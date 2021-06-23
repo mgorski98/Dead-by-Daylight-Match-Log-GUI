@@ -44,6 +44,8 @@ class FacedSurvivorState(enum.Enum):
     BledOut = 2
     Disconnected = 3
     Escaped = 4
+    HeadPopped = 5
+    GivenHatch = 6
 #</editor-fold>
 
 @mapperRegistry.mapped
