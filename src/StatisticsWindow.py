@@ -3,14 +3,15 @@ from __future__ import annotations
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout, \
-    QScrollArea
+    QScrollArea, QFrame
 
+from globaldata import Globals
 from models import FacedSurvivorState
 from waitingspinnerwidget import QtWaitingSpinner
 
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics, \
-    EliminationInfo
-from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper, addWidgets
+    EliminationInfo, CommonSurvivorInfo
+from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper, addWidgets, toResourceName, singleOrPlural
 
 
 class StatisticsWorker(QThread):
@@ -146,18 +147,55 @@ class StatisticsWindow(QDialog):
             mostCommonSurvivorLayout = QVBoxLayout()
             leastCommonSurvivorLayout = QVBoxLayout()
             eliminationInfoLayout = QVBoxLayout()
-            addSubLayouts(generalKillerStatsLayout, favouriteKillerLayout, mostCommonSurvivorLayout,
-                          leastCommonSurvivorLayout, eliminationInfoLayout)
+            layouts = [favouriteKillerLayout, mostCommonSurvivorLayout, leastCommonSurvivorLayout, eliminationInfoLayout]
+            widgets = [QWidget() for _ in layouts]
+            for l, w in zip(layouts, widgets):
+                w.setLayout(l)
+                w.setStyleSheet(".QWidget{border: 1px solid black;border-radius: 10px}")
+            addWidgets(generalKillerStatsLayout, *widgets)
             killerStatsLayout.addLayout(generalKillerStatsLayout)
+
             favouriteKillerLabel = QLabel(qtMakeBold("Favourite killer"))
             mostCommonSurvivorLabel = QLabel(qtMakeBold("Most common survivor"))
             leastCommonSurvivorLabel = QLabel(qtMakeBold("Least common survivor"))
             eliminationInfoLabel = QLabel(qtMakeBold("Total eliminations"))
-            for layout, label in zip([favouriteKillerLayout, mostCommonSurvivorLayout, leastCommonSurvivorLayout, eliminationInfoLayout],
-                                     [favouriteKillerLabel, mostCommonSurvivorLabel, leastCommonSurvivorLabel, eliminationInfoLabel]):
+            for layout, label in zip(layouts, [favouriteKillerLabel, mostCommonSurvivorLabel, leastCommonSurvivorLabel, eliminationInfoLabel]):
                 layout.addWidget(label)
                 layout.setAlignment(label, Qt.AlignCenter | Qt.AlignTop)
                 label.setStyleSheet("font-size: 18px")
+
+            def characterSubLayout(info, infoStr, characterExtractorFunc, nameExtractorFunc, iconsDict) -> QHBoxLayout:
+                character = characterExtractorFunc(info)
+                characterLayout = QHBoxLayout()
+                iconLabel = QLabel()
+                icon = iconsDict[toResourceName(nameExtractorFunc(character))]
+                icon = icon.scaled(icon.width()//2, icon.height()//2)
+                iconLabel.setPixmap(icon)
+                infoLabel = QLabel(qtMakeBold(infoStr))
+                infoLabel.setWordWrap(True)
+                infoLabel.setAlignment(Qt.AlignCenter)
+                characterLayout.addWidget(infoLabel)
+                characterLayout.addWidget(iconLabel)
+                characterLayout.setAlignment(iconLabel, Qt.AlignCenter)
+                return characterLayout
+
+            favouriteKillerInfo = killerStats.favouriteKillerInfo
+            favouriteKillerSubLayout = characterSubLayout(favouriteKillerInfo, f"{favouriteKillerInfo.gamesWithKiller:,} out of {favouriteKillerInfo.totalGames} {singleOrPlural(favouriteKillerInfo.totalGames, 'game')}",
+                                                          lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
+            favouriteKillerLayout.addLayout(favouriteKillerSubLayout)
+
+            survExtractor, survNameExtractor = lambda i: i.survivor, lambda s: s.survivorName
+            mostCommonInfo = killerStats.mostCommonSurvivorData
+            mostCommonSurvivorInfoStr = f"{mostCommonInfo.encounters:,} encountered across {mostCommonInfo.totalGames:,} {singleOrPlural(mostCommonInfo.totalGames, 'game')}"
+            mostCommonSurvivorSubLayout = characterSubLayout(mostCommonInfo, mostCommonSurvivorInfoStr,
+                                                             survExtractor, survNameExtractor, Globals.SURVIVOR_ICONS)
+            mostCommonSurvivorLayout.addLayout(mostCommonSurvivorSubLayout)
+
+            leastCommonInfo = killerStats.leastCommonSurvivorData
+            leastCommonSurvivorInfoStr = f"{leastCommonInfo.encounters:,} encountered across {leastCommonInfo.totalGames:,} {singleOrPlural(leastCommonInfo.totalGames, 'game')}"
+            leastCommonSurvivorSubLayout = characterSubLayout(killerStats.leastCommonSurvivorData, leastCommonSurvivorInfoStr,
+                                                              survExtractor, survNameExtractor, Globals.SURVIVOR_ICONS)
+            leastCommonSurvivorLayout.addLayout(leastCommonSurvivorSubLayout)
 
             sacrificesLabel = QLabel(qtMakeBold(f"Sacrifices: {killerStats.totalEliminationsInfo.sacrifices:,}"))
             killsLabel = QLabel(qtMakeBold(f"Kills: {killerStats.totalEliminationsInfo.kills:,}"))
