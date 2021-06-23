@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.__setupMenuBar()
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
+        self.statsWindow = None
 
 
         self.statusBar().showMessage("Ready", 5000)
@@ -341,6 +342,8 @@ class MainWindow(QMainWindow):
             killerMatches = s.query(KillerMatch).all()
             survivorMatches = s.query(SurvivorMatch).all()
         calc = StatisticsCalculator(killerMatches, survivorMatches, self.resources)
+        if self.statsWindow is not None:
+            del self.statsWindow
         self.statsWindow = StatisticsWindow(calc)
         self.statsWindow.setModal(True)
         self.statsWindow.exec_()
