@@ -267,6 +267,8 @@ class StatisticsCalculator(object):
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
         totalMapHistogram = pd.DataFrame(data=(totalMapHistogram[0] + totalMapHistogram[1]).astype(int), columns=['count'])
 
+        totalGamesWithMapPresent = totalMapHistogram['count'].sum()
+
         mostCommonMap: GameMap = totalMapHistogram.idxmax()[0] if not totalMapHistogram.empty else None
         leastCommonMap: GameMap = totalMapHistogram.idxmin()[0] if not totalMapHistogram.empty else None
 
@@ -283,10 +285,10 @@ class StatisticsCalculator(object):
         mostCommonRealmGames = realmsDict[mostCommonRealm] if len(realmsDict) > 0 else 0
         leastCommonRealmGames = realmsDict[leastCommonRealm] if len(realmsDict) > 0 else 0
 
-        mostCommonMapInfo = MapInfo(totalGames=totalGames, map=mostCommonMap, mapGames=mostCommonMapGames)
-        leastCommonMapInfo = MapInfo(totalGames=totalGames, map=leastCommonMap, mapGames=leastCommonMapGames)
-        mostCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=mostCommonRealm, realmGames=mostCommonRealmGames)
-        leastCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=leastCommonRealm, realmGames=leastCommonRealmGames)
+        mostCommonMapInfo = MapInfo(totalGames=totalGamesWithMapPresent, map=mostCommonMap, mapGames=mostCommonMapGames)
+        leastCommonMapInfo = MapInfo(totalGames=totalGamesWithMapPresent, map=leastCommonMap, mapGames=leastCommonMapGames)
+        mostCommonRealmInfo = MapRealmInfo(totalGames=totalGamesWithMapPresent, realm=mostCommonRealm, realmGames=mostCommonRealmGames)
+        leastCommonRealmInfo = MapRealmInfo(totalGames=totalGamesWithMapPresent, realm=leastCommonRealm, realmGames=leastCommonRealmGames)
 
         return GeneralMatchStatistics(averagePointsPerMatch=averagePoints, totalGames=totalGames, totalPoints=totalPoints,
                                       mostCommonMapData=mostCommonMapInfo, mostCommonMapRealmData=mostCommonRealmInfo,

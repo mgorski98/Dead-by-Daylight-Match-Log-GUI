@@ -32,7 +32,7 @@ class StatisticsWindow(QDialog):
 
     def __init__(self, calc: StatisticsCalculator, parent=None):
         super().__init__(parent=parent)
-        self.resize(1000, 840)
+        self.resize(1200, 840)
         self.setWindowTitle("Match statistics")
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.worker = StatisticsWorker(calc)
@@ -131,8 +131,6 @@ class StatisticsWindow(QDialog):
         else:
             killerStatsLayout = QGridLayout()
             killerStatsWidget.setLayout(killerStatsLayout)
-            leftSideLayout = QVBoxLayout()
-            plotLayout = QVBoxLayout()
             facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
             killerStatsLayout.addWidget(facedSurvivorsChartView)
 
@@ -160,6 +158,7 @@ class StatisticsWindow(QDialog):
                     maxVal = count
         categories = [survivor.survivorName for survivor in killerStats.facedSurvivorStatesHistogram.keys()]
         categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
         valueAxis.setRange(0, maxVal)
         barSeries = QBarSeries()
         for _set, _ in barSetPairs:
