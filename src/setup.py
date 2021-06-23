@@ -3,7 +3,7 @@ import sys
 
 base = "Win32GUI" if sys.platform=='win32' else None
 packages = ["sqlalchemy"]
-excluded = ["tkinter", "scipy", "notebook"]
+excluded = ["tkinter", "scipy", "notebook", "matplotlib"]
 build_exe_opts = {
     "packages": packages,
     "excludes": excluded
