@@ -255,6 +255,9 @@ class StatisticsWindow(QDialog):
         chartView = QChartView(chart)
         return chartView
 
+    def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
+        pass
+
     def __setupTotalStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         pass
 

@@ -134,6 +134,7 @@ class KillerMatchStatistics(MatchStatistics):
 class SurvivorMatchStatistics(MatchStatistics):
     gamesPlayedWithSurvivor: dict[Survivor, int]
     matchResultsHistogram: dict[SurvivorMatchResult, int]
+    facedKillerHistogram: dict[Killer, int]
     mostCommonItemType: ItemType
     mostCommonKillerData: CommonKillerInfo
     mostLethalKillerData: LethalKillerInfo
@@ -249,7 +250,7 @@ class StatisticsCalculator(object):
                                               matchResultsHistogram=matchResultsHistogram, mostCommonItemType=mostCommonItemType,
                                               mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo,
                                               leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo,
-                                              totalGames=self.survivorGamesDf.shape[0])
+                                              totalGames=self.survivorGamesDf.shape[0], facedKillerHistogram=facedKillerHistogramDict)
 
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
