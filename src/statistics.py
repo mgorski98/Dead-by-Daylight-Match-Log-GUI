@@ -76,7 +76,7 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.survivor.survivorName} ({self.encounters:,} {singleOrPlural(self.encounters, "game")} out of {self.totalGames:,})'
+        return f'{self.survivor.survivorName} ({self.encounters:,} {singleOrPlural(self.encounters, "encounter")} out of {self.totalGames:,} {singleOrPlural(self.totalGames, "game")})'
 
     def __repr__(self):
         return self.__str__()
