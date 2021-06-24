@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import sys
+
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
+from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout, \
-    QScrollArea, QFrame
+    QScrollArea, QFrame, QLineEdit, QSizePolicy, QLayout, QPushButton
 
 from globaldata import Globals
 from models import FacedSurvivorState
@@ -72,58 +75,34 @@ class StatisticsWindow(QDialog):
         self.layout().deleteLater()
         mainLayout = QGridLayout() #create a box for general stats, and below it - a tab widget with survivor and killer stats
         self.layout().destroyed.connect(lambda: self.setLayout(mainLayout))
-        generalStatsLayout = QVBoxLayout()
+
+        generalStatsLayout = self.__setupGeneralStatsLayout(generalStats)
         mainLayout.addLayout(generalStatsLayout, 0, 0, 1, 1)
         killerAndSurvivorStatsLayout = QVBoxLayout()
         mainLayout.addLayout(killerAndSurvivorStatsLayout, 1, 0, 3, 1)
         statsTabWidget = QTabWidget()
+
         killerStatsScroll = QScrollArea()
-        survivorStatsScroll = QScrollArea()
         killerStatsScroll.setWidgetResizable(True)
+        killerStatsScroll.setAutoFillBackground(True)
+
+        survivorStatsScroll = QScrollArea()
         survivorStatsScroll.setWidgetResizable(True)
+        survivorStatsScroll.setAutoFillBackground(True)
+
         killerStatsWidget = QWidget()
         survivorStatsWidget = QWidget()
         killerStatsScroll.setWidget(killerStatsWidget)
         survivorStatsScroll.setWidget(survivorStatsWidget)
+
         killerStatsScroll.setStyleSheet("background-color: white; border: 0px black;")
         survivorStatsScroll.setStyleSheet("background-color: white; border: 0px black;")
+
         killerAndSurvivorStatsLayout.setContentsMargins(0, 20, 0, 0)
         statsTabWidget.addTab(killerStatsScroll, "Killer statistics")
         statsTabWidget.addTab(survivorStatsScroll, "Survivor statistics")
+
         killerAndSurvivorStatsLayout.addWidget(statsTabWidget)
-        generalStatsLabel = QLabel(qtMakeBold("General match statistics"))
-        generalStatsLabel.setStyleSheet("font-size: 20px;")
-        generalStatsLabel.setAlignment(Qt.AlignCenter)
-        generalStatsLayout.addWidget(generalStatsLabel)
-        generalStatsLayout.setAlignment(generalStatsLabel, Qt.AlignCenter | Qt.AlignTop)
-        generalStatsLayout.addSpacerItem(QSpacerItem(0, 15))
-        margins = (25, 0, 25, 0)
-        mostCommonMapLayout, mostCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
-        leastCommonMapLayout, leastCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
-        totalPointsLayout = QHBoxLayout()
-        averagePointsLayout = QHBoxLayout()
-        gamesLayout = QHBoxLayout()
-        mostCommonMapInfoLabel, mostCommonMapLabel = QLabel(qtMakeBold("Most common map")), QLabel(qtMakeBold(str(generalStats.mostCommonMapData)))
-        mostCommonRealmInfoLabel, mostCommonRealmLabel = QLabel(qtMakeBold("Most common map realm")), QLabel(qtMakeBold(str(generalStats.mostCommonMapRealmData)))
-        leastCommonMapInfoLabel, leastCommonMapLabel = QLabel(qtMakeBold("Least common map")), QLabel(qtMakeBold(str(generalStats.leastCommonMapData)))
-        leastCommonRealmInfoLabel, leastCommonRealmLabel = QLabel(qtMakeBold("Least common map realm")), QLabel(qtMakeBold(str(generalStats.leastCommonMapRealmData)))
-        pointsLabel, totalPointsInfoLabel = QLabel(qtMakeBold(f"{generalStats.totalPoints:,}")), QLabel(qtMakeBold("Total points"))
-        avgPointsLabel, avgPointsInfoLabel = QLabel(qtMakeBold(f"{generalStats.averagePointsPerMatch:,}")), QLabel(qtMakeBold("Average points per match"))
-        gamesLabel, gamesInfoLabel = QLabel(qtMakeBold(f"{generalStats.totalGames:,}")), QLabel(qtMakeBold("Total matches played"))
-
-
-        self.__setStatSubLayout(mostCommonMapLayout, mostCommonMapInfoLabel, mostCommonMapLabel, margins)
-        self.__setStatSubLayout(mostCommonRealmLayout, mostCommonRealmInfoLabel, mostCommonRealmLabel, margins)
-        self.__setStatSubLayout(leastCommonMapLayout, leastCommonMapInfoLabel, leastCommonMapLabel, margins)
-        self.__setStatSubLayout(leastCommonRealmLayout, leastCommonRealmInfoLabel, leastCommonRealmLabel, margins)
-
-        self.__setStatSubLayout(totalPointsLayout, totalPointsInfoLabel, pointsLabel, margins)
-        self.__setStatSubLayout(averagePointsLayout, avgPointsInfoLabel, avgPointsLabel, margins)
-        self.__setStatSubLayout(gamesLayout, gamesInfoLabel, gamesLabel, margins)
-
-        sublayouts = [gamesLayout, totalPointsLayout, averagePointsLayout,
-                      mostCommonMapLayout, mostCommonRealmLayout, leastCommonMapLayout, leastCommonRealmLayout]
-        addSubLayouts(generalStatsLayout, *sublayouts)
 
         #killer stats setup
         if killerStats is None:
@@ -205,6 +184,10 @@ class StatisticsWindow(QDialog):
 
             facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
             killerStatsLayout.addWidget(facedSurvivorsChartView)
+            facedSurvivorsChartView.setMinimumHeight(600)
+            killerGamesChartView = self.__setupKillerGamesChart(killerStats)
+            killerStatsLayout.addWidget(killerGamesChartView)
+            killerGamesChartView.setMinimumHeight(600)
 
         #survivor stats setup
         if survivorStats is None:
@@ -253,6 +236,8 @@ class StatisticsWindow(QDialog):
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignRight)
         chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
 
     def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
@@ -264,8 +249,78 @@ class StatisticsWindow(QDialog):
     def __setupEliminationsChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         pass
 
+    def __setupGeneralStatsLayout(self, stats: GeneralMatchStatistics) -> QLayout:
+        generalStatsLayout = QVBoxLayout()
+
+        generalStatsLabel = QLabel(qtMakeBold("General match statistics"))
+        generalStatsLabel.setStyleSheet("font-size: 20px;")
+        generalStatsLabel.setAlignment(Qt.AlignCenter)
+
+        generalStatsLayout.addWidget(generalStatsLabel)
+        generalStatsLayout.setAlignment(generalStatsLabel, Qt.AlignCenter | Qt.AlignTop)
+        generalStatsLayout.addSpacerItem(QSpacerItem(0, 15))
+
+        margins = (25, 0, 25, 0)
+        mostCommonMapLayout, mostCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
+        leastCommonMapLayout, leastCommonRealmLayout = QHBoxLayout(), QHBoxLayout()
+        totalPointsLayout = QHBoxLayout()
+        averagePointsLayout = QHBoxLayout()
+        gamesLayout = QHBoxLayout()
+        mostCommonMapInfoLabel, mostCommonMapLabel = QLabel(qtMakeBold("Most common map")), QLabel(
+            qtMakeBold(str(stats.mostCommonMapData)))
+        mostCommonRealmInfoLabel, mostCommonRealmLabel = QLabel(qtMakeBold("Most common map realm")), QLabel(
+            qtMakeBold(str(stats.mostCommonMapRealmData)))
+        leastCommonMapInfoLabel, leastCommonMapLabel = QLabel(qtMakeBold("Least common map")), QLabel(
+            qtMakeBold(str(stats.leastCommonMapData)))
+        leastCommonRealmInfoLabel, leastCommonRealmLabel = QLabel(qtMakeBold("Least common map realm")), QLabel(
+            qtMakeBold(str(stats.leastCommonMapRealmData)))
+        pointsLabel, totalPointsInfoLabel = QLabel(qtMakeBold(f"{stats.totalPoints:,}")), QLabel(
+            qtMakeBold("Total points"))
+        avgPointsLabel, avgPointsInfoLabel = QLabel(qtMakeBold(f"{stats.averagePointsPerMatch:,}")), QLabel(
+            qtMakeBold("Average points per match"))
+        gamesLabel, gamesInfoLabel = QLabel(qtMakeBold(f"{stats.totalGames:,}")), QLabel(
+            qtMakeBold("Total matches played"))
+
+        self.__setStatSubLayout(mostCommonMapLayout, mostCommonMapInfoLabel, mostCommonMapLabel, margins)
+        self.__setStatSubLayout(mostCommonRealmLayout, mostCommonRealmInfoLabel, mostCommonRealmLabel, margins)
+        self.__setStatSubLayout(leastCommonMapLayout, leastCommonMapInfoLabel, leastCommonMapLabel, margins)
+        self.__setStatSubLayout(leastCommonRealmLayout, leastCommonRealmInfoLabel, leastCommonRealmLabel, margins)
+
+        self.__setStatSubLayout(totalPointsLayout, totalPointsInfoLabel, pointsLabel, margins)
+        self.__setStatSubLayout(averagePointsLayout, avgPointsInfoLabel, avgPointsLabel, margins)
+        self.__setStatSubLayout(gamesLayout, gamesInfoLabel, gamesLabel, margins)
+
+        sublayouts = [gamesLayout, totalPointsLayout, averagePointsLayout,
+                      mostCommonMapLayout, mostCommonRealmLayout, leastCommonMapLayout, leastCommonRealmLayout]
+        addSubLayouts(generalStatsLayout, *sublayouts)
+        return generalStatsLayout
+
     def __setupKillerGamesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
-        pass
+        gamesHistogram = killerStats.gamesPlayedWithKiller
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        valueAxis.setRange(0, max(gamesHistogram.values()))
+        barset = QBarSet("Games with certain killer")
+        for k in gamesHistogram.keys():
+            barset.append(gamesHistogram[k])
+        barSeries = QBarSeries()
+        barSeries.append(barset)
+        categories = [killer.killerAlias for killer in gamesHistogram.keys()]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        chart = QChart()
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        chart.addSeries(barSeries)
+        chart.setTitle("Games played with each killer")
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
 
     def __setupTotalEliminationsInfo(self, eliminationInfo: EliminationInfo) -> QVBoxLayout:
         layout = QVBoxLayout()
