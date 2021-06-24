@@ -252,7 +252,31 @@ class StatisticsWindow(QDialog):
         return chartView
 
     def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
-        pass
+        facedKillerHist = survivorStats.facedKillerHistogram
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categories = [k.killerAlias for k in facedKillerHist.keys()]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        valueAxis.setRange(0, max(facedKillerHist.values()))
+        barset = QBarSet("Faced killers")
+        for k in facedKillerHist.keys():
+            barset.append(facedKillerHist[k])
+        barSeries = QBarSeries()
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        barSeries.append(barset)
+        chart = QChart()
+        chart.addSeries(barSeries)
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.setTitle(qtMakeBold('Faced killers frequency'))
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
 
     def __setupTotalStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
