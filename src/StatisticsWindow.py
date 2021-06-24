@@ -76,6 +76,8 @@ class StatisticsWindow(QDialog):
         mainLayout = QGridLayout() #create a box for general stats, and below it - a tab widget with survivor and killer stats
         self.layout().destroyed.connect(lambda: self.setLayout(mainLayout))
 
+        minChartHeight = 600
+
         generalStatsLayout = self.__setupGeneralStatsLayout(generalStats)
         mainLayout.addLayout(generalStatsLayout, 0, 0, 1, 1)
         killerAndSurvivorStatsLayout = QVBoxLayout()
@@ -184,10 +186,13 @@ class StatisticsWindow(QDialog):
 
             facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
             killerStatsLayout.addWidget(facedSurvivorsChartView)
-            facedSurvivorsChartView.setMinimumHeight(600)
+            facedSurvivorsChartView.setMinimumHeight(minChartHeight)
             killerGamesChartView = self.__setupKillerGamesChart(killerStats)
             killerStatsLayout.addWidget(killerGamesChartView)
-            killerGamesChartView.setMinimumHeight(600)
+            killerGamesChartView.setMinimumHeight(minChartHeight)
+            totalStatesChartView = self.__setupTotalStatesChart(killerStats)
+            killerStatsLayout.addWidget(totalStatesChartView)
+            totalStatesChartView.setMinimumHeight(minChartHeight)
 
         #survivor stats setup
         if survivorStats is None:
@@ -244,7 +249,31 @@ class StatisticsWindow(QDialog):
         pass
 
     def __setupTotalStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
-        pass
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categories = [' '.join(splitUpper(state.name)) for state in FacedSurvivorState]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        barset = QBarSet("Survivor state")
+        valueAxis.setRange(0, max(killerStats.totalSurvivorStatesHistogram.values()))
+        for k in FacedSurvivorState:
+            barset.append(killerStats.totalSurvivorStatesHistogram[k])
+        barSeries = QBarSeries()
+        barSeries.append(barset)
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        chart = QChart()
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.addSeries(barSeries)
+        chart.setTitle("Total survivor states")
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
+
 
     def __setupEliminationsChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         pass
