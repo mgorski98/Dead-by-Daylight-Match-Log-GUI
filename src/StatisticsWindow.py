@@ -196,6 +196,9 @@ class StatisticsWindow(QDialog):
             totalKillerEliminationsChartView = self.__setupEliminationsChart(killerStats)
             killerStatsLayout.addWidget(totalKillerEliminationsChartView)
             totalKillerEliminationsChartView.setMinimumHeight(minChartHeight)
+            averageKillsChart = self.__setupAverageKillsChart(killerStats)
+            killerStatsLayout.addWidget(averageKillsChart)
+            averageKillsChart.setMinimumHeight(minChartHeight)
 
         #survivor stats setup
         if survivorStats is None:
@@ -397,3 +400,30 @@ class StatisticsWindow(QDialog):
         self.__setStatSubLayout(dcsLayout, dcsInfoLabel, dcsLabel, margins)
         addSubLayouts(layout, sacrificesLayout, killsLayout, dcsLayout)
         return layout
+
+    def __setupAverageKillsChart(self, killerStats: KillerMatchStatistics):
+        histogram = killerStats.averageKillerKillsPerMatch
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categories = [k.killerAlias for k in histogram.keys()]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        valueAxis.setRange(0, max(histogram.values()))
+        barset = QBarSet("Average kills per match")
+        for k in histogram.keys():
+            barset.append(histogram[k])
+        barSeries = QBarSeries()
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        barSeries.append(barset)
+        chart = QChart()
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.addSeries(barSeries)
+        chart.setTitle(qtMakeBold("Average kills per match by killer"))
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
