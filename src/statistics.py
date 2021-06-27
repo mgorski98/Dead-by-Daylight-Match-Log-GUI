@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Iterable, Optional
 
+import pickle
 import numpy as np
 import pandas as pd
 
@@ -306,12 +307,17 @@ def exportAsXML(statistics: MatchStatistics, destinationPath: str):
 def exportAsYAML(statistics: MatchStatistics, destinationPath: str):
     pass
 
+def exportAsBinary(statistics: MatchStatistics, destinationPath: str):
+    with open(destinationPath, mode='wb') as f:
+        pickle.dump(statistics, f)
+
 class StatisticsExporter(object):
 
     __export_types__ : dict[str, Callable[[object, str], None]] = {
         "xml": exportAsXML,
         "json": exportAsJson,
-        "yaml": exportAsYAML
+        "yaml": exportAsYAML,
+        "bin": exportAsBinary
     }
 
     def __init__(self, exportType: str):
@@ -325,3 +331,5 @@ class StatisticsExporter(object):
             raise ValueError("Export function handler is None")
         self.exportHandler(statistics, destinationPath)
 
+class StatisticsImporter(object):
+    pass
