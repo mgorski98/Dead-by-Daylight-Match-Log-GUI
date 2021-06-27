@@ -106,6 +106,21 @@ class StatisticsWindow(QDialog):
 
         killerAndSurvivorStatsLayout.addWidget(statsTabWidget)
 
+        def characterSubLayout(info, infoStr, characterExtractorFunc, nameExtractorFunc, iconsDict) -> QHBoxLayout:
+            character = characterExtractorFunc(info)
+            characterLayout = QHBoxLayout()
+            iconLabel = QLabel()
+            icon = iconsDict[toResourceName(nameExtractorFunc(character))]
+            icon = icon.scaled(icon.width() // 2, icon.height() // 2)
+            iconLabel.setPixmap(icon)
+            infoLabel = QLabel(qtMakeBold(infoStr))
+            infoLabel.setWordWrap(True)
+            infoLabel.setAlignment(Qt.AlignCenter)
+            characterLayout.addWidget(infoLabel)
+            characterLayout.addWidget(iconLabel)
+            characterLayout.setAlignment(iconLabel, Qt.AlignCenter)
+            return characterLayout
+
         #killer stats setup
         if killerStats is None:
             l = QLabel(qtMakeBold("Nothing to see here. No killer matches present."))
@@ -145,21 +160,6 @@ class StatisticsWindow(QDialog):
                 layout.setAlignment(label, Qt.AlignCenter | Qt.AlignTop)
                 label.setStyleSheet("font-size: 18px")
 
-            def characterSubLayout(info, infoStr, characterExtractorFunc, nameExtractorFunc, iconsDict) -> QHBoxLayout:
-                character = characterExtractorFunc(info)
-                characterLayout = QHBoxLayout()
-                iconLabel = QLabel()
-                icon = iconsDict[toResourceName(nameExtractorFunc(character))]
-                icon = icon.scaled(icon.width()//2, icon.height()//2)
-                iconLabel.setPixmap(icon)
-                infoLabel = QLabel(qtMakeBold(infoStr))
-                infoLabel.setWordWrap(True)
-                infoLabel.setAlignment(Qt.AlignCenter)
-                characterLayout.addWidget(infoLabel)
-                characterLayout.addWidget(iconLabel)
-                characterLayout.setAlignment(iconLabel, Qt.AlignCenter)
-                return characterLayout
-
             favouriteKillerInfo = killerStats.favouriteKillerInfo
             favouriteKillerSubLayout = characterSubLayout(favouriteKillerInfo, f"{favouriteKillerInfo.gamesWithKiller:,} out of {favouriteKillerInfo.totalGames} {singleOrPlural(favouriteKillerInfo.totalGames, 'game')}",
                                                           lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
@@ -167,13 +167,13 @@ class StatisticsWindow(QDialog):
 
             survExtractor, survNameExtractor = lambda i: i.survivor, lambda s: s.survivorName
             mostCommonInfo = killerStats.mostCommonSurvivorData
-            mostCommonSurvivorInfoStr = f"{mostCommonInfo.encounters:,} encountered across {mostCommonInfo.totalGames:,} {singleOrPlural(mostCommonInfo.totalGames, 'game')}"
+            mostCommonSurvivorInfoStr = f"{mostCommonInfo.encounters:,} {singleOrPlural(mostCommonInfo.encounters, 'encounter')} across {mostCommonInfo.totalGames:,} {singleOrPlural(mostCommonInfo.totalGames, 'game')}"
             mostCommonSurvivorSubLayout = characterSubLayout(mostCommonInfo, mostCommonSurvivorInfoStr,
                                                              survExtractor, survNameExtractor, Globals.SURVIVOR_ICONS)
             mostCommonSurvivorLayout.addLayout(mostCommonSurvivorSubLayout)
 
             leastCommonInfo = killerStats.leastCommonSurvivorData
-            leastCommonSurvivorInfoStr = f"{leastCommonInfo.encounters:,} encountered across {leastCommonInfo.totalGames:,} {singleOrPlural(leastCommonInfo.totalGames, 'game')}"
+            leastCommonSurvivorInfoStr = f"{leastCommonInfo.encounters:,} {singleOrPlural(leastCommonInfo.encounters, 'encounter')} across {leastCommonInfo.totalGames:,} {singleOrPlural(leastCommonInfo.totalGames, 'game')}"
             leastCommonSurvivorSubLayout = characterSubLayout(killerStats.leastCommonSurvivorData, leastCommonSurvivorInfoStr,
                                                               survExtractor, survNameExtractor, Globals.SURVIVOR_ICONS)
             leastCommonSurvivorLayout.addLayout(leastCommonSurvivorSubLayout)
@@ -187,15 +187,19 @@ class StatisticsWindow(QDialog):
             facedSurvivorsChartView = self.__setupFacedSurvivorStatesChart(killerStats)
             killerStatsLayout.addWidget(facedSurvivorsChartView)
             facedSurvivorsChartView.setMinimumHeight(minChartHeight)
+
             killerGamesChartView = self.__setupKillerGamesChart(killerStats)
             killerStatsLayout.addWidget(killerGamesChartView)
             killerGamesChartView.setMinimumHeight(minChartHeight)
+
             totalStatesChartView = self.__setupTotalStatesChart(killerStats)
             killerStatsLayout.addWidget(totalStatesChartView)
             totalStatesChartView.setMinimumHeight(minChartHeight)
+
             totalKillerEliminationsChartView = self.__setupEliminationsChart(killerStats)
             killerStatsLayout.addWidget(totalKillerEliminationsChartView)
             totalKillerEliminationsChartView.setMinimumHeight(minChartHeight)
+
             averageKillsChart = self.__setupAverageKillsChart(killerStats)
             killerStatsLayout.addWidget(averageKillsChart)
             averageKillsChart.setMinimumHeight(minChartHeight)
@@ -208,7 +212,61 @@ class StatisticsWindow(QDialog):
             layout.addWidget(l)
             layout.setAlignment(l, Qt.AlignCenter)
         else:
-            pass
+            generalSurvivorStatsLabel = QLabel(qtMakeBold("General survivor match statistics"))
+            generalSurvivorStatsLabel.setStyleSheet("font-size: 18px;")
+
+            survivorStatsLayout = QVBoxLayout()
+            survivorStatsLayout.addWidget(generalSurvivorStatsLabel)
+            survivorStatsLayout.addSpacerItem(QSpacerItem(0, 15))
+            survivorStatsLayout.setAlignment(generalSurvivorStatsLabel, Qt.AlignCenter | Qt.AlignTop)
+            survivorStatsWidget.setLayout(survivorStatsLayout)
+
+            generalSurvivorStatsLayout = QHBoxLayout()
+            survivorStatsLayout.addLayout(generalSurvivorStatsLayout)
+
+            mostCommonKillerLayout = QVBoxLayout()
+            mostLethalKillerLayout = QVBoxLayout()
+            leastCommonKillerLayout = QVBoxLayout()
+            leastLethalKillerLayout = QVBoxLayout()
+            mostCommonItemTypeLayout = QVBoxLayout()
+
+            layouts = [mostCommonKillerLayout, leastCommonKillerLayout, mostLethalKillerLayout, leastLethalKillerLayout, mostCommonItemTypeLayout]
+            widgets = [QWidget() for _ in layouts]
+            for l, w in zip(layouts, widgets):
+                w.setLayout(l)
+                w.setStyleSheet(".QWidget{border: 1px solid black;border-radius: 10px}")
+
+            addWidgets(generalSurvivorStatsLayout, *widgets)
+
+            labels = [
+                QLabel(qtMakeBold("Most common killer")),
+                QLabel(qtMakeBold("Least common killer")),
+                QLabel(qtMakeBold("Most lethal killer")),
+                QLabel(qtMakeBold("Least lethal killer")),
+                QLabel(qtMakeBold("Most common item type"))
+            ]
+
+            for _layout, label in zip(layouts, labels):
+                _layout.addWidget(label)
+                _layout.setAlignment(label, Qt.AlignTop | Qt.AlignCenter)
+                label.setStyleSheet("font-size: 18px")
+
+            mostCommonKillerInfoStr = f"{survivorStats.mostCommonKillerData.encounters} {singleOrPlural(survivorStats.mostCommonKillerData.encounters, 'encounter')} across {survivorStats.mostCommonKillerData.totalGames} {singleOrPlural(survivorStats.mostCommonKillerData.totalGames, 'game')}"
+            mostCommonKillerSubLayout = characterSubLayout(survivorStats.mostCommonKillerData, mostCommonKillerInfoStr,
+                                                           lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
+            mostCommonKillerLayout.addLayout(mostCommonKillerSubLayout)
+            leastCommonKillerInfoStr = f"{survivorStats.leastCommonKillerData.encounters} {singleOrPlural(survivorStats.leastCommonKillerData.encounters, 'encounter')} across {survivorStats.leastCommonKillerData.totalGames} {singleOrPlural(survivorStats.leastCommonKillerData.totalGames, 'game')}"
+            leastCommonKillerSubLayout = characterSubLayout(survivorStats.leastCommonKillerData, leastCommonKillerInfoStr,
+                                                            lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
+            leastCommonKillerLayout.addLayout(leastCommonKillerSubLayout)
+            mostLethalKillerStr = f""
+            mostLethalKillerSubLayout = characterSubLayout(survivorStats.mostLethalKillerData, mostLethalKillerStr,
+                                                           lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
+            mostCommonKillerLayout.addLayout(mostLethalKillerSubLayout)
+            leastLethalKillerStr = f""
+            leastLethalKillerSubLayout = characterSubLayout(survivorStats.leastLethalKillerData, leastLethalKillerStr,
+                                                            lambda i: i.killer, lambda k: k.killerAlias, Globals.KILLER_ICONS)
+            leastLethalKillerLayout.addLayout(leastLethalKillerSubLayout)
 
     def __setStatSubLayout(self, layout: QHBoxLayout, leftLabel: QLabel, rightLabel: QLabel, margins: tuple[int, int, int, int]):
         layout.addWidget(leftLabel)
