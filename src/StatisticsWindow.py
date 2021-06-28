@@ -158,11 +158,14 @@ class StatisticsWindow(QDialog):
             addWidgets(generalKillerStatsLayout, *widgets)
             killerStatsLayout.addLayout(generalKillerStatsLayout)
 
-            favouriteKillerLabel = QLabel(qtMakeBold("Favourite killer"))
-            mostCommonSurvivorLabel = QLabel(qtMakeBold("Most common survivor"))
-            leastCommonSurvivorLabel = QLabel(qtMakeBold("Least common survivor"))
-            eliminationInfoLabel = QLabel(qtMakeBold("Total eliminations"))
-            for layout, label in zip(layouts, [favouriteKillerLabel, mostCommonSurvivorLabel, leastCommonSurvivorLabel, eliminationInfoLabel]):
+            labels = [
+                QLabel(qtMakeBold("Favourite killer")),
+                QLabel(qtMakeBold("Most common survivor")),
+                QLabel(qtMakeBold("Least common survivor")),
+                QLabel(qtMakeBold("Total eliminations"))
+            ]
+
+            for layout, label in zip(layouts, labels):
                 layout.addWidget(label)
                 layout.setAlignment(label, Qt.AlignCenter | Qt.AlignTop)
                 label.setStyleSheet("font-size: 18px")
@@ -258,28 +261,40 @@ class StatisticsWindow(QDialog):
                 _layout.setAlignment(label, Qt.AlignTop | Qt.AlignCenter)
                 label.setStyleSheet("font-size: 18px")
 
-            mostCommonKillerInfoStr = f"{survivorStats.mostCommonKillerData.encounters} {singleOrPlural(survivorStats.mostCommonKillerData.encounters, 'encounter')} across {survivorStats.mostCommonKillerData.totalGames} {singleOrPlural(survivorStats.mostCommonKillerData.totalGames, 'game')}"
-            mostCommonKillerSubLayout = characterSubLayout(survivorStats.mostCommonKillerData, [mostCommonKillerInfoStr],
+            mostCommonInfo = survivorStats.mostCommonKillerData
+            mostCommonKillerInfoStr = f"{mostCommonInfo.encounters} {singleOrPlural(mostCommonInfo.encounters, 'encounter')} across {mostCommonInfo.totalGames} {singleOrPlural(mostCommonInfo.totalGames, 'game')}"
+            mostCommonKillerSubLayout = characterSubLayout(mostCommonInfo, [mostCommonKillerInfoStr],
                                                            killerInfoExtractor, killerNameExtractor, Globals.KILLER_ICONS)
             mostCommonKillerLayout.addLayout(mostCommonKillerSubLayout)
-            leastCommonKillerInfoStr = f"{survivorStats.leastCommonKillerData.encounters} {singleOrPlural(survivorStats.leastCommonKillerData.encounters, 'encounter')} across {survivorStats.leastCommonKillerData.totalGames} {singleOrPlural(survivorStats.leastCommonKillerData.totalGames, 'game')}"
-            leastCommonKillerSubLayout = characterSubLayout(survivorStats.leastCommonKillerData, [leastCommonKillerInfoStr],
+
+            leastCommonInfo = survivorStats.leastCommonKillerData
+            leastCommonKillerInfoStr = f"{leastCommonInfo.encounters} {singleOrPlural(leastCommonInfo.encounters, 'encounter')} across {leastCommonInfo.totalGames} {singleOrPlural(leastCommonInfo.totalGames, 'game')}"
+            leastCommonKillerSubLayout = characterSubLayout(leastCommonInfo, [leastCommonKillerInfoStr],
                                                             killerInfoExtractor, killerNameExtractor, Globals.KILLER_ICONS)
             leastCommonKillerLayout.addLayout(leastCommonKillerSubLayout)
+
+            mostLethalInfo = survivorStats.mostLethalKillerData
             mostLethalKillerInfoStrings = (
-                f"{survivorStats.mostLethalKillerData.deathsCount} {singleOrPlural(survivorStats.mostLethalKillerData.deathsCount, 'death')} out of {survivorStats.mostLethalKillerData.totalGames} {singleOrPlural(survivorStats.mostLethalKillerData.totalGames, 'game')}",
-                f"Kill ratio: {survivorStats.mostLethalKillerData.killRatio:.2}"
+                f"{mostLethalInfo.deathsCount} {singleOrPlural(mostLethalInfo.deathsCount, 'death')} out of {mostLethalInfo.totalGames} {singleOrPlural(mostLethalInfo.totalGames, 'game')}",
+                f"Kill ratio: {mostLethalInfo.killRatio:.2}"
             )
-            mostLethalKillerSubLayout = characterSubLayout(survivorStats.mostLethalKillerData, mostLethalKillerInfoStrings,
+            mostLethalKillerSubLayout = characterSubLayout(mostLethalInfo, mostLethalKillerInfoStrings,
                                                            killerInfoExtractor, killerNameExtractor, Globals.KILLER_ICONS)
             mostLethalKillerLayout.addLayout(mostLethalKillerSubLayout)
+
+            leastLethalInfo = survivorStats.leastLethalKillerData
             leastLethalKillerInfoStrings = (
-                f"{survivorStats.leastLethalKillerData.deathsCount} {singleOrPlural(survivorStats.leastLethalKillerData.deathsCount, 'death')} out of {survivorStats.leastLethalKillerData.totalGames} {singleOrPlural(survivorStats.leastLethalKillerData.totalGames, 'game')}",
-                f"Kill ratio: {survivorStats.leastLethalKillerData.killRatio:.2}"
+                f"{leastLethalInfo.deathsCount} {singleOrPlural(leastLethalInfo.deathsCount, 'death')} out of {leastLethalInfo.totalGames} {singleOrPlural(leastLethalInfo.totalGames, 'game')}",
+                f"Kill ratio: {leastLethalInfo.killRatio:.2}"
             )
-            leastLethalKillerSubLayout = characterSubLayout(survivorStats.leastLethalKillerData, leastLethalKillerInfoStrings,
+            leastLethalKillerSubLayout = characterSubLayout(leastLethalInfo, leastLethalKillerInfoStrings,
                                                             killerInfoExtractor, killerNameExtractor, Globals.KILLER_ICONS)
             leastLethalKillerLayout.addLayout(leastLethalKillerSubLayout)
+
+            itemTypeInfo = survivorStats.mostCommonItemTypeData
+            mostCommonItemTypeLabel = QLabel()
+            mostCommonItemTypeIconLabel = QLabel()
+            addWidgets(mostCommonItemTypeLayout, mostCommonItemTypeLabel, mostCommonItemTypeIconLabel)
 
     def __setStatSubLayout(self, layout: QHBoxLayout, leftLabel: QLabel, rightLabel: QLabel, margins: tuple[int, int, int, int]):
         layout.addWidget(leftLabel)

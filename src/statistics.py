@@ -107,6 +107,12 @@ class MapRealmInfo(object):
         return self.__str__()
 
 @dataclass(frozen=True)
+class ItemTypeInfo(object):
+    itemType: ItemType
+    gamesWithItemType: int
+    totalGames: int
+
+@dataclass(frozen=True)
 class MatchStatistics(ABC):
     averagePointsPerMatch: int
     totalGames: int
@@ -136,7 +142,7 @@ class SurvivorMatchStatistics(MatchStatistics):
     gamesPlayedWithSurvivor: dict[Survivor, int]
     matchResultsHistogram: dict[SurvivorMatchResult, int]
     facedKillerHistogram: dict[Killer, int]
-    mostCommonItemType: ItemType
+    mostCommonItemTypeData: ItemTypeInfo
     mostCommonKillerData: CommonKillerInfo
     mostLethalKillerData: LethalKillerInfo
     leastCommonKillerData: CommonKillerInfo
@@ -223,7 +229,12 @@ class StatisticsCalculator(object):
         averagePoints = self.survivorGamesDf['points'].sum() // self.survivorGamesDf.shape[0]
         mostCommonKiller = facedKillerHistogram.idxmax()
         leastCommonKiller = facedKillerHistogram.idxmin()
-        mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
+        itemsHistogram = self.survivorGamesDf.groupby('item', sort=False).size()
+        itemTypesHistogram = defaultdict(int)
+        for index, count in itemsHistogram.iteritems():
+            itemTypesHistogram[index.itemType] += count
+        mostCommonItemType = max(itemTypesHistogram, key=itemTypesHistogram.get)
+        mostCommonItemTypeInfo = ItemTypeInfo(itemType=mostCommonItemType, totalGames=self.survivorGamesDf.shape[0], gamesWithItemType=itemTypesHistogram[mostCommonItemType])
         facedKillerMatchResults = self.survivorGamesDf.groupby(["faced killer", "match result"], sort=False).size()
         lossResults = (SurvivorMatchResult.Sacrificed, SurvivorMatchResult.Killed, SurvivorMatchResult.Camped,
                        SurvivorMatchResult.Dead, SurvivorMatchResult.Tunnelled)
@@ -248,7 +259,7 @@ class StatisticsCalculator(object):
                                                  encounters=facedKillerHistogramDict[leastCommonKiller],
                                                  totalGames=self.survivorGamesDf.shape[0])
         return SurvivorMatchStatistics(gamesPlayedWithSurvivor=survivorGamesHistogram, averagePointsPerMatch=averagePoints,
-                                              matchResultsHistogram=matchResultsHistogram, mostCommonItemType=mostCommonItemType,
+                                              matchResultsHistogram=matchResultsHistogram, mostCommonItemTypeData=mostCommonItemTypeInfo,
                                               mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo,
                                               leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo,
                                               totalGames=self.survivorGamesDf.shape[0], facedKillerHistogram=facedKillerHistogramDict)
