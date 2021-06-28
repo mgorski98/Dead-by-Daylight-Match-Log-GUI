@@ -112,6 +112,12 @@ class ItemTypeInfo(object):
     gamesWithItemType: int
     totalGames: int
 
+    def __str__(self):
+        return f'{self.itemType.name}, chosen {self.gamesWithItemType:,} {singleOrPlural(self.gamesWithItemType, "time")} out of {self.totalGames:,} {singleOrPlural(self.totalGames, "game")}'
+
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen=True)
 class MatchStatistics(ABC):
     averagePointsPerMatch: int

@@ -4,7 +4,7 @@ import sys
 
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
-from PyQt5.QtGui import QPainter
+from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout, \
     QScrollArea, QFrame, QLineEdit, QSizePolicy, QLayout, QPushButton
 
@@ -40,6 +40,7 @@ class StatisticsWindow(QDialog):
         self.resize(1200, 840)
         self.setWindowTitle("Match statistics")
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
+        self.resources = calc.resources
         self.worker = StatisticsWorker(calc)
         self.worker.calculationFinished.connect(self.__setupUIForStatistics)
         self.worker.finished.connect(self.enableCloseButton)
@@ -291,10 +292,16 @@ class StatisticsWindow(QDialog):
                                                             killerInfoExtractor, killerNameExtractor, Globals.KILLER_ICONS)
             leastLethalKillerLayout.addLayout(leastLethalKillerSubLayout)
 
+            itemTypeSubLayout = QHBoxLayout()
             itemTypeInfo = survivorStats.mostCommonItemTypeData
-            mostCommonItemTypeLabel = QLabel()
+            mostCommonItemTypeLabel = QLabel(qtMakeBold(str(itemTypeInfo)))
+            mostCommonItemTypeLabel.setWordWrap(True)
             mostCommonItemTypeIconLabel = QLabel()
-            addWidgets(mostCommonItemTypeLayout, mostCommonItemTypeLabel, mostCommonItemTypeIconLabel)
+            itemTypeSubLayout.addWidget(mostCommonItemTypeLabel)
+            itemTypeSubLayout.addWidget(mostCommonItemTypeIconLabel)
+            item = next(x for x in self.resources.items if x.itemType == itemTypeInfo.itemType)
+            mostCommonItemTypeIconLabel.setPixmap(Globals.ITEM_ICONS[toResourceName(item.itemName)])
+            mostCommonItemTypeLayout.addLayout(itemTypeSubLayout)
 
     def __setStatSubLayout(self, layout: QHBoxLayout, leftLabel: QLabel, rightLabel: QLabel, margins: tuple[int, int, int, int]):
         layout.addWidget(leftLabel)
