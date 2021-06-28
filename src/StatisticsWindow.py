@@ -544,3 +544,12 @@ class StatisticsWindow(QDialog):
         chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
+
+    def __setupSurvivorGamesChart(self, survivorStats: SurvivorMatchStatistics):
+        pass
+
+    def __setupMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
+        pass
+
+    def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics):
+        pass
