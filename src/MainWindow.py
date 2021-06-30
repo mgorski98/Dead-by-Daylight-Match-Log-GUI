@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
-        updateAction.triggered.connect(self.__updateResources)
+        updateAction.triggered.connect(lambda: self.__updateResources())
         loadLogAction = QAction('Load match log data', self)
         loadLogAction.setShortcut(QKeySequence("Ctrl+O"))
         loadLogAction.triggered.connect(self.__loadMatchLogs)

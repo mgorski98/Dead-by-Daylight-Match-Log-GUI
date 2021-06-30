@@ -303,6 +303,14 @@ class StatisticsWindow(QDialog):
             mostCommonItemTypeIconLabel.setPixmap(Globals.ITEM_ICONS[toResourceName(item.itemName)])
             mostCommonItemTypeLayout.addLayout(itemTypeSubLayout)
 
+            survivorGamesChart = self.__setupSurvivorGamesChart(survivorStats)
+            survivorGamesChart.setMinimumHeight(minChartHeight)
+            survivorStatsLayout.addWidget(survivorGamesChart)
+
+            facedKillersChart = self.__setupFacedKillerHistogramChart(survivorStats)
+            facedKillersChart.setMinimumHeight(minChartHeight)
+            survivorStatsLayout.addWidget(facedKillersChart)
+
     def __setStatSubLayout(self, layout: QHBoxLayout, leftLabel: QLabel, rightLabel: QLabel, margins: tuple[int, int, int, int]):
         layout.addWidget(leftLabel)
         layout.addWidget(rightLabel)
@@ -344,33 +352,6 @@ class StatisticsWindow(QDialog):
         chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
 
-    def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
-        facedKillerHist = survivorStats.facedKillerHistogram
-        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
-        categories = [k.killerAlias for k in facedKillerHist.keys()]
-        categoryAxis.append(categories)
-        categoryAxis.setLabelsAngle(-90)
-        valueAxis.setRange(0, max(facedKillerHist.values()))
-        barset = QBarSet("Faced killers")
-        for k in facedKillerHist.keys():
-            barset.append(facedKillerHist[k])
-        barSeries = QBarSeries()
-        barSeries.attachAxis(categoryAxis)
-        barSeries.attachAxis(valueAxis)
-        barSeries.append(barset)
-        chart = QChart()
-        chart.addSeries(barSeries)
-        chart.addAxis(categoryAxis, Qt.AlignBottom)
-        chart.addAxis(valueAxis, Qt.AlignLeft)
-        chart.setTitle(qtMakeBold('Faced killers frequency'))
-        chart.setAnimationOptions(QChart.SeriesAnimations)
-        chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignRight)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
-
     def __setupTotalStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
         categories = [' '.join(splitUpper(state.name)) for state in FacedSurvivorState]
@@ -396,7 +377,6 @@ class StatisticsWindow(QDialog):
         chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
-
 
     def __setupEliminationsChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
@@ -545,11 +525,61 @@ class StatisticsWindow(QDialog):
         chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
 
-    def __setupSurvivorGamesChart(self, survivorStats: SurvivorMatchStatistics):
-        pass
+    def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
+        facedKillerHist = survivorStats.facedKillerHistogram
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categories = [k.killerAlias for k in facedKillerHist.keys()]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        valueAxis.setRange(0, max(facedKillerHist.values()))
+        barset = QBarSet("Faced killers")
+        for k in facedKillerHist.keys():
+            barset.append(facedKillerHist[k])
+        barSeries = QBarSeries()
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        barSeries.append(barset)
+        chart = QChart()
+        chart.addSeries(barSeries)
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.setTitle(qtMakeBold('Faced killers frequency'))
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
+
+    def __setupSurvivorGamesChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categories = [s.survivorName for s in survivorStats.gamesPlayedWithSurvivor.keys()]
+        categoryAxis.append(categories)
+        categoryAxis.setLabelsAngle(-90)
+        barset = QBarSet("Games with survivor")
+        for k in survivorStats.gamesPlayedWithSurvivor.keys():
+            barset.append(survivorStats.gamesPlayedWithSurvivor[k])
+        valueAxis.setRange(0, max(survivorStats.gamesPlayedWithSurvivor.values()))
+        barSeries = QBarSeries()
+        barSeries.append(barset)
+        barSeries.attachAxis(categoryAxis)
+        barSeries.attachAxis(valueAxis)
+        chart = QChart()
+        chart.addAxis(categoryAxis, Qt.AlignBottom)
+        chart.addAxis(valueAxis, Qt.AlignLeft)
+        chart.addSeries(barSeries)
+        chart.setTitle(qtMakeBold("Total games with each survivor"))
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignRight)
+        chartView = QChartView(chart)
+        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        chartView.setRenderHint(QPainter.Antialiasing)
+        return chartView
 
     def __setupMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
-        pass
+        resultsHistogram = survivorStats.matchResultsHistogram
 
-    def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics):
-        pass
+    def __setupSurvivorMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
+        resultsHistogram = survivorStats.survivorsMatchResultsHistogram
