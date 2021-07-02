@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Iterable
 
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
@@ -527,52 +528,25 @@ class StatisticsWindow(QDialog):
 
     def __setupFacedKillerHistogramChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
         facedKillerHist = survivorStats.facedKillerHistogram
-        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
-        categories = [k.killerAlias for k in facedKillerHist.keys()]
-        categoryAxis.append(categories)
-        categoryAxis.setLabelsAngle(-90)
-        valueAxis.setRange(0, max(facedKillerHist.values()))
+        categoryAxis, valueAxis = self.__barSeriesAxes(0, max(facedKillerHist.values()), [k.killerAlias for k in facedKillerHist.keys()])
         barset = QBarSet("Faced killers")
         for k in facedKillerHist.keys():
             barset.append(facedKillerHist[k])
-        barSeries = QBarSeries()
-        barSeries.attachAxis(categoryAxis)
-        barSeries.attachAxis(valueAxis)
-        barSeries.append(barset)
-        chart = QChart()
-        chart.addSeries(barSeries)
-        chart.addAxis(categoryAxis, Qt.AlignBottom)
-        chart.addAxis(valueAxis, Qt.AlignLeft)
-        chart.setTitle(qtMakeBold('Faced killers frequency'))
-        chart.setAnimationOptions(QChart.SeriesAnimations)
-        chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignRight)
+        barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
+        chart = self.__barChart(barSeries, qtMakeBold('Faced killers frequency'), categoryAxis, valueAxis)
         chartView = QChartView(chart)
         chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         chartView.setRenderHint(QPainter.Antialiasing)
         return chartView
 
     def __setupSurvivorGamesChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
-        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
-        categories = [s.survivorName for s in survivorStats.gamesPlayedWithSurvivor.keys()]
-        categoryAxis.append(categories)
-        categoryAxis.setLabelsAngle(-90)
+        gamesHist = survivorStats.gamesPlayedWithSurvivor
+        categoryAxis, valueAxis = self.__barSeriesAxes(0, max(gamesHist.values()), [s.survivorName for s in gamesHist.keys()])
         barset = QBarSet("Games with survivor")
-        for k in survivorStats.gamesPlayedWithSurvivor.keys():
-            barset.append(survivorStats.gamesPlayedWithSurvivor[k])
-        valueAxis.setRange(0, max(survivorStats.gamesPlayedWithSurvivor.values()))
-        barSeries = QBarSeries()
-        barSeries.append(barset)
-        barSeries.attachAxis(categoryAxis)
-        barSeries.attachAxis(valueAxis)
-        chart = QChart()
-        chart.addAxis(categoryAxis, Qt.AlignBottom)
-        chart.addAxis(valueAxis, Qt.AlignLeft)
-        chart.addSeries(barSeries)
-        chart.setTitle(qtMakeBold("Total games with each survivor"))
-        chart.setAnimationOptions(QChart.SeriesAnimations)
-        chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignRight)
+        for k in gamesHist.keys():
+            barset.append(gamesHist[k])
+        barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
+        chart = self.__barChart(barSeries, qtMakeBold("Total games with each survivor"), categoryAxis, valueAxis)
         chartView = QChartView(chart)
         chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         chartView.setRenderHint(QPainter.Antialiasing)
@@ -594,3 +568,29 @@ class StatisticsWindow(QDialog):
         chart = QChart()
         chartView = QChartView(chart)
         return chartView
+
+    def __barSeriesAxes(self, minVal: int, maxVal: int, categories: list[str], labelAngle:int = -90) -> tuple[QBarCategoryAxis, QValueAxis]:
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        categoryAxis.setLabelsAngle(labelAngle)
+        categoryAxis.append(categories)
+        valueAxis.setRange(minVal, maxVal)
+        return categoryAxis, valueAxis
+
+    def __barChart(self, series, title: str, xAxis, yAxis, legendVisible=True, legendAlignment=Qt.AlignRight) -> QChart:
+        chart = QChart()
+        chart.addSeries(series)
+        chart.addAxis(xAxis, Qt.AlignBottom)
+        chart.addAxis(yAxis, Qt.AlignLeft)
+        chart.setTitle(title)
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.legend().setVisible(legendVisible)
+        chart.legend().setAlignment(legendAlignment)
+        return chart
+
+    def __barSeries(self, xAxis, yAxis, barsets: Iterable[QBarSet]) -> QBarSeries:
+        barSeries = QBarSeries()
+        for _set in barsets:
+            barSeries.append(_set)
+        barSeries.attachAxis(xAxis)
+        barSeries.attachAxis(yAxis)
+        return barSeries
