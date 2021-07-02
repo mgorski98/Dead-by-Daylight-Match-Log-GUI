@@ -580,6 +580,17 @@ class StatisticsWindow(QDialog):
 
     def __setupMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
         resultsHistogram = survivorStats.matchResultsHistogram
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        barset = QBarSet("Match results")
+        barSeries = QBarSeries()
+        chart = QChart()
+        chartView = QChartView(chart)
+        return chartView
 
     def __setupSurvivorMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
         resultsHistogram = survivorStats.survivorsMatchResultsHistogram
+        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
+        barSeries = QBarSeries()
+        chart = QChart()
+        chartView = QChartView(chart)
+        return chartView

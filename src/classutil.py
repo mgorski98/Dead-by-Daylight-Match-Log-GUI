@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import re
 from datetime import date, datetime
+from enum import Enum
 from typing import Union, Callable, Optional
 
 from PyQt5.QtCore import QRunnable, QObject, pyqtSignal
