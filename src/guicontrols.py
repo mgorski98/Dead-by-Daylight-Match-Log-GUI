@@ -479,7 +479,7 @@ class FacedSurvivorSelectionWindow(QWidget):
 class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
     def __init__(self, offerings: list[Offering], parent=None):
-        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...", filterFunction=lambda o,s: o.offeringName.startswith(s))
+        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...", filterFunction=lambda o,s: s.lower() in o.offeringName.lower())
         self.items = offerings
         self.currentItems = offerings
         self.initPopupGrid()
