@@ -5,6 +5,7 @@ import sys
 from operator import itemgetter
 from typing import Iterable
 
+from PyQt5 import QtGui
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QPixmap
@@ -37,6 +38,7 @@ class StatisticsWorker(QThread):
 
 class StatisticsWindow(QDialog):
 
+    closing = pyqtSignal()
 
     def __init__(self, calc: StatisticsCalculator, parent=None):
         super().__init__(parent=parent)
@@ -68,6 +70,9 @@ class StatisticsWindow(QDialog):
         self.worker.start()
         return super().exec_()
 
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        super().closeEvent(a0)
+        self.closing.emit()
 
     def enableCloseButton(self):
         self.setWindowFlags(self.windowFlags() | Qt.WindowCloseButtonHint)

@@ -342,10 +342,15 @@ class MainWindow(QMainWindow):
             killerMatches = s.query(KillerMatch).all()
             survivorMatches = s.query(SurvivorMatch).all()
         calc = StatisticsCalculator(killerMatches, survivorMatches, self.resources)
-        if self.statsWindow is not None:
-            del self.statsWindow
+
+        def deleteStatsWindowReference():
+            if self.statsWindow is not None:
+                del self.statsWindow
+                self.statsWindow = None
+
         self.statsWindow = StatisticsWindow(calc)
         self.statsWindow.setModal(True)
+        self.statsWindow.closing.connect(deleteStatsWindowReference)
         self.statsWindow.exec_()
 
     def __saveMatches(self):
