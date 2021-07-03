@@ -37,7 +37,7 @@ class LoadedGamesDisplayDialog(QDialog):
         discardButton = QPushButton("Discard")
         acceptButton = QPushButton("Accept")
         acceptButton.clicked.connect(self.accept)
-        discardButton.clicked.connect(closeDialog)
+        discardButton.clicked.connect(lambda: closeDialog())
         buttonsLayout.addStretch(1)
         buttonsLayout.addWidget(acceptButton)
         buttonsLayout.addWidget(discardButton)
