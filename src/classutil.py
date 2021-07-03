@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
-from enum import Enum
 from typing import Union, Callable, Optional
 
 from PyQt5.QtCore import QRunnable, QObject, pyqtSignal
@@ -12,8 +11,8 @@ from globaldata import Globals
 from models import Killer, Survivor, KillerAddon, Item, ItemAddon, Offering, Realm, Perk, KillerMatch, SurvivorMatch, \
     DBDMatch, KillerMatchPerk, FacedSurvivorState, FacedSurvivor, MatchKillerAddon, MatchItemAddon, SurvivorMatchResult, \
     SurvivorMatchPerk, GameMap
-from util import isDateString, levenshteinDistance
-from dataclasses import dataclass
+from util import isDateString
+
 
 @dataclass(frozen=True)
 class DBDResources(object):

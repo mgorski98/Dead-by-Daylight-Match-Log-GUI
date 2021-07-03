@@ -1,12 +1,11 @@
 from __future__ import annotations
+
 import datetime
 import re
 from typing import Optional, Callable
+
 import numpy as np
-from functools import wraps
-
 import requests
-
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QLayout, QWidget, QMessageBox
 

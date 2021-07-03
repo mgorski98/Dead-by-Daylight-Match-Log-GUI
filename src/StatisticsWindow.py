@@ -1,24 +1,22 @@
 from __future__ import annotations
 
 import dataclasses
-import sys
 from operator import itemgetter
 from typing import Iterable
 
 from PyQt5 import QtGui
 from PyQt5.QtChart import QBarSet, QBarSeries, QChart, QBarCategoryAxis, QValueAxis, QChartView
 from PyQt5.QtCore import QThread, Qt, pyqtSignal
-from PyQt5.QtGui import QPainter, QPixmap
+from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QGridLayout, QLabel, QSpacerItem, QWidget, QHBoxLayout, \
-    QScrollArea, QFrame, QLineEdit, QSizePolicy, QLayout, QPushButton
+    QScrollArea, QSizePolicy, QLayout
 
 from globaldata import Globals
 from models import FacedSurvivorState
-from waitingspinnerwidget import QtWaitingSpinner
-
 from statistics import StatisticsCalculator, GeneralMatchStatistics, SurvivorMatchStatistics, KillerMatchStatistics, \
-    EliminationInfo, CommonSurvivorInfo
+    EliminationInfo
 from util import clearLayout, qtMakeBold, addSubLayouts, splitUpper, addWidgets, toResourceName, singleOrPlural
+from waitingspinnerwidget import QtWaitingSpinner
 
 
 class StatisticsWorker(QThread):

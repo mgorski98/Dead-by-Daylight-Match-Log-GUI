@@ -12,7 +12,6 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog, QListWidgetItem, QDialog
-from sqlalchemy.orm.strategy_options import subqueryload
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from StatisticsWindow import StatisticsWindow

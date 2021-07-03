@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+import pickle
 from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Iterable, Optional
 
-import pickle
-import numpy as np
 import pandas as pd
 
 from classutil import DBDResources
 from models import SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
     SurvivorMatchResult, FacedSurvivorState
-
 from util import singleOrPlural
+
 
 @dataclass(frozen=True)
 class EliminationInfo(object):

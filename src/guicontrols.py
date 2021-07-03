@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import operator
 from functools import partial
-from typing import Union, Callable, Iterable
+from typing import Union, Callable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
