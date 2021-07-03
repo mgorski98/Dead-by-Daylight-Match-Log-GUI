@@ -518,7 +518,7 @@ class OfferingSelection(QWidget):
         offeringLabel.setWordWrap(True)
         selectionButton = QPushButton()
         selectionButton.setFlat(True)
-        size = QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1])
+        size = QSize(*Globals.OFFERING_ICON_SIZE)
         selectionButton.setIconSize(size)
         selectionButton.setFixedSize(size)
         selectionButton.setIcon(self.defaultIcon)
