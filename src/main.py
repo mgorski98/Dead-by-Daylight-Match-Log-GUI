@@ -12,6 +12,7 @@ from globaldata import Globals
 
 import json
 
+
 def loadConfig(path: str):
     with open(path,mode='r') as f:
         return json.load(f)

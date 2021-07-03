@@ -4,8 +4,8 @@ import enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Optional, Callable
 from io import StringIO
+from typing import Optional
 
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, Date, Enum
 from sqlalchemy.orm import registry, relationship
@@ -44,6 +44,8 @@ class FacedSurvivorState(enum.Enum):
     BledOut = 2
     Disconnected = 3
     Escaped = 4
+    HeadPopped = 5
+    GivenHatch = 6
 #</editor-fold>
 
 @mapperRegistry.mapped

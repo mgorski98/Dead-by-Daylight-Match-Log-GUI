@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QListWidget, QLabel, QTabWidget, \
-    QGridLayout, QMessageBox
+    QGridLayout
 
 from guicontrols import PaginatedMatchListWidget
 from models import DBDMatch, SurvivorMatch, KillerMatch
@@ -36,7 +37,7 @@ class LoadedGamesDisplayDialog(QDialog):
         discardButton = QPushButton("Discard")
         acceptButton = QPushButton("Accept")
         acceptButton.clicked.connect(self.accept)
-        discardButton.clicked.connect(closeDialog)
+        discardButton.clicked.connect(lambda: closeDialog())
         buttonsLayout.addStretch(1)
         buttonsLayout.addWidget(acceptButton)
         buttonsLayout.addWidget(discardButton)

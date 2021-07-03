@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import datetime
 import re
 from typing import Optional, Callable
+
 import numpy as np
-
 import requests
-
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QLayout, QWidget, QMessageBox
 
@@ -88,7 +88,7 @@ def qtMakeItalic(s: str) -> str:
 
 def confirmation(text: str="Confirmation", informativeText: str="Please confirm your action", title: str="Confirmation dialog") -> Callable:
     def outerWrapper(func):
-        def wrapper(self=None): #this is needed if we also want to use this decorator on class member functions
+        def wrapper(*args):
             msgBox = QMessageBox()
             msgBox.setText(text)
             msgBox.setIcon(QMessageBox.Question)
@@ -97,7 +97,7 @@ def confirmation(text: str="Confirmation", informativeText: str="Please confirm 
             msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             result = msgBox.exec_()
             if result == QMessageBox.Yes:
-                func()
+                func(*args)
         return wrapper
     return outerWrapper
 

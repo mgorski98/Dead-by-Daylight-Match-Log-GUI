@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import operator
 from functools import partial
-from typing import Union, Callable, Iterable
+from typing import Union, Callable
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPaintEvent, QPalette
@@ -425,11 +426,12 @@ class FacedSurvivorSelect(ItemSelect):
 
     def __init__(self, survivors: list[Survivor], icons: dict[str, QPixmap], iconSize=(112,156), parent=None):
         super().__init__(parent=parent, iconSize=iconSize, items=survivors, icons=icons, nameExtractorFunc=lambda surv: surv.survivorName)
-        self.survivorState = FacedSurvivorState.Sacrificed
+        self.survivorState = FacedSurvivorState.Escaped
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
         self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
         self.survivorStateComboBox.activated.connect(self.selectState)
+        self.survivorStateComboBox.setCurrentIndex(self.survivorState.value)
         comboItems = map(str, self.items)
         iconsCombo = map(lambda surv: QIcon(self.icons[toResourceName(surv.survivorName)]),
                                self.items)
@@ -447,8 +449,8 @@ class FacedSurvivorSelect(ItemSelect):
 
     def resetSelection(self):
         super(FacedSurvivorSelect, self).resetSelection()
-        self.survivorStateComboBox.setCurrentIndex(0)
-        self.survivorState = FacedSurvivorState.Sacrificed
+        self.survivorStateComboBox.setCurrentIndex(FacedSurvivorState.Escaped.value)
+        self.survivorState = FacedSurvivorState.Escaped
 
 
 class FacedSurvivorSelectionWindow(QWidget):
@@ -477,7 +479,7 @@ class FacedSurvivorSelectionWindow(QWidget):
 class OfferingSelectPopup(SearchableGridViewSelectionPopup):
 
     def __init__(self, offerings: list[Offering], parent=None):
-        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...", filterFunction=lambda o,s: o.offeringName.startswith(s))
+        super().__init__(columns=5, parent=parent,placeholderText="Search for offerings...", filterFunction=lambda o,s: s.lower() in o.offeringName.lower())
         self.items = offerings
         self.currentItems = offerings
         self.initPopupGrid()
@@ -516,7 +518,7 @@ class OfferingSelection(QWidget):
         offeringLabel.setWordWrap(True)
         selectionButton = QPushButton()
         selectionButton.setFlat(True)
-        size = QSize(Globals.OFFERING_ICON_SIZE[0], Globals.OFFERING_ICON_SIZE[1])
+        size = QSize(*Globals.OFFERING_ICON_SIZE)
         selectionButton.setIconSize(size)
         selectionButton.setFixedSize(size)
         selectionButton.setIcon(self.defaultIcon)

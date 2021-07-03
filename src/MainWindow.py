@@ -12,7 +12,6 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QLineEdit, QLabel, QSpinBox, \
     QDateEdit, QTabWidget, QAction, QMessageBox, QSpacerItem, QProgressDialog, QListWidget, QPushButton, QComboBox, \
     QFileDialog, QListWidgetItem, QDialog
-from sqlalchemy.orm.strategy_options import subqueryload
 
 from LoadedGamesDisplayDialog import LoadedGamesDisplayDialog
 from StatisticsWindow import StatisticsWindow
@@ -42,6 +41,7 @@ class MainWindow(QMainWindow):
         self.__setupMenuBar()
         self.threadPool = QThreadPool.globalInstance()
         self.worker = None
+        self.statsWindow = None
 
 
         self.statusBar().showMessage("Ready", 5000)
@@ -308,7 +308,7 @@ class MainWindow(QMainWindow):
 
     def __setupMenuBar(self):
         updateAction = QAction('Update game data and image database', self)
-        updateAction.triggered.connect(self.__updateResources)
+        updateAction.triggered.connect(lambda: self.__updateResources())
         loadLogAction = QAction('Load match log data', self)
         loadLogAction.setShortcut(QKeySequence("Ctrl+O"))
         loadLogAction.triggered.connect(self.__loadMatchLogs)
@@ -341,8 +341,15 @@ class MainWindow(QMainWindow):
             killerMatches = s.query(KillerMatch).all()
             survivorMatches = s.query(SurvivorMatch).all()
         calc = StatisticsCalculator(killerMatches, survivorMatches, self.resources)
+
+        def deleteStatsWindowReference():
+            if self.statsWindow is not None:
+                del self.statsWindow
+                self.statsWindow = None
+
         self.statsWindow = StatisticsWindow(calc)
         self.statsWindow.setModal(True)
+        self.statsWindow.closing.connect(deleteStatsWindowReference)
         self.statsWindow.exec_()
 
     def __saveMatches(self):

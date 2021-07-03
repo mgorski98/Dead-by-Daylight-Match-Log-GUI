@@ -1,19 +1,19 @@
 from __future__ import annotations
 
+import pickle
 from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Iterable, Optional
 
-import numpy as np
 import pandas as pd
 
 from classutil import DBDResources
 from models import SurvivorMatch, KillerMatch, Survivor, Killer, Realm, GameMap, ItemType, \
     SurvivorMatchResult, FacedSurvivorState
-
 from util import singleOrPlural
+
 
 @dataclass(frozen=True)
 class EliminationInfo(object):
@@ -76,7 +76,7 @@ class CommonSurvivorInfo(object):
     totalGames: int
 
     def __str__(self):
-        return f'{self.survivor.survivorName} ({self.encounters:,} {singleOrPlural(self.encounters, "game")} out of {self.totalGames:,})'
+        return f'{self.survivor.survivorName} ({self.encounters:,} {singleOrPlural(self.encounters, "encounter")} out of {self.totalGames:,} {singleOrPlural(self.totalGames, "game")})'
 
     def __repr__(self):
         return self.__str__()
@@ -101,6 +101,18 @@ class MapRealmInfo(object):
 
     def __str__(self):
         return f'{self.realm.realmName} ({self.realmGames:,} {singleOrPlural(self.realmGames, "game")} out of {self.totalGames:,})'
+
+    def __repr__(self):
+        return self.__str__()
+
+@dataclass(frozen=True)
+class ItemTypeInfo(object):
+    itemType: ItemType
+    gamesWithItemType: int
+    totalGames: int
+
+    def __str__(self):
+        return f'{self.itemType.name}, chosen {self.gamesWithItemType:,} {singleOrPlural(self.gamesWithItemType, "time")} out of {self.totalGames:,} {singleOrPlural(self.totalGames, "game")}'
 
     def __repr__(self):
         return self.__str__()
@@ -134,7 +146,9 @@ class KillerMatchStatistics(MatchStatistics):
 class SurvivorMatchStatistics(MatchStatistics):
     gamesPlayedWithSurvivor: dict[Survivor, int]
     matchResultsHistogram: dict[SurvivorMatchResult, int]
-    mostCommonItemType: ItemType
+    survivorsMatchResultsHistogram: dict[Survivor, dict[SurvivorMatchResult, int]]
+    facedKillerHistogram: dict[Killer, int]
+    mostCommonItemTypeData: ItemTypeInfo
     mostCommonKillerData: CommonKillerInfo
     mostLethalKillerData: LethalKillerInfo
     leastCommonKillerData: CommonKillerInfo
@@ -221,7 +235,12 @@ class StatisticsCalculator(object):
         averagePoints = self.survivorGamesDf['points'].sum() // self.survivorGamesDf.shape[0]
         mostCommonKiller = facedKillerHistogram.idxmax()
         leastCommonKiller = facedKillerHistogram.idxmin()
-        mostCommonItemType = self.survivorGamesDf.groupby('item', sort=False).size().notnull().idxmax().itemType
+        itemsHistogram = self.survivorGamesDf.groupby('item', sort=False).size()
+        itemTypesHistogram = defaultdict(int)
+        for index, count in itemsHistogram.iteritems():
+            itemTypesHistogram[index.itemType] += count
+        mostCommonItemType = max(itemTypesHistogram, key=itemTypesHistogram.get)
+        mostCommonItemTypeInfo = ItemTypeInfo(itemType=mostCommonItemType, totalGames=self.survivorGamesDf.shape[0], gamesWithItemType=itemTypesHistogram[mostCommonItemType])
         facedKillerMatchResults = self.survivorGamesDf.groupby(["faced killer", "match result"], sort=False).size()
         lossResults = (SurvivorMatchResult.Sacrificed, SurvivorMatchResult.Killed, SurvivorMatchResult.Camped,
                        SurvivorMatchResult.Dead, SurvivorMatchResult.Tunnelled)
@@ -245,11 +264,17 @@ class StatisticsCalculator(object):
         leastCommonKillerInfo = CommonKillerInfo(killer=leastCommonKiller,
                                                  encounters=facedKillerHistogramDict[leastCommonKiller],
                                                  totalGames=self.survivorGamesDf.shape[0])
+
+        survivorMatchResults = defaultdict(lambda: defaultdict(int))
+        for survivor, result in zip(self.survivorGamesDf["survivor"], self.survivorGamesDf["match result"]):
+            survivorMatchResults[survivor][result] += 1
+
         return SurvivorMatchStatistics(gamesPlayedWithSurvivor=survivorGamesHistogram, averagePointsPerMatch=averagePoints,
-                                              matchResultsHistogram=matchResultsHistogram, mostCommonItemType=mostCommonItemType,
+                                              matchResultsHistogram=matchResultsHistogram, mostCommonItemTypeData=mostCommonItemTypeInfo,
                                               mostCommonKillerData=mostCommonKillerInfo, mostLethalKillerData=mostLethalKillerInfo,
                                               leastCommonKillerData=leastCommonKillerInfo, leastLethalKillerData=leastLethalKillerInfo,
-                                              totalGames=self.survivorGamesDf.shape[0])
+                                              totalGames=self.survivorGamesDf.shape[0], facedKillerHistogram=facedKillerHistogramDict,
+                                              survivorsMatchResultsHistogram=survivorMatchResults)
 
 
     def calculateGeneral(self) -> GeneralMatchStatistics:
@@ -267,6 +292,8 @@ class StatisticsCalculator(object):
         totalMapHistogram = pd.concat([survivorMapHistogram,killerMapHistogram],axis=1).fillna(value=0)
         totalMapHistogram = pd.DataFrame(data=(totalMapHistogram[0] + totalMapHistogram[1]).astype(int), columns=['count'])
 
+        totalGamesWithMapPresent = totalMapHistogram['count'].sum()
+
         mostCommonMap: GameMap = totalMapHistogram.idxmax()[0] if not totalMapHistogram.empty else None
         leastCommonMap: GameMap = totalMapHistogram.idxmin()[0] if not totalMapHistogram.empty else None
 
@@ -283,10 +310,10 @@ class StatisticsCalculator(object):
         mostCommonRealmGames = realmsDict[mostCommonRealm] if len(realmsDict) > 0 else 0
         leastCommonRealmGames = realmsDict[leastCommonRealm] if len(realmsDict) > 0 else 0
 
-        mostCommonMapInfo = MapInfo(totalGames=totalGames, map=mostCommonMap, mapGames=mostCommonMapGames)
-        leastCommonMapInfo = MapInfo(totalGames=totalGames, map=leastCommonMap, mapGames=leastCommonMapGames)
-        mostCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=mostCommonRealm, realmGames=mostCommonRealmGames)
-        leastCommonRealmInfo = MapRealmInfo(totalGames=totalGames, realm=leastCommonRealm, realmGames=leastCommonRealmGames)
+        mostCommonMapInfo = MapInfo(totalGames=totalGamesWithMapPresent, map=mostCommonMap, mapGames=mostCommonMapGames)
+        leastCommonMapInfo = MapInfo(totalGames=totalGamesWithMapPresent, map=leastCommonMap, mapGames=leastCommonMapGames)
+        mostCommonRealmInfo = MapRealmInfo(totalGames=totalGamesWithMapPresent, realm=mostCommonRealm, realmGames=mostCommonRealmGames)
+        leastCommonRealmInfo = MapRealmInfo(totalGames=totalGamesWithMapPresent, realm=leastCommonRealm, realmGames=leastCommonRealmGames)
 
         return GeneralMatchStatistics(averagePointsPerMatch=averagePoints, totalGames=totalGames, totalPoints=totalPoints,
                                       mostCommonMapData=mostCommonMapInfo, mostCommonMapRealmData=mostCommonRealmInfo,
@@ -303,12 +330,17 @@ def exportAsXML(statistics: MatchStatistics, destinationPath: str):
 def exportAsYAML(statistics: MatchStatistics, destinationPath: str):
     pass
 
+def exportAsBinary(statistics: MatchStatistics, destinationPath: str):
+    with open(destinationPath, mode='wb') as f:
+        pickle.dump(statistics, f)
+
 class StatisticsExporter(object):
 
     __export_types__ : dict[str, Callable[[object, str], None]] = {
         "xml": exportAsXML,
         "json": exportAsJson,
-        "yaml": exportAsYAML
+        "yaml": exportAsYAML,
+        "bin": exportAsBinary
     }
 
     def __init__(self, exportType: str):
@@ -322,3 +354,5 @@ class StatisticsExporter(object):
             raise ValueError("Export function handler is None")
         self.exportHandler(statistics, destinationPath)
 
+class StatisticsImporter(object):
+    pass
