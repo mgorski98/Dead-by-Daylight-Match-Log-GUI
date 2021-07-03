@@ -426,11 +426,12 @@ class FacedSurvivorSelect(ItemSelect):
 
     def __init__(self, survivors: list[Survivor], icons: dict[str, QPixmap], iconSize=(112,156), parent=None):
         super().__init__(parent=parent, iconSize=iconSize, items=survivors, icons=icons, nameExtractorFunc=lambda surv: surv.survivorName)
-        self.survivorState = FacedSurvivorState.Sacrificed
+        self.survivorState = FacedSurvivorState.Escaped
         self.survivorStateComboBox = QComboBox()
         self.layout().addWidget(self.survivorStateComboBox)
         self.survivorStateComboBox.addItems(' '.join(splitUpper(state.name)).lower().capitalize() for state in FacedSurvivorState)
         self.survivorStateComboBox.activated.connect(self.selectState)
+        self.survivorStateComboBox.setCurrentIndex(self.survivorState.value)
         comboItems = map(str, self.items)
         iconsCombo = map(lambda surv: QIcon(self.icons[toResourceName(surv.survivorName)]),
                                self.items)
@@ -448,8 +449,8 @@ class FacedSurvivorSelect(ItemSelect):
 
     def resetSelection(self):
         super(FacedSurvivorSelect, self).resetSelection()
-        self.survivorStateComboBox.setCurrentIndex(0)
-        self.survivorState = FacedSurvivorState.Sacrificed
+        self.survivorStateComboBox.setCurrentIndex(FacedSurvivorState.Escaped.value)
+        self.survivorState = FacedSurvivorState.Escaped
 
 
 class FacedSurvivorSelectionWindow(QWidget):
