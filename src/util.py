@@ -122,7 +122,8 @@ def singleOrPlural(i: int, single: str):
 def measureTime(func):
     def wrapper(*args, **kwargs):
         start = time.time()
-        func(*args, **kwargs)
+        retVal = func(*args, **kwargs)
         end = time.time()
         print(f"Time taken for function {func.__name__}: {end - start} seconds")
+        return retVal
     return wrapper
