@@ -317,6 +317,14 @@ class StatisticsWindow(QDialog):
             facedKillersChart.setMinimumHeight(minChartHeight)
             survivorStatsLayout.addWidget(facedKillersChart)
 
+            individualSurvivorMatchResultsChart = self.__setupSurvivorMatchResultsHistogramChart(survivorStats)
+            individualSurvivorMatchResultsChart.setMinimumHeight(minChartHeight)
+            survivorStatsLayout.addWidget(individualSurvivorMatchResultsChart)
+
+            totalMatchResultsChart = self.__setupMatchResultsHistogramChart(survivorStats)
+            totalMatchResultsChart.setMinimumHeight(minChartHeight)
+            survivorStatsLayout.addWidget(totalMatchResultsChart)
+
     def __setStatSubLayout(self, layout: QHBoxLayout, leftLabel: QLabel, rightLabel: QLabel, margins: tuple[int, int, int, int]):
         layout.addWidget(leftLabel)
         layout.addWidget(rightLabel)
@@ -477,10 +485,18 @@ class StatisticsWindow(QDialog):
 
     def __setupSurvivorMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
         resultsHistogram = survivorStats.survivorsMatchResultsHistogram
-        categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
-        categories = [s.survivorName for s in resultsHistogram.keys()]
-        barSeries = QBarSeries()
-        chart = QChart()
+        barsets = [(QBarSet(" ".join(splitUpper(state.name))), state) for state in SurvivorMatchResult]
+        maxVal = 0
+        for _set, result in barsets:
+            for survivor in resultsHistogram.keys():
+                results = resultsHistogram[survivor]
+                count = results[result]
+                _set.append(count)
+                if count > maxVal:
+                    maxVal = count
+        categoryAxis, valueAxis = self.__barSeriesAxes(0, maxVal, [s.survivorName for s in resultsHistogram.keys()])
+        barSeries = self.__barSeries(categoryAxis, valueAxis, map(itemgetter(0), barsets))
+        chart = self.__barChart(barSeries, qtMakeBold("Individual survivors' match results"), categoryAxis, valueAxis)
         return self.__barChartView(chart)
 
     def __barSeriesAxes(self, minVal: int, maxVal: int, categories: list[str], labelAngle:int = -90) -> tuple[QBarCategoryAxis, QValueAxis]:
