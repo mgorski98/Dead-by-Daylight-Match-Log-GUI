@@ -8,6 +8,7 @@ import numpy as np
 import requests
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QLayout, QWidget, QMessageBox
+import time
 
 
 def saveImageFromURL(url: str, dest: str):
@@ -117,3 +118,11 @@ def addSubLayouts(layout: QLayout, *layouts):
 
 def singleOrPlural(i: int, single: str):
     return single + 's' if i != 1 else single
+
+def measureTime(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        func(*args, **kwargs)
+        end = time.time()
+        print(f"Time taken for function {func.__name__}: {end - start} seconds")
+    return wrapper
