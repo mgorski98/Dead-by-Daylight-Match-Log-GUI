@@ -337,10 +337,7 @@ class StatisticsWindow(QDialog):
         categoryAxis, valueAxis = self.__barSeriesAxes(0, maxVal, [s.survivorName for s in killerStats.facedSurvivorStatesHistogram.keys()])
         barSeries = self.__barSeries(categoryAxis, valueAxis, map(itemgetter(0), barSetPairs))
         chart = self.__barChart(barSeries, qtMakeBold("Faced survivors' fates"), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupTotalStatesChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         hist = killerStats.totalSurvivorStatesHistogram
@@ -350,10 +347,7 @@ class StatisticsWindow(QDialog):
             barset.append(hist[k])
         barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
         chart = self.__barChart(barSeries, qtMakeBold("Total survivor states"), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupEliminationsChart(self, killerStats: KillerMatchStatistics) -> QChartView:
         elims = killerStats.totalKillerEliminations
@@ -367,9 +361,7 @@ class StatisticsWindow(QDialog):
         categoryAxis, valueAxis = self.__barSeriesAxes(0, maxVal, [k.killerAlias for k in elims.keys()])
         barSeries = self.__barSeries(categoryAxis, valueAxis, barSets)
         chart = self.__barChart(barSeries, qtMakeBold("Total killer eliminations"), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupGeneralStatsLayout(self, stats: GeneralMatchStatistics) -> QLayout:
         generalStatsLayout = QVBoxLayout()
@@ -425,10 +417,7 @@ class StatisticsWindow(QDialog):
             barset.append(gamesHistogram[k])
         barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
         chart = self.__barChart(barSeries, qtMakeBold("Games played with each killer"), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupTotalEliminationsInfo(self, eliminationInfo: EliminationInfo) -> QVBoxLayout:
         layout = QVBoxLayout()
@@ -464,10 +453,7 @@ class StatisticsWindow(QDialog):
             barset.append(facedKillerHist[k])
         barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
         chart = self.__barChart(barSeries, qtMakeBold('Faced killers frequency'), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupSurvivorGamesChart(self, survivorStats: SurvivorMatchStatistics) -> QChartView:
         gamesHist = survivorStats.gamesPlayedWithSurvivor
@@ -477,10 +463,7 @@ class StatisticsWindow(QDialog):
             barset.append(gamesHist[k])
         barSeries = self.__barSeries(categoryAxis, valueAxis, [barset])
         chart = self.__barChart(barSeries, qtMakeBold("Total games with each survivor"), categoryAxis, valueAxis)
-        chartView = QChartView(chart)
-        chartView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        chartView.setRenderHint(QPainter.Antialiasing)
-        return chartView
+        return self.__barChartView(chart)
 
     def __setupMatchResultsHistogramChart(self, survivorStats: SurvivorMatchStatistics):
         resultsHistogram = survivorStats.matchResultsHistogram
@@ -498,8 +481,7 @@ class StatisticsWindow(QDialog):
         categories = [s.survivorName for s in resultsHistogram.keys()]
         barSeries = QBarSeries()
         chart = QChart()
-        chartView = QChartView(chart)
-        return chartView
+        return self.__barChartView(chart)
 
     def __barSeriesAxes(self, minVal: int, maxVal: int, categories: list[str], labelAngle:int = -90) -> tuple[QBarCategoryAxis, QValueAxis]:
         categoryAxis, valueAxis = QBarCategoryAxis(), QValueAxis()
